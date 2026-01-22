@@ -176,8 +176,8 @@ def solve_quiz(reader):
             time.sleep(0.5)
             find_and_click_image(abs_check_path, "Check Answer Button")
             
-            time.sleep(0.2) 
-            find_and_click_image(abs_next_path, "Next Page Button")
+            time.sleep(0.1) 
+            pyautogui.click()
             
         else:
             print(f"[!] Could not locate answer '{ai_answer_text}' on screen.")
@@ -236,11 +236,7 @@ def main():
                         break
                     
                     solve_quiz(reader)
-                    
-                    print("[*] Waiting 3s for next question...")
-                    for _ in range(5): # Sleep 3s in small chunks to allow interrupt
-                        if keyboard.is_pressed('esc'): break
-                        time.sleep(0.1)
+                    time.sleep(0.5)
 
             time.sleep(0.05)
             
