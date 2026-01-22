@@ -10,15 +10,14 @@ from fuzzywuzzy import fuzz
 from PIL import Image
 
 # --- Configuration ---
-# Adjust these paths if your folder structure changes
 BUTTON_IMAGE_PATH = r'..\buttons\show_question_button.png'
 CHECK_BUTTON_PATH = r'..\buttons\check_answer_button.png'
 NEXT_BUTTON_PATH = r'..\buttons\next_page_button.png'
 
 OLLAMA_MODEL = 'hf.co/arcee-ai/Arcee-VyLinh-GGUF:Q8_0'
 LANGUAGES = ['vi', 'en']
-CONFIDENCE_THRESHOLD = 0.8  # For image matching
-FUZZY_MATCH_THRESHOLD = 85  # For text matching (0-100)
+CONFIDENCE_THRESHOLD = 0.8  
+FUZZY_MATCH_THRESHOLD = 85  
 
 # PyAutoGUI Safety
 pyautogui.FAILSAFE = True
@@ -51,15 +50,12 @@ def find_best_match_location(target_text, ocr_results):
 
     for (box, text, prob) in ocr_results:
         text_norm = text.lower().strip()
-        
-        # Calculate similarity scores
+
         score_ratio = fuzz.ratio(target_norm, text_norm)
         score_partial = fuzz.partial_ratio(target_norm, text_norm)
-        
-        # Weighted score: Prioritize exact matches, but allow partials for noisy OCR
+
         final_score = max(score_ratio, score_partial)
-        
-        # Filter out very short noise (e.g., single characters often misread)
+
         if len(text_norm) < 2:
             final_score = 0
 
@@ -92,7 +88,7 @@ def find_and_click_image(image_path, description="image", retries=1):
                 if i < retries:
                     time.sleep(0.5)
         except pyautogui.ImageNotFoundException:
-            pass # Standard behavior if not found
+            pass 
         except Exception as e:
             print(f"[!] Error searching for image: {e}")
     
@@ -103,9 +99,7 @@ def check_ollama_connection():
     """Checks if Ollama is running and the model is available."""
     print("[*] Checking Ollama connection...")
     try:
-        # Simple list command to check connectivity
         models = ollama.list()
-        # You could verify if OLLAMA_MODEL is in the list, but strictly not required if it pulls on demand.
         print("[*] Ollama is online.")
         return True
     except Exception as e:
@@ -113,9 +107,6 @@ def check_ollama_connection():
         return False
 
 def solve_quiz(reader):
-    """
-    Main Logic Sequence
-    """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     abs_show_path = os.path.join(script_dir, BUTTON_IMAGE_PATH)
     abs_check_path = os.path.join(script_dir, CHECK_BUTTON_PATH)
@@ -169,7 +160,6 @@ def solve_quiz(reader):
         ])
         
         ai_answer_text = response['message']['content'].strip()
-        # Clean up if AI wraps text in quotes or markdown
         ai_answer_text = ai_answer_text.replace('"', '').replace("'", '').replace("**", "")
         
         print(f"\n=== AI ANSWER: {ai_answer_text} ===\n")
@@ -186,7 +176,7 @@ def solve_quiz(reader):
             time.sleep(0.5)
             find_and_click_image(abs_check_path, "Check Answer Button")
             
-            time.sleep(0.2) # Wait for result animation
+            time.sleep(0.2) 
             find_and_click_image(abs_next_path, "Next Page Button")
             
         else:
@@ -198,12 +188,10 @@ def solve_quiz(reader):
 def main():
     print("--- QUIZ SLAYER BOT ---")
     
-    # 1. Check Dependencies
     if not check_ollama_connection():
         print("Please start Ollama and try again.")
         return
 
-    # 2. Init OCR
     print("Initializing EasyOCR... (Loading models)")
     try:
         reader = easyocr.Reader(LANGUAGES, gpu=True) # Set gpu=False if no CUDA
@@ -220,7 +208,7 @@ def main():
     print(" [Esc] -> Stop Auto-Mode / Quit")
     print("="*50 + "\n")
 
-    # 3. Main Loop
+    # Main Loop
     while True:
         try:
             # --- EXIT ---
@@ -242,22 +230,19 @@ def main():
                 while keyboard.is_pressed('g'): time.sleep(0.1) # Debounce
                 
                 while True:
-                    # Check exit condition continuously
                     if keyboard.is_pressed('esc'):
                         print("\n>>> [AUTO MODE] STOPPED by user.")
                         while keyboard.is_pressed('esc'): time.sleep(0.1) # Debounce Esc
                         break
                     
-                    # Run logic
                     solve_quiz(reader)
                     
-                    # Wait for next question load
                     print("[*] Waiting 3s for next question...")
-                    for _ in range(30): # Sleep 3s in small chunks to allow interrupt
+                    for _ in range(5): # Sleep 3s in small chunks to allow interrupt
                         if keyboard.is_pressed('esc'): break
                         time.sleep(0.1)
 
-            time.sleep(0.05) # Reduce CPU usage
+            time.sleep(0.05)
             
         except KeyboardInterrupt:
             print("\n[!] User interrupted.")
