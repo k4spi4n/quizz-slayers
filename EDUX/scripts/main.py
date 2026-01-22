@@ -15,7 +15,7 @@ CHECK_BUTTON_PATH = r'..\buttons\check_answer_button.png'
 NEXT_BUTTON_PATH = r'..\buttons\next_page_button.png'
 
 OLLAMA_MODEL = 'hf.co/arcee-ai/Arcee-VyLinh-GGUF:Q8_0'
-LANGUAGES = ['vi', 'en']
+LANGUAGES = ['vi']
 CONFIDENCE_THRESHOLD = 0.8  
 FUZZY_MATCH_THRESHOLD = 85  
 SYSTEM_PROMPT = """Bạn là trợ lí thông minh chuyên trả lời câu hỏi. Yêu cầu:
@@ -102,7 +102,6 @@ def find_and_click_image(image_path, description="image", retries=1):
     return False
 
 def check_ollama_connection():
-    """Checks if Ollama is running and the model is available."""
     print("[*] Checking Ollama connection...")
     try:
         models = ollama.list()
@@ -121,7 +120,7 @@ def solve_quiz(reader):
     # 1. Click 'Show Question'
     # We try this, but if not found, we assume the question might already be visible
     if find_and_click_image(abs_show_path, "Show Question Button"):
-        time.sleep(1.5) # Wait for animation
+        time.sleep(1) 
 
     # 2. Capture Screen
     print("[*] Capturing screen...")
@@ -156,7 +155,6 @@ def solve_quiz(reader):
         ])
         
         ai_answer_text = response['message']['content'].strip()
-        ai_answer_text = ai_answer_text.replace('"', '').replace("'", '').replace("**", "")
         
         print(f"\n=== AI ANSWER: {ai_answer_text} ===\n")
 
@@ -172,7 +170,7 @@ def solve_quiz(reader):
             time.sleep(0.5)
             find_and_click_image(abs_check_path, "Check Answer Button")
             
-            time.sleep(0.1) 
+            time.sleep(0.5) 
             pyautogui.click()
             
         else:
@@ -190,7 +188,7 @@ def main():
 
     print("Initializing EasyOCR... (Loading models)")
     try:
-        reader = easyocr.Reader(LANGUAGES, gpu=True) # Set gpu=False if no CUDA
+        reader = easyocr.Reader(LANGUAGES, gpu=True)
         print("EasyOCR initialized successfully.")
     except Exception as e:
         print(f"[!] EasyOCR Error: {e}")
@@ -215,7 +213,7 @@ def main():
             # --- MANUAL MODE (F) ---
             if keyboard.is_pressed('f'):
                 print("\n>>> [Manual] 'F' Triggered")
-                while keyboard.is_pressed('f'): time.sleep(0.1) # Debounce
+                while keyboard.is_pressed('f'): time.sleep(0.1) 
                 
                 solve_quiz(reader)
                 print("\n[*] Manual sequence finished.")
@@ -223,16 +221,11 @@ def main():
             # --- AUTO MODE (G) ---
             if keyboard.is_pressed('g'):
                 print("\n>>> [AUTO MODE] STARTED. Press 'Esc' to stop.")
-                while keyboard.is_pressed('g'): time.sleep(0.1) # Debounce
+                while keyboard.is_pressed('g'): time.sleep(0.1) 
                 
                 while True:
-                    if keyboard.is_pressed('esc'):
-                        print("\n>>> [AUTO MODE] STOPPED by user.")
-                        while keyboard.is_pressed('esc'): time.sleep(0.1) # Debounce Esc
-                        break
-                    
                     solve_quiz(reader)
-                    time.sleep(0.5)
+                    time.sleep(1)
 
             time.sleep(0.05)
             
