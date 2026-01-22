@@ -20,9 +20,9 @@ CONFIDENCE_THRESHOLD = 0.8
 FUZZY_MATCH_THRESHOLD = 85  
 SYSTEM_PROMPT = """Bạn là trợ lí thông minh chuyên trả lời câu hỏi. Yêu cầu:
 1. Xác định câu trả lời đúng. 
-2. Trả về CHÍNH XÁC nguyên văn dòng text của đáp án đó xuất hiện trên màn hình (gồm cả ký tự A/B/C/D và đáp án). "
-3. KHÔNG giải thích, KHÔNG thêm lời dẫn. "
-Ví dụ: Nếu đáp án đúng là 'C. Hà Nội', hãy in ra: C. Hà Nội
+2. Trả về CHÍNH XÁC nguyên văn dòng text của đáp án đó xuất hiện trên màn hình (gồm cả ký tự A/B/C/D và đáp án). 
+3. KHÔNG giải thích, KHÔNG thêm lời dẫn. 
+Ví dụ: Nếu đáp án đúng là 'C. Hà Nội', hãy in ra chính xác: C. Hà Nội.
 """
 
 # PyAutoGUI Safety
@@ -146,7 +146,7 @@ def solve_quiz(reader):
 
     # 4. Query AI
     print(f"[*] Sending to AI ({OLLAMA_MODEL})...")
-    prompt = f"Dưới đây là nội dung câu hỏi và các đáp án trên màn hình:\n{full_text_block}\nCÂU TRẢ LỜI CỦA BẠN: "
+    prompt = f"Dưới đây là nội dung câu hỏi và các đáp án có thể chọn trên màn hình:\n{full_text_block}\nCÂU TRẢ LỜI CỦA BẠN: "
 
     try:
         response = ollama.chat(model=OLLAMA_MODEL, messages=[
