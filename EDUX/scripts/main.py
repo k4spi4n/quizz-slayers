@@ -18,6 +18,12 @@ OLLAMA_MODEL = 'hf.co/arcee-ai/Arcee-VyLinh-GGUF:Q8_0'
 LANGUAGES = ['vi', 'en']
 CONFIDENCE_THRESHOLD = 0.8  
 FUZZY_MATCH_THRESHOLD = 85  
+SYSTEM_PROMPT = """Bạn là trợ lí thông minh chuyên trả lời câu hỏi. Yêu cầu:
+1. Xác định câu trả lời đúng. 
+2. Trả về CHÍNH XÁC nguyên văn dòng text của đáp án đó xuất hiện trên màn hình (gồm cả ký tự A/B/C/D và đáp án). "
+3. KHÔNG giải thích, KHÔNG thêm lời dẫn. "
+Ví dụ: Nếu đáp án đúng là 'C. Hà Nội', hãy in ra: C. Hà Nội
+"""
 
 # PyAutoGUI Safety
 pyautogui.FAILSAFE = True
@@ -131,7 +137,7 @@ def solve_quiz(reader):
     ocr_results = reader.readtext(screenshot_np, detail=1)
     
     full_text_lines = [res[1] for res in ocr_results]
-    full_text_block = '\n'.join(full_text_lines).strip()
+    full_text_block = ' '.join(full_text_lines).strip()
     
     if not full_text_block:
         print("[!] No text detected on screen.")
@@ -141,21 +147,11 @@ def solve_quiz(reader):
 
     # 4. Query AI
     print(f"[*] Sending to AI ({OLLAMA_MODEL})...")
-    prompt = (
-        f"Dưới đây là nội dung câu hỏi và các đáp án trên màn hình:\n"
-        f"""
-{full_text_block}
-"""
-
-        f"Yêu cầu:\n"
-        f"1. Xác định câu trả lời đúng.\n"
-        f"2. Trả về CHÍNH XÁC nguyên văn dòng text của đáp án đó xuất hiện trên màn hình (bao gồm cả ký tự A/B/C/D nếu có).\n"
-        f"3. KHÔNG giải thích, KHÔNG thêm lời dẫn. Chỉ in ra text đáp án.\n"
-        f"Ví dụ: Nếu đáp án đúng là 'C. Hà Nội', hãy in ra: C. Hà Nội"
-    )
+    prompt = f"Dưới đây là nội dung câu hỏi và các đáp án trên màn hình:\n{full_text_block}\nCÂU TRẢ LỜI CỦA BẠN: "
 
     try:
         response = ollama.chat(model=OLLAMA_MODEL, messages=[
+            {'role': 'system', 'content': SYSTEM_PROMPT},
             {'role': 'user', 'content': prompt}
         ])
         
