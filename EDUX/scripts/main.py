@@ -199,7 +199,7 @@ def main():
     print(" BOT READY TO SLAY ")
     print(" [F]   -> Solve ONE question")
     print(" [G]   -> Auto-Solve Mode (Loop)")
-    print(" [Esc] -> Stop Auto-Mode / Quit")
+    print(" [Esc] -> Quit")
     print("="*50 + "\n")
 
     # Main Loop
@@ -220,7 +220,7 @@ def main():
 
             # --- AUTO MODE (G) ---
             if keyboard.is_pressed('g'):
-                print("\n>>> [AUTO MODE] STARTED. Press 'Esc' to stop.")
+                print("\n>>> [AUTO MODE] STARTED. Press 'Ctrl + C' to stop.")
                 while keyboard.is_pressed('g'): time.sleep(0.1) 
                 
                 while True:
