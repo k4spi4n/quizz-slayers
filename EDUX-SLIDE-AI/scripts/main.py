@@ -10,13 +10,16 @@ import re
 import hashlib
 from fuzzywuzzy import fuzz
 from PIL import Image
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Configuration ---
 BUTTON_IMAGE_PATH = r'..\buttons\show_question_button.png'
 CHECK_BUTTON_PATH = r'..\buttons\check_answer_button.png'
 NEXT_BUTTON_PATH = r'..\buttons\next_page_button.png'
 
-OLLAMA_MODEL = 'hf.co/arcee-ai/Arcee-VyLinh-GGUF:Q8_0 '
+OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'hf.co/arcee-ai/Arcee-VyLinh-GGUF:Q8_0')
 LANGUAGES = ['vi']
 CONFIDENCE_THRESHOLD = 0.8  
 FUZZY_MATCH_THRESHOLD = 80  

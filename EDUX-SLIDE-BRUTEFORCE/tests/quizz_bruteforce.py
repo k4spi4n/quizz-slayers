@@ -66,7 +66,7 @@ def test_wait_for_user_login(page: Page) -> None:
     question_answer_cache: dict[str, list[str]] = {}
 
     no_question_button = page.get_by_role("button", name="Không có câu hỏi")
-    answer_button = page.get_by_role("button", name="Trả lời câu hỏi")
+    answer_button = page.get_by_role("button", name="Trả lời trên lớp")
     check_button = page.get_by_role("button", name="Kiểm tra")
     next_button = page.get_by_role("button", name="Câu tiếp theo")
     retry_button = page.get_by_role("button", name="Thử lại")
