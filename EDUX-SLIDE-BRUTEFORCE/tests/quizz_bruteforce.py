@@ -105,8 +105,10 @@ def test_wait_for_user_login(page: Page) -> None:
         if no_question_button.is_visible():
             next_page_button.click()
             print("[INFO] No question on this slide. Clicked 'Trang sau'.")
-            page.wait_for_load_state("domcontentloaded")
-            page.wait_for_timeout(200)
+            try:
+                no_question_button.wait_for(state="hidden", timeout=1000)
+            except Exception:
+                pass
             continue
 
         if not question_locator.is_visible():
@@ -117,7 +119,6 @@ def test_wait_for_user_login(page: Page) -> None:
             question_locator.wait_for(state="visible", timeout=10000)
         except Exception:
             print("[WARN] Question not visible yet. Retrying loop.")
-            page.wait_for_timeout(200)
             continue
 
         question_text = question_locator.inner_text().strip()
@@ -129,7 +130,6 @@ def test_wait_for_user_login(page: Page) -> None:
                 answers_locator.first.wait_for(state="visible", timeout=10000)
             except Exception:
                 print("[WARN] Answers not visible yet. Retrying loop.")
-                page.wait_for_timeout(200)
                 continue
 
             answer_texts = extract_answer_texts(answers_locator)
@@ -186,21 +186,28 @@ def test_wait_for_user_login(page: Page) -> None:
                 if next_page_button.is_visible():
                     next_page_button.click()
                     print("[INFO] Clicked 'Trang sau' button.")
+                    try: next_page_button.wait_for(state="hidden", timeout=1000)
+                    except: pass
                 elif next_button.is_visible():
                     next_button.click()
                     print("[INFO] Clicked 'Cau tiep theo' button.")
+                    try: next_button.wait_for(state="hidden", timeout=1000)
+                    except: pass
                 elif retry_button.is_visible():
                     retry_button.click()
                     if chosen_answer_text:
                         wrong_answers.setdefault(question_text, set()).add(chosen_answer_text)
                         print(f"[INFO] Marked wrong answer: {chosen_answer_text}")
                     print("[INFO] Clicked 'Thu lai' button.")
+                    try: retry_button.wait_for(state="hidden", timeout=1000)
+                    except: pass
                 else:
                     print("[WARN] Follow-up buttons not visible after wait.")
             except Exception:
                 print("[WARN] No follow-up button appeared.")
 
-        page.wait_for_timeout(200)
+        if not clicked_answer:
+            page.wait_for_timeout(50)
 
     # Keep this test non-failing while we are still wiring selectors.
     print(f"[INFO] Current URL after click: {page.url}")
