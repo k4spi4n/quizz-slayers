@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import sys
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import messagebox
@@ -11,46 +12,16 @@ import pyperclip
 
 from playwright.sync_api import Page
 
+# Add project root to sys.path to import shared modules
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from src.core.auth import ensure_login_gui
+
 LOGIN_URL = "https://edux.cmcu.edu.vn/login"
-ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
 PROMPT_PATH = os.path.join(os.path.dirname(__file__), "..", "questions_prompt.txt")
 
 QUESTION_LABEL_RE = re.compile(r"^Câu\s+(\d+)")
 ANSWER_LINE_RE = re.compile(r"^(\d+)\.(.*)$")
 TF_TOKEN_RE = re.compile(r"(\d+)\s*\.\s*(đúng|sai|true|false|d|đ|s|t|f|1|0)", re.IGNORECASE)
-
-
-def load_env_file() -> None:
-    if not os.path.exists(ENV_PATH):
-        return
-    with open(ENV_PATH, "r", encoding="utf-8") as env_file:
-        for line in env_file:
-            raw = line.strip()
-            if not raw or raw.startswith("#") or "=" not in raw:
-                continue
-            key, value = raw.split("=", 1)
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-
-def ensure_login_env() -> tuple[str, str]:
-    load_env_file()
-    email = os.environ.get("EDUX_EMAIL", "").strip()
-    password = os.environ.get("EDUX_PASSWORD", "").strip()
-
-    if not email:
-        email = input("Enter EDUX email: ").strip()
-    if not password:
-        password = input("Enter EDUX password: ").strip()
-
-    os.makedirs(os.path.dirname(ENV_PATH), exist_ok=True)
-    with open(ENV_PATH, "w", encoding="utf-8") as env_file:
-        env_file.write(f"EDUX_EMAIL={email}\n")
-        env_file.write(f"EDUX_PASSWORD={password}\n")
-
-    os.environ["EDUX_EMAIL"] = email
-    os.environ["EDUX_PASSWORD"] = password
-    return email, password
 
 
 def ensure_prompt_file() -> None:
@@ -325,14 +296,18 @@ def show_start_dialog(message: str) -> None:
 
 def test_bruteforce(page: Page) -> None:
     ensure_prompt_file()
-    email, password = ensure_login_env()
+    email, password = ensure_login_gui()
 
     page.goto(LOGIN_URL, wait_until="domcontentloaded")
-    page.locator("#email").fill(email)
-    page.locator("#password").fill(password)
-    page.locator("#password").press("Enter")
+    
+    if email and password:
+        page.locator("#email").fill(email)
+        page.locator("#password").fill(password)
+        page.locator("#password").press("Enter")
+        print("\n[INFO] Auto-login attempted. Finish navigation to the test.")
+    else:
+        print("\n[INFO] 'Tự đăng nhập' được chọn. Vui lòng đăng nhập thủ công trên trình duyệt.")
 
-    print("\n[INFO] Auto-login attempted. Finish navigation to the test.")
     show_start_dialog("Khi bạn thấy màn hình chuẩn bị làm bài tập, hãy nhấn nút dưới đây để bắt đầu.")
 
     start_button = page.get_by_role("button", name="Làm bài tập")

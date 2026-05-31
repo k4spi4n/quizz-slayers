@@ -1,12 +1,16 @@
 import os
 import random
 import tkinter as tk
+import sys
 from PIL import Image, ImageTk
 
 from playwright.sync_api import Page
 
+# Add project root to sys.path to import shared modules
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from src.core.auth import ensure_login_gui
+
 LOGIN_URL = "https://edux.cmcu.edu.vn/login"
-ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
 
 
 def show_start_dialog(message: str) -> None:
@@ -57,39 +61,6 @@ def show_start_dialog(message: str) -> None:
     root.mainloop()
 
 
-def load_env_file() -> None:
-    if not os.path.exists(ENV_PATH):
-        return
-    with open(ENV_PATH, "r", encoding="utf-8") as env_file:
-        for line in env_file:
-            raw = line.strip()
-            if not raw or raw.startswith("#") or "=" not in raw:
-                continue
-            key, value = raw.split("=", 1)
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-
-def ensure_login_env() -> tuple[str, str]:
-    load_env_file()
-    email = os.environ.get("EDUX_EMAIL", "").strip()
-    password = os.environ.get("EDUX_PASSWORD", "").strip()
-
-    if not email:
-        email = input("Enter EDUX email: ").strip()
-    if not password:
-        password = input("Enter EDUX password: ").strip()
-
-    os.makedirs(os.path.dirname(ENV_PATH), exist_ok=True)
-    with open(ENV_PATH, "w", encoding="utf-8") as env_file:
-        env_file.write(f"EDUX_EMAIL={email}\n")
-        env_file.write(f"EDUX_PASSWORD={password}\n")
-
-    os.environ["EDUX_EMAIL"] = email
-    os.environ["EDUX_PASSWORD"] = password
-    return email, password
-
-
 def extract_answer_texts(answers_locator) -> list[str]:
         return answers_locator.evaluate_all(
                 """
@@ -103,12 +74,17 @@ def extract_answer_texts(answers_locator) -> list[str]:
 
 
 def test_wait_for_user_login(page: Page) -> None:
-    email, password = ensure_login_env()
+    email, password = ensure_login_gui()
     page.goto(LOGIN_URL, wait_until="domcontentloaded")
-    page.locator("#email").fill(email)
-    page.locator("#password").fill(password)
-    page.locator("#password").press("Enter")
-    print("\n[INFO] Auto-login attempted. If needed, finish any extra steps in the browser.")
+
+    if email and password:
+        page.locator("#email").fill(email)
+        page.locator("#password").fill(password)
+        page.locator("#password").press("Enter")
+        print("\n[INFO] Auto-login attempted. If needed, finish any extra steps in the browser.")
+    else:
+        print("\n[INFO] 'Tự đăng nhập' được chọn. Vui lòng đăng nhập thủ công trên trình duyệt.")
+    
     show_start_dialog("Khi bạn thấy màn hình slide, chuyển tới slide đang làm mới nhất và nhấn nút dưới đây để bắt đầu tự động trả lời.")
 
     wrong_answers: dict[str, set[str]] = {}
