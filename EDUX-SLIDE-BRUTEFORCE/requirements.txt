@@ -1,3 +1,4 @@
 pytest>=8.2.0
 pytest-playwright>=0.5.0
 playwright>=1.44.0
+Pillow>=10.0.0

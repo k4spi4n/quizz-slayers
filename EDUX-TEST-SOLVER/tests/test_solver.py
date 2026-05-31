@@ -5,6 +5,7 @@ import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import messagebox
 from typing import Optional
+from PIL import Image, ImageTk
 
 import pyperclip
 
@@ -274,6 +275,54 @@ def prompt_answers_via_gui() -> dict[int, str]:
 
 
 
+def show_start_dialog(message: str) -> None:
+    root = tk.Tk()
+    root.title("Sẵn sàng?")
+    root.attributes("-topmost", True)
+    root.resizable(False, False)
+
+    # Load and resize image
+    img_path = os.path.join(os.path.dirname(__file__), "..", "img", "screen_to_start.png")
+    if os.path.exists(img_path):
+        try:
+            pil_img = Image.open(img_path)
+            # Resize to width 280, maintain aspect ratio
+            w_percent = (280 / float(pil_img.size[0]))
+            h_size = int((float(pil_img.size[1]) * float(w_percent)))
+            pil_img = pil_img.resize((280, h_size), Image.Resampling.LANCZOS)
+            
+            img = ImageTk.PhotoImage(pil_img)
+            img_label = tk.Label(root, image=img)
+            img_label.image = img  # Keep reference
+            img_label.pack(pady=(10, 5), padx=10)
+        except Exception as e:
+            print(f"[WARN] Could not load image: {e}")
+
+    label = tk.Label(root, text=message, wraplength=280, pady=5, font=("Segoe UI", 10))
+    label.pack(padx=10)
+
+    def on_start():
+        root.destroy()
+
+    start_button = tk.Button(root, text="Bắt đầu ngay", command=on_start, width=20, height=1, font=("Segoe UI", 10, "bold"), bg="#4CAF50", fg="white")
+    start_button.pack(pady=(5, 15))
+
+    # Position at bottom right
+    root.update_idletasks()
+    width = root.winfo_width()
+    height = root.winfo_height()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    
+    # Calculate x, y for bottom right with a small margin
+    margin = 20
+    x = screen_width - width - margin
+    y = screen_height - height - margin - 40 # -40 for taskbar
+    
+    root.geometry(f"{width}x{height}+{x}+{y}")
+    root.mainloop()
+
+
 def test_bruteforce(page: Page) -> None:
     ensure_prompt_file()
     email, password = ensure_login_env()
@@ -284,10 +333,10 @@ def test_bruteforce(page: Page) -> None:
     page.locator("#password").press("Enter")
 
     print("\n[INFO] Auto-login attempted. Finish navigation to the test.")
-    print("[INFO] When ready to start, press Enter to click 'Lam bai tap' and capture payload.\n")
-    input()
+    show_start_dialog("Khi bạn thấy màn hình chuẩn bị làm bài tập, hãy nhấn nút dưới đây để bắt đầu.")
 
     start_button = page.get_by_role("button", name="Làm bài tập")
+
     with page.expect_response(lambda resp: "start" in resp.url, timeout=20000) as response_info:
         start_button.click()
 

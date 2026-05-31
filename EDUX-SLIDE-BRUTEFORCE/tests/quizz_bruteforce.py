@@ -1,10 +1,60 @@
 import os
 import random
+import tkinter as tk
+from PIL import Image, ImageTk
 
 from playwright.sync_api import Page
 
 LOGIN_URL = "https://edux.cmcu.edu.vn/login"
 ENV_PATH = os.path.join(os.path.dirname(__file__), "..", ".env")
+
+
+def show_start_dialog(message: str) -> None:
+    root = tk.Tk()
+    root.title("Sẵn sàng?")
+    root.attributes("-topmost", True)
+    root.resizable(False, False)
+
+    # Load and resize image
+    img_path = os.path.join(os.path.dirname(__file__), "..", "img", "screen_to_start.png")
+    if os.path.exists(img_path):
+        try:
+            pil_img = Image.open(img_path)
+            # Resize to width 280, maintain aspect ratio
+            w_percent = (280 / float(pil_img.size[0]))
+            h_size = int((float(pil_img.size[1]) * float(w_percent)))
+            pil_img = pil_img.resize((280, h_size), Image.Resampling.LANCZOS)
+            
+            img = ImageTk.PhotoImage(pil_img)
+            img_label = tk.Label(root, image=img)
+            img_label.image = img  # Keep reference
+            img_label.pack(pady=(10, 5), padx=10)
+        except Exception as e:
+            print(f"[WARN] Could not load image: {e}")
+
+    label = tk.Label(root, text=message, wraplength=280, pady=5, font=("Segoe UI", 10))
+    label.pack(padx=10)
+
+    def on_start():
+        root.destroy()
+
+    start_button = tk.Button(root, text="Bắt đầu ngay", command=on_start, width=20, height=1, font=("Segoe UI", 10, "bold"), bg="#4CAF50", fg="white")
+    start_button.pack(pady=(5, 15))
+
+    # Position at bottom right
+    root.update_idletasks()
+    width = root.winfo_width()
+    height = root.winfo_height()
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    
+    # Calculate x, y for bottom right with a small margin
+    margin = 20
+    x = screen_width - width - margin
+    y = screen_height - height - margin - 40 # -40 for taskbar
+    
+    root.geometry(f"{width}x{height}+{x}+{y}")
+    root.mainloop()
 
 
 def load_env_file() -> None:
@@ -59,8 +109,7 @@ def test_wait_for_user_login(page: Page) -> None:
     page.locator("#password").fill(password)
     page.locator("#password").press("Enter")
     print("\n[INFO] Auto-login attempted. If needed, finish any extra steps in the browser.")
-    print("[INFO] After you reach the quiz screen, press Enter here to click 'Tra loi cau hoi'.\n")
-    input()
+    show_start_dialog("Khi bạn thấy màn hình slide, chuyển tới slide đang làm mới nhất và nhấn nút dưới đây để bắt đầu tự động trả lời.")
 
     wrong_answers: dict[str, set[str]] = {}
     question_answer_cache: dict[str, list[str]] = {}
