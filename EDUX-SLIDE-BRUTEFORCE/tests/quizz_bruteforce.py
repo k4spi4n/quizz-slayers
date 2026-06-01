@@ -74,7 +74,7 @@ def extract_answer_texts(answers_locator) -> list[str]:
 
 
 def test_wait_for_user_login(page: Page) -> None:
-    email, password = ensure_login_gui()
+    email, password, _api_key, _model = ensure_login_gui()
     page.goto(LOGIN_URL, wait_until="domcontentloaded")
 
     if email and password:

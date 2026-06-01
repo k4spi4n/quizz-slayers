@@ -195,14 +195,62 @@ def prompt_answers_via_gui() -> dict[int, str]:
 
     ui_font = tkfont.Font(family="Segoe UI", size=10)
 
+    prompt_text = ""
+    if os.path.exists(PROMPT_PATH):
+        try:
+            with open(PROMPT_PATH, "r", encoding="utf-8") as handle:
+                prompt_text = handle.read().strip()
+        except Exception:
+            prompt_text = ""
+
+    top_frame = tk.Frame(root)
+    top_frame.pack(fill="both", expand=True, padx=12, pady=(12, 6))
+
+    top_label = tk.Label(
+        top_frame,
+        text="Danh sách câu hỏi + prompt (đã tạo sẵn)",
+        anchor="w",
+        justify="left",
+        font=ui_font,
+    )
+    top_label.pack(fill="x", pady=(0, 4))
+
+    top_buttons = tk.Frame(top_frame)
+    top_buttons.pack(fill="x", pady=(0, 6))
+
+    copy_button = tk.Button(
+        top_buttons,
+        text="Copy Prompt",
+        command=lambda: pyperclip.copy(prompt_text) if prompt_text else None,
+        font=ui_font,
+    )
+    copy_button.pack(side="left")
+
+    guide_label = tk.Label(
+        top_buttons,
+        text="Copy prompt để dán vào bất kỳ Chatbot AI."
+             " Sau đó dán kết quả trả về vào khung bên dưới.",
+        font=("Segoe UI", 9),
+        fg="gray",
+    )
+    guide_label.pack(side="left", padx=10)
+
+    prompt_box = tk.Text(top_frame, wrap="word", font=ui_font, height=8)
+    prompt_box.pack(fill="both", expand=True)
+    prompt_box.insert("1.0", prompt_text)
+    prompt_box.configure(state="disabled")
+
+    bottom_frame = tk.Frame(root)
+    bottom_frame.pack(fill="both", expand=True, padx=12, pady=(6, 12))
+
     instruction = (
         "Paste one-line JSONL or one-line JSON array below, then click Validate."
     )
-    label = tk.Label(root, text=instruction, anchor="w", justify="left", font=ui_font)
-    label.pack(fill="x", padx=12, pady=(12, 4))
+    label = tk.Label(bottom_frame, text=instruction, anchor="w", justify="left", font=ui_font)
+    label.pack(fill="x", pady=(0, 4))
 
-    text = tk.Text(root, wrap="word", font=ui_font)
-    text.pack(fill="both", expand=True, padx=12, pady=8)
+    text = tk.Text(bottom_frame, wrap="word", font=ui_font)
+    text.pack(fill="both", expand=True, pady=8)
 
     result: dict[int, str] = {}
 
@@ -227,22 +275,97 @@ def prompt_answers_via_gui() -> dict[int, str]:
         text.delete("1.0", "end")
         text.insert("1.0", clip)
 
-    buttons = tk.Frame(root)
+    buttons = tk.Frame(bottom_frame)
     buttons.pack(fill="x", pady=(0, 12))
 
     paste_button = tk.Button(buttons, text="Paste from Clipboard", command=on_paste, font=ui_font)
     paste_button.pack(side="left", padx=6)
 
-    validate_button = tk.Button(buttons, text="Validate", command=on_validate, font=ui_font)
+    validate_button = tk.Button(
+        buttons,
+        text="Validate",
+        command=on_validate,
+        font=("Segoe UI", 10, "bold"),
+        bg="#4CAF50",
+        fg="white",
+    )
     validate_button.pack(side="left", padx=6)
 
     root.update_idletasks()
     req_w = max(root.winfo_reqwidth() + 40, 820)
     req_h = max(root.winfo_reqheight() + 80, 620)
-    root.geometry(f"{req_w}x{req_h}")
+    screen_w = root.winfo_screenwidth()
+    screen_h = root.winfo_screenheight()
+    margin = 20
+    width = min(req_w, screen_w - 40)
+    height = min(req_h, screen_h - 80)
+    x = screen_w - width - margin
+    y = screen_h - height - margin - 40
+    root.geometry(f"{width}x{height}+{x}+{y}")
 
     root.mainloop()
     return result
+
+
+def sanitize_ai_response(raw: str) -> str:
+    text = raw.strip()
+    if text.startswith("```"):
+        match = re.search(r"```(?:json)?\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    return text
+
+
+def resolve_litellm_model(model: str, api_key: str) -> str:
+    raw = model.strip()
+    if "/" in raw:
+        return raw
+
+    if raw:
+        if raw.startswith("gemini"):
+            return f"gemini/{raw}"
+        return raw
+
+    key = api_key.strip()
+    if key.startswith("AIza"):
+        return "gemini/gemini-1.5-flash"
+    if key.startswith("sk-ant"):
+        return "anthropic/claude-3-5-sonnet-20240620"
+    return "gpt-4o-mini"
+
+
+def get_answers_via_litellm(prompt_content: str, api_key: str, model: str) -> dict[int, str]:
+    if not api_key:
+        return {}
+    try:
+        from litellm import completion
+    except Exception as exc:
+        print(f"[WARN] LiteLLM not available: {exc}")
+        return {}
+
+    model_name = resolve_litellm_model(model, api_key)
+    try:
+        response = completion(
+            model=model_name,
+            messages=[{"role": "user", "content": prompt_content}],
+            api_key=api_key,
+            temperature=0,
+        )
+    except Exception as exc:
+        print(f"[WARN] LiteLLM request failed: {exc}")
+        return {}
+
+    content = ""
+    try:
+        content = response["choices"][0]["message"]["content"]
+    except Exception:
+        try:
+            content = response.choices[0].message.content
+        except Exception:
+            content = ""
+
+    content = sanitize_ai_response(content)
+    return load_answers_from_jsonl_line(content)
 
 
 
@@ -296,7 +419,7 @@ def show_start_dialog(message: str) -> None:
 
 def test_bruteforce(page: Page) -> None:
     ensure_prompt_file()
-    email, password = ensure_login_gui()
+    email, password, api_key, model = ensure_login_gui()
 
     page.goto(LOGIN_URL, wait_until="domcontentloaded")
     
@@ -342,9 +465,17 @@ def test_bruteforce(page: Page) -> None:
         print(f"[WARN] Clipboard copy failed: {exc}")
 
     print("[INFO] Wrote questions prompt to questions_prompt.txt.")
-    print("[INFO] Paste the prompt into AI, then paste answers into the dialog.")
 
-    answers = prompt_answers_via_gui()
+    answers = {}
+    if api_key:
+        print("[INFO] API key detected. Requesting answers via LiteLLM...")
+        answers = get_answers_via_litellm(prompt_content, api_key, model)
+        if not answers:
+            print("[WARN] LiteLLM did not return usable answers. Falling back to manual paste.")
+
+    if not answers:
+        print("[INFO] Paste the prompt into AI, then paste answers into the dialog.")
+        answers = prompt_answers_via_gui()
     if not answers:
         print("[WARN] No answers parsed from dialog input. Stopping.")
         return
