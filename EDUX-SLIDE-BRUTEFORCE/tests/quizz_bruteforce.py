@@ -61,18 +61,6 @@ def show_start_dialog(message: str) -> None:
     root.mainloop()
 
 
-def extract_answer_texts(answers_locator) -> list[str]:
-        return answers_locator.evaluate_all(
-                """
-                nodes => nodes.map(node => {
-                    const letter = node.querySelector('span.font-bold')?.innerText?.trim() || '';
-                    const text = node.querySelector('div.prose p')?.innerText?.trim() || '';
-                    return `${letter} ${text}`.trim();
-                })
-                """
-        )
-
-
 def test_wait_for_user_login(page: Page) -> None:
     email, password, _api_key, _model = ensure_login_gui()
     page.goto(LOGIN_URL, wait_until="domcontentloaded")
@@ -87,8 +75,7 @@ def test_wait_for_user_login(page: Page) -> None:
     
     show_start_dialog("Khi bạn thấy màn hình slide, chuyển tới slide đang làm mới nhất và nhấn nút dưới đây để bắt đầu tự động trả lời.")
 
-    wrong_answers: dict[str, set[str]] = {}
-    question_answer_cache: dict[str, list[str]] = {}
+    wrong_answers: dict[str, set[int]] = {}
 
     no_question_button = page.get_by_role("button", name="Không có câu hỏi")
     answer_button = page.get_by_role("button", name="Trả lời trên lớp")
@@ -104,112 +91,78 @@ def test_wait_for_user_login(page: Page) -> None:
     while not page.is_closed():
         if no_question_button.is_visible():
             next_page_button.click()
-            print("[INFO] No question on this slide. Clicked 'Trang sau'.")
-            try:
-                no_question_button.wait_for(state="hidden", timeout=1000)
-            except Exception:
-                pass
+            print("[INFO] Next Page (No Question)")
+            try: no_question_button.wait_for(state="hidden", timeout=1000)
+            except: pass
             continue
 
         if not question_locator.is_visible():
-            answer_button.wait_for(state="visible")
-            answer_button.click()
+            if answer_button.is_visible():
+                answer_button.click()
+            else:
+                page.wait_for_timeout(500)
+                continue
 
         try:
-            question_locator.wait_for(state="visible", timeout=10000)
+            question_locator.wait_for(state="visible", timeout=5000)
         except Exception:
-            print("[WARN] Question not visible yet. Retrying loop.")
             continue
 
         question_text = question_locator.inner_text().strip()
-        print(f"[INFO] Question: {question_text}")
+        print(f"\n[Q] {question_text[:60]}...")
 
-        answer_texts = question_answer_cache.get(question_text)
-        if answer_texts is None:
-            try:
-                answers_locator.first.wait_for(state="visible", timeout=10000)
-            except Exception:
-                print("[WARN] Answers not visible yet. Retrying loop.")
-                continue
+        try:
+            answers_locator.first.wait_for(state="visible", timeout=5000)
+        except:
+            continue
 
-            answer_texts = extract_answer_texts(answers_locator)
-            question_answer_cache[question_text] = answer_texts
+        answer_count = answers_locator.count()
+        if answer_count == 0:
+            continue
 
-        answer_count = len(answer_texts)
-        print(f"[INFO] Answers found: {answer_count}")
+        tried_indices = wrong_answers.get(question_text, set())
+        # Reset if we tried all
+        if len(tried_indices) >= answer_count:
+            tried_indices.clear()
 
-        target_answer = os.environ.get("AUTO_ANSWER_TEXT", "").strip()
-        clicked_answer = False
-        chosen_answer_text = ""
-        if target_answer:
-            print(f"[INFO] Auto-answer target: {target_answer}")
-            match = answers_locator.filter(has_text=target_answer).first
-            match.click()
-            clicked_answer = True
-            chosen_answer_text = target_answer
-        elif answer_count > 0:
-            tried_for_question = wrong_answers.get(question_text, set())
-            next_index = next(
-                (i for i, text in enumerate(answer_texts) if text not in tried_for_question),
-                None,
+        next_index = next((i for i in range(answer_count) if i not in tried_indices), 0)
+        
+        print(f"[Pick] #{next_index + 1}/{answer_count}")
+        answers_locator.nth(next_index).click()
+        check_button.click()
+
+        try:
+            page.wait_for_function(
+                """
+                () => {
+                  const labels = ['Trang sau', 'Câu tiếp theo', 'Thử lại'];
+                  return labels.some(label => {
+                    const btn = Array.from(document.querySelectorAll('button'))
+                      .find(b => (b.textContent || '').trim() === label);
+                    return btn && !btn.disabled && btn.offsetParent !== null;
+                  });
+                }
+                """,
+                timeout=10000,
             )
-            if next_index is None:
-                tried_for_question.clear()
-                next_index = 0
 
-            chosen_answer_text = answer_texts[next_index]
-            print(f"[INFO] AUTO_ANSWER_TEXT not set. Pick: {chosen_answer_text}")
-            answers_locator.nth(next_index).click()
-            clicked_answer = True
-        else:
-            print("[WARN] No answers available to click.")
+            if next_page_button.is_visible():
+                next_page_button.click()
+                print("[Done] Next Page")
+                try: next_page_button.wait_for(state="hidden", timeout=1000)
+                except: pass
+            elif next_button.is_visible():
+                next_button.click()
+                print("[Done] Next Question")
+                try: next_button.wait_for(state="hidden", timeout=1000)
+                except: pass
+            elif retry_button.is_visible():
+                wrong_answers.setdefault(question_text, set()).add(next_index)
+                print(f"[Wrong] Index {next_index + 1} marked")
+                retry_button.click()
+                try: retry_button.wait_for(state="hidden", timeout=1000)
+                except: pass
+        except Exception:
+            print("[WARN] No follow-up button")
 
-        if clicked_answer:
-            check_button.click()
-            print("[INFO] Clicked 'Kiem tra' button.")
-
-            try:
-                page.wait_for_function(
-                    """
-                    () => {
-                      const labels = ['Trang sau', 'Câu tiếp theo', 'Thử lại'];
-                      return labels.some(label => {
-                        const btn = Array.from(document.querySelectorAll('button'))
-                          .find(b => (b.textContent || '').trim() === label);
-                        return btn && !btn.disabled && btn.offsetParent !== null;
-                      });
-                    }
-                    """,
-                    timeout=10000,
-                )
-
-                if next_page_button.is_visible():
-                    next_page_button.click()
-                    print("[INFO] Clicked 'Trang sau' button.")
-                    try: next_page_button.wait_for(state="hidden", timeout=1000)
-                    except: pass
-                elif next_button.is_visible():
-                    next_button.click()
-                    print("[INFO] Clicked 'Cau tiep theo' button.")
-                    try: next_button.wait_for(state="hidden", timeout=1000)
-                    except: pass
-                elif retry_button.is_visible():
-                    retry_button.click()
-                    if chosen_answer_text:
-                        wrong_answers.setdefault(question_text, set()).add(chosen_answer_text)
-                        print(f"[INFO] Marked wrong answer: {chosen_answer_text}")
-                    print("[INFO] Clicked 'Thu lai' button.")
-                    try: retry_button.wait_for(state="hidden", timeout=1000)
-                    except: pass
-                else:
-                    print("[WARN] Follow-up buttons not visible after wait.")
-            except Exception:
-                print("[WARN] No follow-up button appeared.")
-
-        if not clicked_answer:
-            page.wait_for_timeout(50)
-
-    # Keep this test non-failing while we are still wiring selectors.
-    print(f"[INFO] Current URL after click: {page.url}")
-    print("[INFO] Browser will stay open. Close the browser window to finish.")
     page.wait_for_event("close")
