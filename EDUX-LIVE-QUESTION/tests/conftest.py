@@ -9,7 +9,5 @@ def browser_type_launch_args(browser_type_launch_args):
             "--disable-background-timer-throttling",
             "--disable-backgrounding-occluded-windows",
             "--disable-renderer-backgrounding",
-            "--disable-features=CalculateNativeWinOcclusion", 
-            "--disable-background-media-suspend",
         ]
     }

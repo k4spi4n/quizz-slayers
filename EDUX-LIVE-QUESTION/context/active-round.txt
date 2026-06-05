@@ -1,0 +1,68 @@
+no question:
+{"code":"200","message":"No active round","data":null}
+
+MCQ:
+{
+    "code": "200",
+    "message": "Active round found",
+    "data": {
+        "session_id": "56372868-62ba-4dec-9e00-b8a51612368e",
+        "round_id": "d443c91c-8103-4730-92ac-0c3aa4a5ea87",
+        "question_id": "32bb5bd4-5807-4ae9-be67-32f6ae13fd70",
+        "question_type": "single_choice",
+        "answer_mode": "whole_class",
+        "source_type": "exam_interactive",
+        "question_text": "What is a key advantage of prototyping in software product development?",
+        "choices": [
+            {
+                "key": "A",
+                "label": "It helps refine ideas and gather user feedback."
+            },
+            {
+                "key": "B",
+                "label": "It guarantees immediate profit."
+            },
+            {
+                "key": "C",
+                "label": "It replaces the need for a business case."
+            },
+            {
+                "key": "D",
+                "label": "It eliminates the need for testing."
+            }
+        ],
+        "is_active": true,
+        "max_answer_time": 25,
+        "started_at": 1780641500.5532699,
+        "server_time": 1780641502.17087
+    }
+}
+
+True/False:
+{
+    "code": "200",
+    "message": "Active round found",
+    "data": {
+        "session_id": "da389c19-8c4e-47c3-b9e2-23762e4604e0",
+        "round_id": "12247c49-6b9b-4883-bfac-37ccc4ea7e1b",
+        "question_id": "ed95e47f-20ec-40a8-8a0d-96c3620391c2:0",
+        "question_type": "true_false",
+        "answer_mode": "whole_class",
+        "source_type": "exam_interactive",
+        "question_text": "Analyze the following statements about product vision and its importance.\nA product vision should define what makes a product unique.",
+        "choices": [
+            {
+                "key": "true",
+                "label": "Đúng"
+            },
+            {
+                "key": "false",
+                "label": "Sai"
+            }
+        ],
+        "is_active": true,
+        "max_answer_time": 25,
+        "started_at": 1780641559.5511568,
+        "server_time": 1780641564.2200015
+    }
+}
