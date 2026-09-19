@@ -59,6 +59,11 @@
           </div>
         </div>
 
+        <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 6px 10px; display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 14px;">🧠</span>
+          <span style="font-size: 11px; font-weight: 600; color: #c7d2fe;">Chế độ: AI Siêu Chuẩn Xác (Chờ AI phân tích ➔ Click)</span>
+        </div>
+
         <div class="action-buttons">
           <button class="btn btn-primary" id="btnStartSlide">
             <span>▶️</span> Bắt đầu giải Slide
@@ -206,20 +211,62 @@
           <input type="checkbox" id="settingAutoSubmit" checked>
         </div>
 
+        <div class="setting-item">
+          <div>
+            <label class="setting-label">Dùng AI giải Slide bài giảng</label>
+            <span class="setting-desc">Chờ AI phân tích câu hỏi & chọn đáp án chính xác nhất</span>
+          </div>
+          <input type="checkbox" id="settingUseAiSlide" checked>
+        </div>
+
         <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
           <div>
-            <label class="setting-label">Khóa API (API Key) giải AI</label>
-            <span class="setting-desc">Google Gemini (AIza...) hoặc OpenAI (sk-...)</span>
+            <label class="setting-label">Nhà cung cấp / Cấu hình mẫu (Preset)</label>
+            <span class="setting-desc">Chọn nhanh nền tảng AI hoặc tùy chỉnh</span>
           </div>
-          <input type="password" id="settingApiKey" placeholder="Nhập API Key để giải tự động..." style="width: 100%;">
+          <select id="settingApiProvider" style="width: 100%;">
+            <option value="gemini">Google Gemini (Mặc định)</option>
+            <option value="openai">OpenAI (Official)</option>
+            <option value="deepseek">DeepSeek API</option>
+            <option value="openrouter">OpenRouter</option>
+            <option value="ollama">Ollama Local (Offline)</option>
+            <option value="custom">Tùy chỉnh (Custom Base URL / Proxy)</option>
+          </select>
+        </div>
+
+        <div class="setting-item" id="settingApiEndpointGroup" style="flex-direction: column; align-items: flex-start; gap: 6px; display: none;">
+          <div>
+            <label class="setting-label">Nguồn API (Base URL / Endpoint)</label>
+            <span class="setting-desc">Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span>
+          </div>
+          <input type="text" id="settingApiEndpoint" placeholder="http://localhost:20128/v1" style="width: 100%;">
         </div>
 
         <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
           <div>
             <label class="setting-label">Mô hình AI (Model)</label>
-            <span class="setting-desc">Mặc định: gemini-2.0-flash hoặc gpt-4o-mini</span>
+            <span class="setting-desc">Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span>
           </div>
-          <input type="text" id="settingModel" placeholder="gemini-2.0-flash" style="width: 100%;">
+          <div style="display: flex; gap: 6px; width: 100%;">
+            <select id="settingModelSelect" style="flex: 1; min-width: 0;">
+              <!-- Danh sách model được nạp tự động -->
+            </select>
+            <button type="button" class="btn btn-secondary" id="btnFetchModels" style="width: auto; white-space: nowrap; padding: 0 10px; font-size: 11px;" title="Lấy danh sách model từ API server (OpenAI-compatible /models)">
+              <span>🔄</span> Lấy DS
+            </button>
+          </div>
+          <div id="customModelGroup" style="width: 100%; display: none; margin-top: 4px;">
+            <input type="text" id="settingModelCustom" placeholder="Nhập mã model tùy chỉnh (VD: ag/gemini-3.8-flash-high)..." style="width: 100%;">
+          </div>
+          <span id="fetchModelsStatus" style="font-size: 10px; display: none;"></span>
+        </div>
+
+        <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+          <div>
+            <label class="setting-label">Khóa API (API Key)</label>
+            <span class="setting-desc">Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu dùng local</span>
+          </div>
+          <input type="password" id="settingApiKey" placeholder="Nhập API Key để giải tự động..." style="width: 100%;">
         </div>
 
         <button class="btn btn-primary" id="btnSaveSettings">

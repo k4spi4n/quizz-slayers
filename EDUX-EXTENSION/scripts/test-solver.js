@@ -368,24 +368,57 @@
   }
 
   /**
-   * Tìm button theo tên/nhãn chữ
+   * Tìm button theo tên/nhãn chữ với độ chính xác cao theo chuẩn Playwright
    */
-  function findButtonByText(names, root = document, mustBeVisible = true) {
+  function findButtonByText(names, root = document, mustBeVisible = true, mustBeEnabled = true) {
     const nameList = Array.isArray(names) ? names : [names];
-    const buttons = Array.from(root.querySelectorAll('button, [role="button"], a, div, span'));
+    const lowerTargets = nameList.map((n) => normalizeText(n));
 
-    for (const name of nameList) {
-      const lowerTarget = normalizeText(name);
-      const found = buttons.find((btn) => {
-        if (mustBeVisible && !safeIsVisible(btn)) return false;
+    // Pass 1: Tìm trực tiếp trong các thẻ BUTTON, [role="button"], A
+    const actualButtons = Array.from(root.querySelectorAll('button, [role="button"], a'));
+    for (const target of lowerTargets) {
+      for (const btn of actualButtons) {
+        if (mustBeVisible && !safeIsVisible(btn)) continue;
+        if (mustBeEnabled && !safeIsEnabled(btn)) continue;
         const text = normalizeText(btn.textContent);
-        return text === lowerTarget || text.includes(lowerTarget);
-      });
-      if (found) {
-        return found.closest('button, [role="button"], a, div[class*="cursor-pointer"]') || found;
+        if (text === target || (text.includes(target) && text.length <= target.length + 20)) {
+          return btn;
+        }
       }
     }
+
+    // Pass 2: Tìm trong các thẻ con ngắn (span, p, b, strong) nằm trong button/clickable
+    const textEls = Array.from(root.querySelectorAll('span, p, b, strong'));
+    for (const target of lowerTargets) {
+      for (const el of textEls) {
+        if (mustBeVisible && !safeIsVisible(el)) continue;
+        const text = normalizeText(el.textContent);
+        if (text === target || (text.includes(target) && text.length <= target.length + 15)) {
+          const parent = el.closest('button, [role="button"], a, div[class*="cursor-pointer"]');
+          if (parent) {
+            if (mustBeVisible && !safeIsVisible(parent)) continue;
+            if (mustBeEnabled && !safeIsEnabled(parent)) continue;
+            return parent;
+          }
+        }
+      }
+    }
+
     return null;
+  }
+
+  /**
+   * Tìm nút số trang/câu hỏi trong pagination bar
+   */
+  function findPaginationButton(qIndex, root = document) {
+    const target = String(qIndex).trim();
+    const buttons = Array.from(root.querySelectorAll('button, [role="button"]'));
+    return (
+      buttons.find((btn) => {
+        if (!safeIsVisible(btn) || !safeIsEnabled(btn)) return false;
+        return (btn.textContent || '').trim() === target;
+      }) || null
+    );
   }
 
   /**
@@ -457,14 +490,17 @@
    */
   function generateStandardPromptText(compactPayload) {
     const payloadText = JSON.stringify(compactPayload, null, 2);
-    const promptLine =
-      'trả về JSONL một dòng duy nhất (không xuống dòng); ' +
-      'mỗi phần tử có so_cau và dap_an; ' +
-      'dap_an là A/B/C/D hoặc từ/cụm từ/văn bản cần điền; ' +
-      'với câu đúng/sai, dap_an là mảng giá trị Đúng/Sai theo thứ tự mệnh đề; ' +
-      'không giải thích gì thêm';
+    const promptInstructions =
+      'YÊU CẦU ĐỘ CHÍNH XÁC CAO NHẤT (100% ACADEMIC ACCURACY):\n' +
+      '1. Bạn là chuyên gia khảo thí và học thuật cao cấp. Hãy phân tích kỹ từng câu hỏi, đọc các lựa chọn loại trừ và xác định câu trả lời đúng tuyệt đối.\n' +
+      '2. Định dạng đầu ra: BẮT BUỘC trả về JSONL một dòng duy nhất (hoặc JSON Array các object) để hệ thống tự động parse;\n' +
+      '3. Mỗi phần tử có 2 trường: "so_cau" và "dap_an";\n' +
+      '4. Đối với câu trắc nghiệm: "dap_an" là chữ cái A, B, C, hoặc D (hoặc nội dung chính xác của đáp án);\n' +
+      '5. Đối với câu đúng/sai: "dap_an" là mảng giá trị Đúng/Sai theo thứ tự từng mệnh đề trong câu (ví dụ: [true, false, true, true]);\n' +
+      '6. Đối với câu điền khuyết / tự luận: "dap_an" là từ/cụm từ chuẩn xác cần điền;\n' +
+      '7. Tuyệt đối không giải thích, không viết thêm bất kỳ lời dẫn nào ngoài JSON.';
 
-    return payloadText.trim() + '\n\n' + promptLine + '\n';
+    return payloadText.trim() + '\n\n' + promptInstructions + '\n';
   }
 
   /**
@@ -524,11 +560,15 @@
           labelEl.textContent.trim();
 
         const tfBlocks = Array.from(
-          container.querySelectorAll("div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, div[class*='bg-gray-50']")
-        ).filter(safeIsVisible);
+          container.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
+        ).filter((el) => {
+          if (!safeIsVisible(el)) return false;
+          const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+          return btns.includes('Đúng') && btns.includes('Sai');
+        });
 
         const textarea = container.querySelector('textarea');
-        const input = container.querySelector("input[type='text']");
+        const input = container.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])");
         const optionEls = Array.from(
           container.querySelectorAll(
             'div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer'
@@ -739,6 +779,27 @@
     const maxIterations = Object.keys(answers).length + 15;
     let iterations = 0;
 
+    // Đảm bảo bắt đầu từ câu 1 nếu hiện tại đang đứng ở câu khác
+    let firstLabel = findQuestionLabel(dialog);
+    let startIdx = firstLabel ? parseQuestionIndex(firstLabel.textContent) : null;
+    if (startIdx && startIdx > 1) {
+      logMessage(`[INFO] Đang ở câu ${startIdx}. Tự động quay lại câu 1 để giải toàn bộ bài tập...`, 'info');
+      const btn1 = findPaginationButton(1, dialog);
+      if (btn1) {
+        safeClick(btn1);
+        await sleep(350);
+      } else {
+        for (let b = 0; b < startIdx; b++) {
+          const prevBtn = findButtonByText(['Câu trước'], dialog, true, true);
+          if (!prevBtn) break;
+          safeClick(prevBtn);
+          await sleep(150);
+          const cur = findQuestionLabel(dialog);
+          if (cur && parseQuestionIndex(cur.textContent) === 1) break;
+        }
+      }
+    }
+
     while (iterations < maxIterations) {
       iterations++;
 
@@ -768,23 +829,29 @@
         logMessage(`[WARN] Không có đáp án cho câu ${questionIndex}, bỏ qua.`, 'warn');
       } else {
         // Phân loại câu hỏi theo thứ tự ưu tiên của test_solver.py:
-        // 1. True/False blocks: div.border.border-gray-200.rounded-lg.p-3.bg-gray-50
+        // 1. True/False blocks: Phải chứa các button 'Đúng' và 'Sai'
         const trueFalseBlocks = Array.from(
-          dialog.querySelectorAll("div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, div[class*='bg-gray-50']")
-        ).filter(safeIsVisible);
+          dialog.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
+        ).filter((el) => {
+          if (!safeIsVisible(el)) return false;
+          const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+          return btns.includes('Đúng') && btns.includes('Sai');
+        });
 
         const textareaEl = dialog.querySelector('textarea');
-        const inputEl = dialog.querySelector("input[type='text']");
+        const inputEls = Array.from(
+          dialog.querySelectorAll("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])")
+        ).filter(safeIsVisible);
 
         const optionEls = Array.from(
           dialog.querySelectorAll(
-            "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer"
+            "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
           )
         ).filter(safeIsVisible);
 
         if (trueFalseBlocks.length > 0) {
           const tfAnswers = parseTrueFalseAnswers(answerValue, trueFalseBlocks.length);
-          logMessage(`[INFO] Câu ${questionIndex}: điền Đúng/Sai`, 'info');
+          logMessage(`[INFO] Câu ${questionIndex}: điền Đúng/Sai (${tfAnswers.length} mệnh đề)`, 'info');
           for (let i = 0; i < trueFalseBlocks.length; i++) {
             const block = trueFalseBlocks[i];
             const targetName = (i < tfAnswers.length ? tfAnswers[i] : true) ? 'Đúng' : 'Sai';
@@ -798,9 +865,24 @@
           logMessage(`[INFO] Câu ${questionIndex}: điền tự luận`, 'info');
           setNativeValue(textareaEl, answerValue);
           filledCount++;
-        } else if (inputEl && safeIsVisible(inputEl)) {
-          logMessage(`[INFO] Câu ${questionIndex}: điền ô trống`, 'info');
-          setNativeValue(inputEl, answerValue);
+        } else if (inputEls.length > 0) {
+          logMessage(`[INFO] Câu ${questionIndex}: điền ô trống (${inputEls.length} ô)`, 'info');
+          if (inputEls.length === 1) {
+            setNativeValue(inputEls[0], answerValue);
+          } else {
+            let parts = [];
+            try {
+              const parsed = JSON.parse(answerValue);
+              if (Array.isArray(parsed)) parts = parsed.map(String);
+            } catch (e) {}
+            if (parts.length === 0) {
+              parts = answerValue.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+            }
+            for (let i = 0; i < inputEls.length; i++) {
+              const val = i < parts.length ? parts[i] : answerValue;
+              setNativeValue(inputEls[i], val);
+            }
+          }
           filledCount++;
         } else {
           // Trắc nghiệm nhiều lựa chọn
@@ -810,7 +892,7 @@
               await sleep(200);
               currentOptionEls = Array.from(
                 dialog.querySelectorAll(
-                  "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer"
+                  "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
                 )
               ).filter(safeIsVisible);
               if (currentOptionEls.length > 0) break;
@@ -823,22 +905,32 @@
             logMessage(`[INFO] Câu ${questionIndex}: chọn '${answerValue}'`, 'info');
             const optionsList = extractOptionsFromEls(currentOptionEls);
             let chosenIndex = -1;
+            const trimmedAns = answerValue.trim();
 
-            if (answerValue.length === 1 && 'ABCD'.includes(answerValue.toUpperCase())) {
-              const targetLetter = answerValue.toUpperCase() + '.';
+            // 1. Khớp theo ký tự đầu A, B, C, D (hỗ trợ "A", "A.", "A: ", "(A)")
+            const letterMatch =
+              trimmedAns.match(/^[\(\[]?([A-D])[\.\)\:\s]/i) ||
+              (trimmedAns.length === 1 && trimmedAns.match(/^([A-D])$/i));
+
+            if (letterMatch) {
+              const targetLetter = letterMatch[1].toUpperCase();
               for (let i = 0; i < optionsList.length; i++) {
-                const optL = optionsList[i].letter;
-                if (optL === answerValue.toUpperCase() || optL.startsWith(targetLetter)) {
+                const optL = optionsList[i].letter.toUpperCase().replace(/[^A-D]/g, '');
+                if (optL === targetLetter || optionsList[i].letter.toUpperCase().startsWith(targetLetter)) {
                   chosenIndex = i;
                   break;
                 }
               }
-            } else {
-              const target = normalizeText(answerValue);
+            }
+
+            // 2. Khớp theo nội dung text nếu chưa tìm thấy bằng ký tự
+            if (chosenIndex === -1) {
+              const textWithoutLetter = trimmedAns.replace(/^[\(\[]?[A-D][\.\)\:\s\-]+/i, '').trim();
+              const target = normalizeText(textWithoutLetter || trimmedAns);
               if (target) {
                 for (let i = 0; i < optionsList.length; i++) {
                   const optText = normalizeText(optionsList[i].text);
-                  if (optText && optText.includes(target)) {
+                  if (optText && (optText.includes(target) || target.includes(optText))) {
                     chosenIndex = i;
                     break;
                   }
@@ -846,8 +938,14 @@
               }
             }
 
+            // 3. Khớp theo số thứ tự (1..4)
+            if (chosenIndex === -1 && /^[1-4]$/.test(trimmedAns)) {
+              const idx = parseInt(trimmedAns, 10) - 1;
+              if (optionsList[idx]) chosenIndex = idx;
+            }
+
             if (chosenIndex === -1) {
-              logMessage(`[WARN] Câu ${questionIndex}: Không khớp được lựa chọn.`, 'warn');
+              logMessage(`[WARN] Câu ${questionIndex}: Không khớp được lựa chọn nào cho '${answerValue}'.`, 'warn');
             } else {
               safeClick(optionsList[chosenIndex].node);
               filledCount++;
@@ -858,15 +956,21 @@
 
       await sleep(250);
 
-      // Kiểm tra nút "Nộp bài" hoặc "Câu tiếp"
-      const submitBtn = findButtonByText(['Nộp bài'], dialog, true);
-      const nextBtn = findButtonByText(['Câu tiếp', 'Câu tiếp theo'], dialog, true);
+      // Kiểm tra nút "Nộp bài" và "Câu tiếp"
+      const submitBtn = findButtonByText(['Nộp bài'], dialog, true, true);
+      const nextBtn = findButtonByText(['Câu tiếp', 'Câu tiếp theo'], dialog, true, true);
 
-      // Nếu thấy nút Nộp bài
-      if (submitBtn && !nextBtn) {
+      // Nếu chỉ có nút Nộp bài hoặc không còn Câu tiếp
+      if (!nextBtn && submitBtn) {
         if (autoSubmit) {
           logMessage("🎉 Đã đến câu cuối. Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
+          await sleep(500);
+          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
+          if (confirmBtn) {
+            logMessage("✓ Bấm xác nhận nộp bài...", 'info');
+            safeClick(confirmBtn);
+          }
         } else {
           logMessage("✓ Đã hoàn thành điền câu cuối. Bạn có thể bấm 'Nộp bài'.", 'success');
         }
@@ -882,7 +986,7 @@
 
         // Chờ câu tiếp theo xuất hiện (label đổi HOẶC progress đổi - mô phỏng test_solver.py lines 602-618)
         let changed = false;
-        for (let i = 0; i < 50; i++) {
+        for (let i = 0; i < 35; i++) {
           await sleep(150);
           const newLabelEl = findQuestionLabel(dialog);
           const newLabel = newLabelEl ? newLabelEl.textContent.trim() : '';
@@ -895,15 +999,49 @@
           }
         }
 
+        // Fallback: nếu bấm nextBtn không đổi, thử bấm pagination button kế tiếp
         if (!changed) {
-          logMessage('[WARN] Câu tiếp theo chưa hiển thị kịp hoặc đã đến cuối bài.', 'warn');
+          const nextIndex = questionIndex + 1;
+          const paginationBtn = findPaginationButton(nextIndex, dialog);
+          if (paginationBtn) {
+            logMessage(`[INFO] Thử chuyển câu bằng nút số ${nextIndex}...`, 'info');
+            safeClick(paginationBtn);
+            for (let i = 0; i < 20; i++) {
+              await sleep(150);
+              const newLabelEl = findQuestionLabel(dialog);
+              if (newLabelEl && newLabelEl.textContent.trim() !== currentLabel) {
+                changed = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (!changed) {
+          const endSubmitBtn = findButtonByText(['Nộp bài'], dialog, true, true);
+          if (endSubmitBtn && autoSubmit) {
+            logMessage("🎉 Không còn câu tiếp theo. Tự động bấm nút 'Nộp bài'...", 'success');
+            safeClick(endSubmitBtn);
+            await sleep(500);
+            const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
+            if (confirmBtn) safeClick(confirmBtn);
+          } else {
+            logMessage('[WARN] Câu tiếp theo chưa hiển thị kịp hoặc đã đến cuối bài.', 'warn');
+          }
           break;
         }
-      } else {
-        if (submitBtn && autoSubmit) {
+      } else if (submitBtn) {
+        if (autoSubmit) {
           logMessage("🎉 Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
+          await sleep(500);
+          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
+          if (confirmBtn) safeClick(confirmBtn);
         }
+        break;
+      } else {
+        // Không còn nút Câu tiếp và không có nút Nộp bài (bài tập tự lưu)
+        logMessage("🎉 Đã hoàn thành câu cuối cùng của bài tập!", 'success');
         break;
       }
     }
@@ -933,8 +1071,12 @@
       if (!container) return;
 
       const tfBlocks = Array.from(
-        container.querySelectorAll("div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, div[class*='bg-gray-50']")
-      ).filter(safeIsVisible);
+        container.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
+      ).filter((el) => {
+        if (!safeIsVisible(el)) return false;
+        const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+        return btns.includes('Đúng') && btns.includes('Sai');
+      });
 
       if (tfBlocks.length > 0) {
         const tfAnswers = parseTrueFalseAnswers(targetAns, tfBlocks.length);
@@ -958,7 +1100,7 @@
         return;
       }
 
-      const input = container.querySelector("input[type='text']");
+      const input = container.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])");
       if (input && safeIsVisible(input)) {
         setNativeValue(input, targetAns);
         filledCount++;

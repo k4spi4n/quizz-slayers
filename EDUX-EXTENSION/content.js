@@ -5,10 +5,9 @@
  */
 
 (function () {
-  if (window.__EDUX_SLAYERS_INJECTED__) return;
   window.__EDUX_SLAYERS_INJECTED__ = true;
 
-  console.log('⚔️ EDUX Slayers Extension v2.2.0 loaded.');
+  console.log('⚔️ EDUX Slayers Content Script v2.2.0 loaded.');
 
   // =========================================================================
   // 1. Network Interceptor Setup & Shared Session Cache
@@ -66,11 +65,12 @@
   // =========================================================================
   // 2. Extension Message Handlers
   // =========================================================================
-  chrome.storage.local.get(['delayMs', 'autoNext'], (res) => {
+  chrome.storage.local.get(['delayMs', 'autoNext', 'useAiSlide'], (res) => {
     if (res && window.EduxSlideSolver) {
       window.EduxSlideSolver.setConfig({
         delayMs: res.delayMs !== undefined ? res.delayMs : 100,
-        autoNext: res.autoNext !== undefined ? res.autoNext : true
+        autoNext: res.autoNext !== undefined ? res.autoNext : true,
+        useAi: res.useAiSlide !== undefined ? res.useAiSlide : true
       });
     }
   });

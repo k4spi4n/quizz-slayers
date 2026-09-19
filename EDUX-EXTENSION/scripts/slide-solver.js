@@ -15,14 +15,48 @@
   let retryCount = 0;
   let wrongAnswersMap = {};
   let knownCorrectAnswers = {};
+  let aiAttemptedMap = {};
   let lastProgress = Date.now();
   let stallReported = false;
   const STALL_MS = 8000;
 
   let config = {
     delayMs: 100,
-    autoNext: true
+    autoNext: true,
+    useAi: true
   };
+
+  /**
+   * Gửi yêu cầu giải câu hỏi slide tới Background AI Service Worker và CHỜ phản hồi
+   */
+  async function queryAiForSlideAnswer(questionText, choices) {
+    return new Promise((resolve) => {
+      let timeoutId = setTimeout(() => {
+        resolve({ success: false, message: 'AI phản hồi quá lâu (hết thời gian chờ 15s)' });
+      }, 15000);
+
+      try {
+        chrome.runtime.sendMessage(
+          {
+            action: 'AI_SOLVE_SLIDE',
+            question: questionText,
+            choices: choices
+          },
+          (response) => {
+            clearTimeout(timeoutId);
+            if (chrome.runtime.lastError) {
+              resolve({ success: false, message: chrome.runtime.lastError.message });
+            } else {
+              resolve(response || { success: false, message: 'Không nhận được phản hồi' });
+            }
+          }
+        );
+      } catch (err) {
+        clearTimeout(timeoutId);
+        resolve({ success: false, message: err.message });
+      }
+    });
+  }
 
   function notifyPopup(type, payload) {
     try {
@@ -638,6 +672,8 @@
 
       // Decide which index to pick
       let nextIndex = 0;
+      let pickedByAi = false;
+
       if (questionText in knownCorrectAnswers && knownCorrectAnswers[questionText] < answerCount) {
         nextIndex = knownCorrectAnswers[questionText];
         logMessage(`[Pick Known Correct] 🎯 #${nextIndex + 1}/${answerCount}`, 'success');
@@ -646,20 +682,50 @@
           wrongAnswersMap[questionText] = new Set();
         }
         const triedIndices = wrongAnswersMap[questionText];
-        if (triedIndices.size >= answerCount) {
-          triedIndices.clear();
-        }
 
-        for (let i = 0; i < answerCount; i++) {
-          if (!triedIndices.has(i)) {
-            nextIndex = i;
-            break;
+        // Ưu tiên 1: Dùng AI giải câu hỏi nếu được bật và chưa từng hỏi AI cho câu hỏi này
+        const shouldQueryAi = (config.useAi !== false) && !aiAttemptedMap[questionText];
+        if (shouldQueryAi) {
+          aiAttemptedMap[questionText] = true;
+          logMessage(`[AI] 🧠 Đang gửi câu hỏi tới AI và CHỜ phản hồi để chọn đáp án chính xác nhất...`, 'info');
+
+          const choiceTexts = answerList.map((el) => (el.textContent || '').trim().replace(/\s+/g, ' '));
+
+          // BẮT BUỘC CHỜ AI trả về đáp án trước khi thực hiện click để đảm bảo độ chính xác
+          const aiRes = await queryAiForSlideAnswer(questionText, choiceTexts);
+
+          if (!isSlideRunning) return; // Người dùng bấm Dừng trong lúc chờ AI
+
+          if (aiRes && aiRes.success && typeof aiRes.index === 'number' && aiRes.index >= 0 && aiRes.index < answerCount) {
+            if (!triedIndices.has(aiRes.index)) {
+              nextIndex = aiRes.index;
+              pickedByAi = true;
+              logMessage(`[AI Pick] 🎯 AI đã phản hồi! Chọn đáp án #${nextIndex + 1}: "${choiceTexts[nextIndex].substring(0, 45)}..."`, 'success');
+            } else {
+              logMessage(`[AI Pick] AI chọn #${aiRes.index + 1} nhưng đáp án này đã thử trước đó và bị sai.`, 'warn');
+            }
+          } else {
+            logMessage(`[AI Note] ${aiRes?.message || 'Không có phản hồi AI'}, chuyển sang tự động thử các đáp án...`, 'warn');
           }
         }
-        logMessage(`[Pick] #${nextIndex + 1}/${answerCount}`, 'info');
+
+        // Ưu tiên 2: Fallback thử sai nếu không dùng AI hoặc AI chưa chọn được đáp án hợp lệ
+        if (!pickedByAi) {
+          if (triedIndices.size >= answerCount) {
+            triedIndices.clear();
+          }
+
+          for (let i = 0; i < answerCount; i++) {
+            if (!triedIndices.has(i)) {
+              nextIndex = i;
+              break;
+            }
+          }
+          logMessage(`[Pick Fallback] #${nextIndex + 1}/${answerCount}`, 'info');
+        }
       }
 
-      // Select answer: click option card AND inner radio/checkbox to guarantee event trigger
+      // Đã có đáp án (sau khi chờ AI hoặc fallback) -> Thực hiện Click
       const optionCard = answerList[nextIndex];
       const radioInside = optionCard.querySelector("button[role='radio'], div[role='radio'], input[type='radio']");
 
@@ -815,10 +881,12 @@
     stallReported = false;
     wrongAnswersMap = {};
     knownCorrectAnswers = {};
+    aiAttemptedMap = {};
     solvedCount = 0;
     retryCount = 0;
 
-    logMessage('▶️ Bắt đầu tự động giải Slide!', 'success');
+    const modeText = config.useAi !== false ? '🧠 Chế độ: AI Siêu Chuẩn Xác (Chờ AI -> Click)' : '⚡ Chế độ: Thử sai nhanh';
+    logMessage(`▶️ Bắt đầu tự động giải Slide! [${modeText}]`, 'success');
     notifyPopup('SLIDE_STATUS_CHANGE', { isRunning: true });
     runSlideBruteforceStep();
   }

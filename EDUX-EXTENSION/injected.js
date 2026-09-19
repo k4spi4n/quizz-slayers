@@ -9,6 +9,43 @@
 
   console.log('⚔️ [EDUX Slayers Interceptor] Đã kích hoạt bộ lắng nghe gói tin mạng.');
 
+  // =========================================================================
+  // 0. Clock Drift Auto-Synchronization (Chống lỗi 'Request expired' do lệch giờ PC)
+  // =========================================================================
+  const OriginalDate = window.Date;
+  const originalDateNow = OriginalDate.now.bind(OriginalDate);
+  let serverDriftMs = 0;
+
+  function syncServerTime(dateHeader) {
+    if (!dateHeader) return;
+    try {
+      const serverTime = new OriginalDate(dateHeader).getTime();
+      if (!isNaN(serverTime) && serverTime > 0) {
+        const clientTime = originalDateNow();
+        const drift = serverTime - clientTime;
+        if (Math.abs(drift) > 3000) {
+          serverDriftMs = drift;
+          window.__EDUX_SERVER_DRIFT__ = drift;
+          if (!Date.__edux_clock_patched__) {
+            Date.__edux_clock_patched__ = true;
+            Date.now = function () {
+              return originalDateNow() + (window.__EDUX_SERVER_DRIFT__ || 0);
+            };
+            console.log(
+              `[EDUX Slayers Interceptor] ⏱️ Đã bù trừ lệch giờ ${Math.round(drift / 1000)}s so với server để chống lỗi 'Request expired'.`
+            );
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  try {
+    fetch('/api/api/v1/sessions/test?_sync=' + originalDateNow(), { cache: 'no-store' })
+      .then((r) => syncServerTime(r.headers.get('date')))
+      .catch(() => {});
+  } catch (e) {}
+
   function broadcastEvent(type, data, sourceUrl) {
     try {
       window.postMessage(
@@ -127,6 +164,10 @@
           (response && response.url) ||
           (typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || '');
 
+        if (response && response.headers) {
+          syncServerTime(response.headers.get('date'));
+        }
+
         const clone = response.clone();
         clone
           .text()
@@ -159,6 +200,7 @@
   XMLHttpRequest.prototype.send = function (...args) {
     const handleResponse = () => {
       try {
+        syncServerTime(this.getResponseHeader('Date'));
         const url = this.responseURL || this._edux_url || '';
         let json = null;
 
