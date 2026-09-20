@@ -1,4 +1,4 @@
-# ⚔️ Quizz Slayers - Bộ công cụ tự động hóa EDUX
+# ⚡ Quizz Slayers - Bộ công cụ tự động hóa EDUX
 
 > 📢 **THÔNG BÁO QUAN TRỌNG**: 
 > - **Tiện ích mở rộng trình duyệt (`EDUX-EXTENSION`) hiện là trọng tâm phát triển chính (Main Development Focus)** của dự án. Mọi tính năng mới, tối ưu hóa và cập nhật trong tương lai sẽ tập trung hoàn toàn vào Extension này.
