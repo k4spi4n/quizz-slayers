@@ -1,5 +1,5 @@
 /**
- * EDUX Slayers - Popup Controller v2.2.0
+ * EDUX Slayers - Popup Controller v2.3.0
  * Điều khiển giao diện Extension, giải Slide, giải Bài tập (mô phỏng EDUX-TEST-SOLVER)
  * và theo dõi điểm số môn học.
  */
@@ -28,19 +28,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     slideCount: document.getElementById('slideCount'),
     retryCount: document.getElementById('retryCount'),
     slideLog: document.getElementById('slideLog'),
+    btnSlideMethodAi: document.getElementById('btnSlideMethodAi'),
+    btnSlideMethodBrute: document.getElementById('btnSlideMethodBrute'),
+    slideMethodDesc: document.getElementById('slideMethodDesc'),
+    slideMethodIcon: document.getElementById('slideMethodIcon'),
+    slideMethodTitle: document.getElementById('slideMethodTitle'),
+    slideMethodDetail: document.getElementById('slideMethodDetail'),
 
     // Test Solver (Bài tập) UI
     examInfoBox: document.getElementById('examInfoBox'),
     examInfoText: document.getElementById('examInfoText'),
     examStatusDot: document.getElementById('examStatusDot'),
     btnStartExercise: document.getElementById('btnStartExercise'),
+    btnNewSession: document.getElementById('btnNewSession'),
+    btnModeAuto: document.getElementById('btnModeAuto'),
+    btnModeManual: document.getElementById('btnModeManual'),
+    testAutoSection: document.getElementById('testAutoSection'),
+    testManualSection: document.getElementById('testManualSection'),
+    autoStepper: document.getElementById('autoStepper'),
+    step1: document.getElementById('step1'),
+    step2: document.getElementById('step2'),
+    step3: document.getElementById('step3'),
+    stepLine1: document.getElementById('stepLine1'),
+    stepLine2: document.getElementById('stepLine2'),
     btnExtractQuestions: document.getElementById('btnExtractQuestions'),
     btnSolveAI: document.getElementById('btnSolveAI'),
+    activeModelLabel: document.getElementById('activeModelLabel'),
+    btnGoToSettings: document.getElementById('btnGoToSettings'),
+    autoAnswersContainer: document.getElementById('autoAnswersContainer'),
+    autoAnswersBox: document.getElementById('autoAnswersBox'),
+    btnHideAutoAnswers: document.getElementById('btnHideAutoAnswers'),
+    btnToggleAutoAnswers: document.getElementById('btnToggleAutoAnswers'),
     promptPreviewCard: document.getElementById('promptPreviewCard'),
     promptPreviewBox: document.getElementById('promptPreviewBox'),
     btnHidePrompt: document.getElementById('btnHidePrompt'),
     btnTogglePrompt: document.getElementById('btnTogglePrompt'),
     btnPasteClipboard: document.getElementById('btnPasteClipboard'),
+    btnClearAnswers: document.getElementById('btnClearAnswers'),
     answerInput: document.getElementById('answerInput'),
     btnFillAnswers: document.getElementById('btnFillAnswers'),
     testLog: document.getElementById('testLog'),
@@ -110,6 +134,148 @@ document.addEventListener('DOMContentLoaded', async () => {
       UI.examInfoBox.classList.remove('active');
       UI.examInfoText.textContent = "Chưa bắt được đề. Mở hoặc bấm 'Làm bài tập'.";
       UI.examInfoText.title = '';
+    }
+  }
+
+  // Stepper State: 0 = idle, 1 = bắt đề, 2 = AI giải, 3 = điền bài, 4 = xong
+  function setStepperState(step = 0) {
+    const steps = [UI.step1, UI.step2, UI.step3];
+    const lines = [UI.stepLine1, UI.stepLine2];
+
+    steps.forEach((s) => {
+      if (s) {
+        s.classList.remove('active', 'done');
+      }
+    });
+    lines.forEach((l) => {
+      if (l) {
+        l.classList.remove('done');
+      }
+    });
+
+    if (step === 1) {
+      if (UI.step1) UI.step1.classList.add('active');
+    } else if (step === 2) {
+      if (UI.step1) UI.step1.classList.add('done');
+      if (UI.stepLine1) UI.stepLine1.classList.add('done');
+      if (UI.step2) UI.step2.classList.add('active');
+    } else if (step === 3) {
+      if (UI.step1) UI.step1.classList.add('done');
+      if (UI.stepLine1) UI.stepLine1.classList.add('done');
+      if (UI.step2) UI.step2.classList.add('done');
+      if (UI.stepLine2) UI.stepLine2.classList.add('done');
+      if (UI.step3) UI.step3.classList.add('active');
+    } else if (step >= 4) {
+      steps.forEach((s) => s && s.classList.add('done'));
+      lines.forEach((l) => l && l.classList.add('done'));
+    }
+  }
+
+  function updateActiveModelBadge(model, provider) {
+    if (!UI.activeModelLabel) return;
+    const prov = provider || UI.settingApiProvider?.value || 'gemini';
+    const rawModel = model || UI.settingModel?.value || '';
+    let display = rawModel;
+    if (!display) {
+      if (prov === 'gemini') display = 'gemini-2.0-flash';
+      else if (prov === 'deepseek') display = 'deepseek-chat';
+      else if (prov === 'ollama') display = 'llama3.2';
+      else display = 'gpt-4o-mini';
+    }
+    UI.activeModelLabel.textContent = `Model: ${display}`;
+  }
+
+  function switchTestMode(mode) {
+    const isAuto = mode === 'auto';
+    if (UI.btnModeAuto) UI.btnModeAuto.classList.toggle('active', isAuto);
+    if (UI.btnModeManual) UI.btnModeManual.classList.toggle('active', !isAuto);
+    if (UI.testAutoSection) UI.testAutoSection.style.display = isAuto ? 'flex' : 'none';
+    if (UI.testManualSection) UI.testManualSection.style.display = isAuto ? 'none' : 'flex';
+    chrome.storage.local.set({ testWorkflowMode: mode });
+  }
+
+  /**
+   * Làm mới / Bắt đầu phiên giải bài mới:
+   * Xóa sạch ô đáp án, prompt xem trước, và reset stepper.
+   */
+  async function resetSolveSession(keepExamInfo = true) {
+    if (UI.answerInput) UI.answerInput.value = '';
+    await chrome.storage.local.remove('savedAnswers');
+
+    if (UI.promptPreviewBox) UI.promptPreviewBox.value = '';
+    if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'none';
+
+    if (UI.autoAnswersBox) UI.autoAnswersBox.value = '';
+    if (UI.autoAnswersContainer) UI.autoAnswersContainer.style.display = 'none';
+    if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'none';
+
+    setStepperState(0);
+    setHeroBtnLoading(false);
+
+    if (!keepExamInfo) {
+      updateExamInfoUI(null);
+      await chrome.storage.local.remove('lastExamData');
+    }
+  }
+
+  function setHeroBtnLoading(isLoading, title, subtitle) {
+    if (!UI.btnSolveAI) return;
+    const iconEl = UI.btnSolveAI.querySelector('.hero-btn-icon');
+    const titleEl = UI.btnSolveAI.querySelector('.hero-btn-title');
+    const subtitleEl = UI.btnSolveAI.querySelector('.hero-btn-subtitle');
+
+    if (isLoading) {
+      UI.btnSolveAI.classList.add('loading');
+      if (iconEl) iconEl.innerHTML = '<span class="spinner"></span>';
+      if (titleEl && title) titleEl.textContent = title;
+      if (subtitleEl && subtitle) subtitleEl.textContent = subtitle;
+    } else {
+      UI.btnSolveAI.classList.remove('loading');
+      if (iconEl) iconEl.textContent = '⚡';
+      if (titleEl) titleEl.textContent = 'GIẢI BÀI TẬP BẰNG AI (1-CLICK)';
+      if (subtitleEl) subtitleEl.textContent = 'Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài';
+    }
+  }
+
+  function setSlideMethod(method, saveToStorage = true) {
+    const isAi = method === 'ai';
+    if (UI.btnSlideMethodAi) UI.btnSlideMethodAi.classList.toggle('active', isAi);
+    if (UI.btnSlideMethodBrute) UI.btnSlideMethodBrute.classList.toggle('active', !isAi);
+
+    if (UI.settingUseAiSlide) UI.settingUseAiSlide.checked = isAi;
+
+    const model = UI.settingModel?.value || 'gemini-2.0-flash';
+
+    if (isAi) {
+      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = '🧠';
+      if (UI.slideMethodTitle) {
+        UI.slideMethodTitle.textContent = 'AI Siêu Chuẩn Xác (Độ chính xác 100%)';
+        UI.slideMethodTitle.style.color = '#c7d2fe';
+      }
+      if (UI.slideMethodDesc) {
+        UI.slideMethodDesc.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+        UI.slideMethodDesc.style.background = 'rgba(99, 102, 241, 0.12)';
+      }
+      if (UI.slideMethodDetail) {
+        UI.slideMethodDetail.textContent = `Chờ AI (${model}) phân tích câu hỏi và click đáp án đúng, ít thử sai.`;
+      }
+    } else {
+      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = '⚡';
+      if (UI.slideMethodTitle) {
+        UI.slideMethodTitle.textContent = 'Thử sai siêu tốc (Brute-force)';
+        UI.slideMethodTitle.style.color = '#fbbf24';
+      }
+      if (UI.slideMethodDesc) {
+        UI.slideMethodDesc.style.borderColor = 'rgba(251, 191, 36, 0.3)';
+        UI.slideMethodDesc.style.background = 'rgba(251, 191, 36, 0.08)';
+      }
+      if (UI.slideMethodDetail) {
+        UI.slideMethodDetail.textContent = 'Thử lần lượt các đáp án với tốc độ cao, không cần API Key AI.';
+      }
+    }
+
+    if (saveToStorage) {
+      chrome.storage.local.set({ useAiSlide: isAi });
     }
   }
 
@@ -524,7 +690,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     'apiEndpoint',
     'apiKey',
     'apiModel',
-    'cachedModelsByProvider'
+    'cachedModelsByProvider',
+    'testWorkflowMode'
   ]);
 
   if (settings.cachedModelsByProvider && typeof settings.cachedModelsByProvider === 'object') {
@@ -535,6 +702,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   UI.settingAutoNext.checked = settings.autoNext !== undefined ? settings.autoNext : true;
   if (UI.settingAutoSubmit) UI.settingAutoSubmit.checked = settings.autoSubmit !== undefined ? settings.autoSubmit : true;
   if (UI.settingUseAiSlide) UI.settingUseAiSlide.checked = settings.useAiSlide !== undefined ? settings.useAiSlide : true;
+  setSlideMethod(settings.useAiSlide !== undefined ? (settings.useAiSlide ? 'ai' : 'bruteforce') : 'ai', false);
+
+  if (UI.btnSlideMethodAi) {
+    UI.btnSlideMethodAi.addEventListener('click', () => setSlideMethod('ai'));
+  }
+  if (UI.btnSlideMethodBrute) {
+    UI.btnSlideMethodBrute.addEventListener('click', () => setSlideMethod('bruteforce'));
+  }
+  if (UI.settingUseAiSlide) {
+    UI.settingUseAiSlide.addEventListener('change', () => {
+      setSlideMethod(UI.settingUseAiSlide.checked ? 'ai' : 'bruteforce');
+    });
+  }
   if (UI.settingApiProvider && settings.apiProvider) {
     UI.settingApiProvider.value = settings.apiProvider;
     const preset = API_PRESETS[settings.apiProvider];
@@ -556,8 +736,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (UI.settingModel && settings.apiModel) UI.settingModel.value = settings.apiModel;
   const activeProvider = settings.apiProvider || 'gemini';
   renderModelDropdown(activeProvider, settings.apiModel || '');
+  updateActiveModelBadge(settings.apiModel, activeProvider);
 
-  if (settings.savedAnswers) UI.answerInput.value = settings.savedAnswers;
+  if (settings.testWorkflowMode) {
+    switchTestMode(settings.testWorkflowMode);
+  } else {
+    switchTestMode('auto');
+  }
+
+  if (settings.savedAnswers) {
+    UI.answerInput.value = settings.savedAnswers;
+    if (UI.autoAnswersBox) UI.autoAnswersBox.value = settings.savedAnswers;
+    if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'block';
+  }
   if (settings.slideStats) {
     UI.slideCount.textContent = settings.slideStats.solved || 0;
     UI.retryCount.textContent = settings.slideStats.retries || 0;
@@ -626,8 +817,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   UI.btnStartSlide.addEventListener('click', async () => {
     const tab = await getActiveTab();
     if (!tab) return;
+
+    let useAi = UI.btnSlideMethodAi ? UI.btnSlideMethodAi.classList.contains('active') : (UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true);
+
+    const apiKey = (UI.settingApiKey?.value || '').trim();
+    const apiProvider = (UI.settingApiProvider?.value || 'gemini').trim();
+    const isLocal = apiProvider === 'ollama' || (UI.settingApiEndpoint?.value || '').includes('localhost');
+
+    if (useAi && !apiKey && !isLocal) {
+      addLog(UI.slideLog, '⚠️ Chưa có API Key để giải Slide bằng AI. Đang tự động chuyển sang phương pháp Thử sai nhanh...', 'warn');
+      setSlideMethod('bruteforce');
+      useAi = false;
+    }
+
+    const origHtml = UI.btnStartSlide.innerHTML;
+    UI.btnStartSlide.innerHTML = '<span class="spinner spinner-sm"></span> Đang khởi động...';
+    UI.btnStartSlide.disabled = true;
+
     try {
-      const useAi = UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true;
       await sendTabMessage(tab.id, {
         action: 'START_SLIDE_BRUTEFORCE',
         config: {
@@ -648,6 +855,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       );
     } catch (err) {
       addLog(UI.slideLog, 'Lỗi kết nối với trang EDUX: ' + err.message, 'error');
+    } finally {
+      UI.btnStartSlide.innerHTML = origHtml;
+      UI.btnStartSlide.disabled = false;
     }
   });
 
@@ -859,11 +1069,70 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 8. Test Solver Actions (Bài tập)
   // =========================================================================
 
-  // Nút 1: Mở bài tập (Bấm "Làm bài tập" trên trang)
+  // Chuyển đổi chế độ: Tự động (1-Click) vs Thủ công (Web AI)
+  if (UI.btnModeAuto) {
+    UI.btnModeAuto.addEventListener('click', () => switchTestMode('auto'));
+  }
+  if (UI.btnModeManual) {
+    UI.btnModeManual.addEventListener('click', () => switchTestMode('manual'));
+  }
+
+  // Nút liên kết chuyển sang tab Cài đặt đổi Model
+  if (UI.btnGoToSettings) {
+    UI.btnGoToSettings.addEventListener('click', () => {
+      const settingsTabBtn = document.querySelector('.tab-btn[data-tab="tab-settings"]');
+      if (settingsTabBtn) settingsTabBtn.click();
+    });
+  }
+
+  // Nút Phiên mới: Xóa trắng ô đáp án, prompt xem trước và reset tiến trình
+  if (UI.btnNewSession) {
+    UI.btnNewSession.addEventListener('click', async () => {
+      await resetSolveSession(true);
+      addLog(UI.testLog, '🔄 Đã bắt đầu phiên làm việc mới (ô đáp án đã được xóa trắng).', 'info');
+    });
+  }
+
+  // Nút Xóa nhanh ô đáp án trong chế độ thủ công
+  if (UI.btnClearAnswers) {
+    UI.btnClearAnswers.addEventListener('click', async () => {
+      await resetSolveSession(true);
+      addLog(UI.testLog, '🗑️ Đã xóa trắng ô đáp án.', 'info');
+    });
+  }
+
+  // Xem/ẩn đáp án vừa giải ở chế độ Tự động
+  if (UI.btnToggleAutoAnswers) {
+    UI.btnToggleAutoAnswers.addEventListener('click', () => {
+      if (!UI.autoAnswersContainer) return;
+      const isHidden = UI.autoAnswersContainer.style.display === 'none';
+      UI.autoAnswersContainer.style.display = isHidden ? 'block' : 'none';
+    });
+  }
+  if (UI.btnHideAutoAnswers) {
+    UI.btnHideAutoAnswers.addEventListener('click', () => {
+      if (UI.autoAnswersContainer) UI.autoAnswersContainer.style.display = 'none';
+    });
+  }
+
+  // Nút Mở bài tập (Bấm "Làm bài tập" trên trang)
   if (UI.btnStartExercise) {
     UI.btnStartExercise.addEventListener('click', async () => {
+      // Khi bắt đầu một phiên bài tập mới -> Xóa trắng ô đáp án cũ
+      await resetSolveSession(true);
+      setStepperState(1);
+
+      const origHtml = UI.btnStartExercise.innerHTML;
+      UI.btnStartExercise.innerHTML = '<span class="spinner spinner-sm"></span> Đang mở...';
+      UI.btnStartExercise.disabled = true;
+
       const tab = await getActiveTab();
-      if (!tab) return;
+      if (!tab) {
+        UI.btnStartExercise.innerHTML = origHtml;
+        UI.btnStartExercise.disabled = false;
+        return;
+      }
+
       try {
         addLog(UI.testLog, "Đang tìm nút 'Làm bài tập' trên trang...", 'info');
         const res = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
@@ -876,60 +1145,74 @@ document.addEventListener('DOMContentLoaded', async () => {
           }
         } else {
           addLog(UI.testLog, res?.message || 'Không tìm thấy nút làm bài tập.', 'warn');
+          setStepperState(0);
         }
       } catch (err) {
         addLog(UI.testLog, 'Lỗi: ' + err.message, 'error');
+        setStepperState(0);
+      } finally {
+        UI.btnStartExercise.innerHTML = origHtml;
+        UI.btnStartExercise.disabled = false;
       }
     });
   }
 
-  // Nút 2: Copy Prompt câu hỏi chuẩn theo EDUX-TEST-SOLVER
-  UI.btnExtractQuestions.addEventListener('click', async () => {
-    const tab = await getActiveTab();
-    if (!tab) return;
+  // Nút: Copy Prompt câu hỏi chuẩn theo EDUX-TEST-SOLVER (Chế độ thủ công)
+  if (UI.btnExtractQuestions) {
+    UI.btnExtractQuestions.addEventListener('click', async () => {
+      const tab = await getActiveTab();
+      if (!tab) return;
 
-    try {
-      // 1. Kiểm tra xem bài tập đã mở trên trang chưa
-      const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
-      let res = null;
+      const origHtml = UI.btnExtractQuestions.innerHTML;
+      UI.btnExtractQuestions.innerHTML = '<span class="spinner spinner-sm"></span> Đang trích xuất...';
+      UI.btnExtractQuestions.disabled = true;
 
-      if (!checkRes || !checkRes.isOpen) {
-        addLog(UI.testLog, "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...", 'info');
-        const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
-        if (startRes && startRes.questions) {
-          res = startRes;
-          updateExamInfoUI(startRes.questions);
-        } else if (!startRes || !startRes.opened) {
-          addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
-          return;
+      try {
+        // 1. Kiểm tra xem bài tập đã mở trên trang chưa
+        const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+        let res = null;
+
+        if (!checkRes || !checkRes.isOpen) {
+          addLog(UI.testLog, "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...", 'info');
+          const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+          if (startRes && startRes.questions) {
+            res = startRes;
+            updateExamInfoUI(startRes.questions);
+          } else if (!startRes || !startRes.opened) {
+            addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            return;
+          }
         }
-      }
 
-      // 2. Trích xuất đề nếu chưa có
-      if (!res || !res.promptText) {
-        addLog(UI.testLog, 'Đang trích xuất đề bài tập...', 'info');
-        res = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
-      }
+        // 2. Trích xuất đề nếu chưa có
+        if (!res || !res.promptText) {
+          addLog(UI.testLog, 'Đang trích xuất đề bài tập...', 'info');
+          res = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+        }
 
-      if (res && res.promptText) {
-        await navigator.clipboard.writeText(res.promptText);
-        if (UI.promptPreviewBox) UI.promptPreviewBox.value = res.promptText;
-        if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
-        updateExamInfoUI(res.questions);
-        addLog(
-          UI.testLog,
-          `Thành công! Đã copy Prompt (${res.questions?.total_questions || 0} câu) vào Clipboard.`,
-          'success'
-        );
-      } else {
-        addLog(UI.testLog, 'Chưa tìm thấy câu hỏi bài tập nào trên trang.', 'warn');
+        if (res && res.promptText) {
+          await navigator.clipboard.writeText(res.promptText);
+          if (UI.promptPreviewBox) UI.promptPreviewBox.value = res.promptText;
+          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+          updateExamInfoUI(res.questions);
+          addLog(
+            UI.testLog,
+            `Thành công! Đã copy Prompt (${res.questions?.total_questions || 0} câu) vào Clipboard.`,
+            'success'
+          );
+        } else {
+          addLog(UI.testLog, 'Chưa tìm thấy câu hỏi bài tập nào trên trang.', 'warn');
+        }
+      } catch (err) {
+        addLog(UI.testLog, 'Lỗi trích xuất câu hỏi: ' + err.message, 'error');
+      } finally {
+        UI.btnExtractQuestions.innerHTML = origHtml;
+        UI.btnExtractQuestions.disabled = false;
       }
-    } catch (err) {
-      addLog(UI.testLog, 'Lỗi trích xuất câu hỏi: ' + err.message, 'error');
-    }
-  });
+    });
+  }
 
-  // Nút 3: Giải tự động bằng AI (API Key)
+  // Nút Hero CTA: Giải tự động bằng AI (1-Click)
   if (UI.btnSolveAI) {
     UI.btnSolveAI.addEventListener('click', async () => {
       const tab = await getActiveTab();
@@ -943,16 +1226,42 @@ document.addEventListener('DOMContentLoaded', async () => {
       const isLocal = apiProvider === 'ollama' || apiEndpoint.includes('localhost') || apiEndpoint.includes('127.0.0.1');
 
       if (!apiKey && !isLocal) {
-        addLog(UI.testLog, '⚠️ Chưa có API Key! Đang chuyển sang tab Cài đặt để nhập key...', 'warn');
-        const settingsTabBtn = document.querySelector('.tab-btn[data-tab="tab-settings"]');
-        if (settingsTabBtn) settingsTabBtn.click();
+        addLog(UI.testLog, '⚠️ Chưa cấu hình API Key để giải tự động.', 'warn');
+        addLog(UI.testLog, '📋 Đang tự động chuyển sang chế độ Thủ công (Web AI) để bạn tự giải...', 'info');
+        switchTestMode('manual');
+
+        // Hỗ trợ người dùng: tự động mở bài và copy prompt sang chế độ thủ công
+        try {
+          const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+          let extRes = null;
+          if (!checkRes || !checkRes.isOpen) {
+            const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+            if (startRes && startRes.questions) extRes = startRes;
+          }
+          if (!extRes || !extRes.promptText) {
+            extRes = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+          }
+          if (extRes && extRes.promptText) {
+            await navigator.clipboard.writeText(extRes.promptText);
+            if (UI.promptPreviewBox) UI.promptPreviewBox.value = extRes.promptText;
+            if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+            updateExamInfoUI(extRes.questions);
+            addLog(UI.testLog, `✓ Đã tự động copy Prompt (${extRes.questions?.total_questions || 0} câu) vào Clipboard! Hãy dán vào ChatGPT/Claude.`, 'success');
+          }
+        } catch (e) {}
         return;
       }
+
+      // XÓA TRẮNG Ô ĐÁP ÁN KHI BẮT ĐẦU PHIÊN GIẢI MỚI & BẬT BƯỚC 1 (BẮT ĐỀ) VỚI SPINNER
+      await resetSolveSession(true);
+      setStepperState(1);
+      setHeroBtnLoading(true, 'ĐANG BẮT ĐỀ BÀI TẬP...', 'Đang mở bài tập và trích xuất câu hỏi...');
+
+      let extRes = null;
 
       try {
         // BƯỚC 1: Đảm bảo bài tập được mở trên trang trước khi giải
         const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
-        let extRes = null;
 
         if (!checkRes || !checkRes.isOpen) {
           addLog(UI.testLog, "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...", 'info');
@@ -962,6 +1271,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateExamInfoUI(startRes.questions);
           } else if (!startRes || !startRes.opened) {
             addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            setStepperState(0);
+            setHeroBtnLoading(false);
+            switchTestMode('manual');
+            addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công để bạn tự thao tác.', 'info');
             return;
           }
         }
@@ -974,6 +1287,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (!extRes || !extRes.promptText) {
           addLog(UI.testLog, "Không tìm thấy đề bài tập. Hãy kiểm tra giao diện bài tập!", 'warn');
+          setStepperState(0);
+          setHeroBtnLoading(false);
+          switchTestMode('manual');
+          addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công để bạn tự thao tác.', 'info');
           return;
         }
 
@@ -983,11 +1300,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         addLog(UI.testLog, `Đang gửi ${qCount} câu tới AI (${displayModel})...`, 'info');
         setStatus('AI đang giải bài...', 'running');
 
+        // BƯỚC 2: AI giải câu hỏi
+        setStepperState(2);
+        setHeroBtnLoading(true, 'AI ĐANG GIẢI BÀI...', `Đang gửi ${qCount} câu tới AI (${displayModel})...`);
+
         const aiAnswers = await solveWithAI(extRes.promptText, apiKey, model, apiEndpoint, apiProvider);
         UI.answerInput.value = aiAnswers;
+        if (UI.autoAnswersBox) UI.autoAnswersBox.value = aiAnswers;
+        if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'block';
         await chrome.storage.local.set({ savedAnswers: aiAnswers });
 
         addLog(UI.testLog, '✓ AI đã giải xong! Bắt đầu tự động điền đáp án...', 'success');
+
+        // BƯỚC 3: Điền & nộp
+        setStepperState(3);
+        setHeroBtnLoading(true, 'ĐANG ĐIỀN ĐÁP ÁN...', 'Đang tự động chọn đáp án và nộp bài...');
 
         const fillRes = await sendTabMessage(tab.id, {
           action: 'FILL_TEST_ANSWERS',
@@ -996,19 +1323,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         setStatus('Sẵn sàng', 'idle');
+        setHeroBtnLoading(false);
+
         if (fillRes && fillRes.success) {
+          setStepperState(4); // Hoàn tất cả 3 bước
           addLog(UI.testLog, `🎉 Hoàn tất! Đã điền xong ${fillRes.filledCount} câu bài tập.`, 'success');
         } else {
+          setStepperState(0);
           addLog(UI.testLog, `Thông báo: ${fillRes?.message || 'Không thể điền bài.'}`, 'warn');
+          switchTestMode('manual');
+          addLog(UI.testLog, '📋 Đã chuyển sang chế độ Thủ công để bạn kiểm tra lại đáp án và điền lại.', 'info');
         }
       } catch (err) {
-        setStatus('Sẵn sàng', 'idle');
-        addLog(UI.testLog, 'Lỗi giải AI: ' + err.message, 'error');
+        setStatus('Lỗi giải bài', 'stopped');
+        setStepperState(0);
+        setHeroBtnLoading(false);
+        addLog(UI.testLog, '❌ Lỗi giải tự động: ' + err.message, 'error');
+
+        // TỰ ĐỘNG CHUYỂN SANG CHẾ ĐỘ THỦ CÔNG KHI GẶP LỖI
+        switchTestMode('manual');
+        addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công (Web AI). Bạn có thể tự dán đáp án vào ô bên dưới.', 'warn');
+
+        // Nếu đã trích xuất được prompt trước khi lỗi, hiển thị ngay vào khung prompt thủ công
+        if (extRes && extRes.promptText) {
+          if (UI.promptPreviewBox) UI.promptPreviewBox.value = extRes.promptText;
+          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+          navigator.clipboard.writeText(extRes.promptText).catch(() => {});
+          addLog(UI.testLog, `✓ Đã sao chép sẵn đề (${extRes.questions?.total_questions || 0} câu) vào Clipboard và khung Prompt.`, 'info');
+        }
       }
     });
   }
 
-  // Nút 4: Dán đáp án từ Clipboard
+  // Nút Dán đáp án từ Clipboard (Chế độ thủ công)
   if (UI.btnPasteClipboard) {
     UI.btnPasteClipboard.addEventListener('click', async () => {
       try {
@@ -1026,7 +1373,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Nút 5: Xem/ẩn Prompt xem trước
+  // Nút Xem/ẩn Prompt xem trước (Chế độ thủ công)
   if (UI.btnTogglePrompt) {
     UI.btnTogglePrompt.addEventListener('click', async () => {
       if (!UI.promptPreviewCard) return;
@@ -1054,47 +1401,56 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Nút 6: Bắt đầu điền bài tập
-  UI.btnFillAnswers.addEventListener('click', async () => {
-    const rawAnswers = UI.answerInput.value.trim();
-    if (!rawAnswers) {
-      addLog(UI.testLog, 'Vui lòng nhập hoặc dán danh sách đáp án trước!', 'warn');
-      return;
-    }
+  // Nút Bắt đầu điền bài tập (Chế độ thủ công)
+  if (UI.btnFillAnswers) {
+    UI.btnFillAnswers.addEventListener('click', async () => {
+      const rawAnswers = UI.answerInput.value.trim();
+      if (!rawAnswers) {
+        addLog(UI.testLog, 'Vui lòng nhập hoặc dán danh sách đáp án trước!', 'warn');
+        return;
+      }
 
-    await chrome.storage.local.set({ savedAnswers: rawAnswers });
+      await chrome.storage.local.set({ savedAnswers: rawAnswers });
 
-    const tab = await getActiveTab();
-    if (!tab) return;
+      const tab = await getActiveTab();
+      if (!tab) return;
 
-    try {
-      // Đảm bảo bài tập đang mở trước khi điền
-      const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
-      if (!checkRes || !checkRes.isOpen) {
-        addLog(UI.testLog, "Đang mở bài tập trên trang để chuẩn bị điền...", 'info');
-        const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
-        if (!startRes || !startRes.opened) {
-          addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
-          return;
+      const origHtml = UI.btnFillAnswers.innerHTML;
+      UI.btnFillAnswers.innerHTML = '<span class="spinner spinner-sm"></span> Đang điền bài...';
+      UI.btnFillAnswers.disabled = true;
+
+      try {
+        // Đảm bảo bài tập đang mở trước khi điền
+        const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+        if (!checkRes || !checkRes.isOpen) {
+          addLog(UI.testLog, "Đang mở bài tập trên trang để chuẩn bị điền...", 'info');
+          const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+          if (!startRes || !startRes.opened) {
+            addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            return;
+          }
+          await new Promise((r) => setTimeout(r, 400));
         }
-        await new Promise((r) => setTimeout(r, 400));
-      }
 
-      addLog(UI.testLog, 'Đang gửi đáp án tới trang bài tập...', 'info');
-      const res = await sendTabMessage(tab.id, {
-        action: 'FILL_TEST_ANSWERS',
-        answersText: rawAnswers,
-        options: { autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true }
-      });
-      if (res && res.success) {
-        addLog(UI.testLog, `Hoàn tất! Đã điền ${res.filledCount} câu bài tập.`, 'success');
-      } else {
-        addLog(UI.testLog, `Thông báo: ${res?.message || 'Không thể điền bài tập.'}`, 'warn');
+        addLog(UI.testLog, 'Đang gửi đáp án tới trang bài tập...', 'info');
+        const res = await sendTabMessage(tab.id, {
+          action: 'FILL_TEST_ANSWERS',
+          answersText: rawAnswers,
+          options: { autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true }
+        });
+        if (res && res.success) {
+          addLog(UI.testLog, `Hoàn tất! Đã điền ${res.filledCount} câu bài tập.`, 'success');
+        } else {
+          addLog(UI.testLog, `Thông báo: ${res?.message || 'Không thể điền bài tập.'}`, 'warn');
+        }
+      } catch (err) {
+        addLog(UI.testLog, 'Lỗi: Không tìm thấy trang bài tập EDUX.', 'error');
+      } finally {
+        UI.btnFillAnswers.innerHTML = origHtml;
+        UI.btnFillAnswers.disabled = false;
       }
-    } catch (err) {
-      addLog(UI.testLog, 'Lỗi: Không tìm thấy trang bài tập EDUX.', 'error');
-    }
-  });
+    });
+  }
 
   // =========================================================================
   // 9. Settings Actions
@@ -1121,6 +1477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     await chrome.storage.local.set(newSettings);
+    updateActiveModelBadge(newSettings.apiModel, newSettings.apiProvider);
 
     const tab = await getActiveTab();
     if (tab) {

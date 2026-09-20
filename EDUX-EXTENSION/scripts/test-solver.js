@@ -1,5 +1,5 @@
 /**
- * EDUX Slayers - Test Solver Engine v2.2.0 (Mô phỏng chính xác EDUX-TEST-SOLVER)
+ * EDUX Slayers - Test Solver Engine v2.3.0 (Mô phỏng chính xác EDUX-TEST-SOLVER)
  * Tự động trích xuất đề bài tập, chuẩn hóa prompt AI, parse đáp án đa định dạng
  * và tự động điền bài tập từng bước trên giao diện EDUX theo chuẩn Playwright.
  */

@@ -1,5 +1,5 @@
 /**
- * EDUX Slayers - Injected Network Interceptor v2.2.0
+ * EDUX Slayers - Injected Network Interceptor v2.3.0
  * Chạy trong execution context của trang (MAIN world) để bắt toàn bộ API request/response
  * (đặc biệt là request /start và exam questions payload) tương tự Playwright page.expect_response().
  */

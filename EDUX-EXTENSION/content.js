@@ -1,13 +1,13 @@
 /**
- * EDUX Slayers Content Script v2.2.0
- * Modular coordinator: connects Network Interceptor, Slide Solver,
+ * EDUX Slayers Content Script v2.3.0
+ * Unified Controller: Coordinates Slide Solver (Brute-force/AI),
  * Test Solver (Bài tập), and Score Tracker.
  */
 
 (function () {
-  window.__EDUX_SLAYERS_INJECTED__ = true;
+  'use strict';
 
-  console.log('⚔️ EDUX Slayers Content Script v2.2.0 loaded.');
+  console.log('⚔️ EDUX Slayers Content Script v2.3.0 loaded.');
 
   // =========================================================================
   // 1. Network Interceptor Setup & Shared Session Cache
