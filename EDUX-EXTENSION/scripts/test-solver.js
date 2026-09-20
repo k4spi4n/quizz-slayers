@@ -55,13 +55,40 @@
    */
   function sanitizeAiResponse(raw) {
     let text = (raw || '').trim();
-    if (text.startsWith('```')) {
-      const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-      if (match) {
-        return match[1].trim();
+    if (text.charCodeAt(0) === 0xfeff) {
+      text = text.substring(1).trim();
+    }
+
+    // 1. Trích xuất code block markdown ở bất kỳ đâu trong text
+    const codeBlockMatch = text.match(/```(?:json|jsonl|javascript|js)?\s*([\s\S]*?)\s*```/i);
+    if (codeBlockMatch) {
+      text = codeBlockMatch[1].trim();
+    }
+
+    // 2. Unquote nếu text bị JSON-stringified (ví dụ: "\"[{\\\"so_cau\\\"...}\]\"")
+    if (
+      (text.startsWith('"') && text.endsWith('"') && text.length >= 2) ||
+      (text.startsWith("'") && text.endsWith("'") && text.length >= 2)
+    ) {
+      try {
+        const unquoted = JSON.parse(text);
+        if (typeof unquoted === 'string') {
+          text = unquoted.trim();
+        }
+      } catch (e) {
+        text = text.slice(1, -1).trim();
       }
     }
-    return text;
+
+    // 3. Bỏ quote bọc ngoài thừa nếu chuỗi bị paste dính nháy: "[{"so_cau": ...
+    if (/^["']\s*(\[|\{)/.test(text)) {
+      text = text.replace(/^["']\s*/, '');
+    }
+    if (/(\]|\})\s*["']$/.test(text)) {
+      text = text.replace(/\s*["']$/, '');
+    }
+
+    return text.trim();
   }
 
   /**
@@ -99,14 +126,32 @@
 
   /**
    * Mô phỏng normalize_answers_payload() từ EDUX-TEST-SOLVER
+   * Hỗ trợ đa dạng trường số câu (so_cau, cau, question, id, stt, q) và đáp án (dap_an, answer, ans, tra_loi, da, a)
    */
   function normalizeAnswersPayload(data) {
     const answers = {};
     if (Array.isArray(data)) {
       data.forEach((item) => {
         if (typeof item !== 'object' || item === null) return;
-        const idx = item.so_cau ?? item.soCau ?? item.question ?? item.id;
-        const ans = item.dap_an ?? item.dapAn ?? item.answer;
+        const idx =
+          item.so_cau ??
+          item.soCau ??
+          item.cau ??
+          item.cau_so ??
+          item.cau_hoi ??
+          item.question ??
+          item.question_id ??
+          item.id ??
+          item.stt ??
+          item.q;
+        const ans =
+          item.dap_an ??
+          item.dapAn ??
+          item.answer ??
+          item.ans ??
+          item.tra_loi ??
+          item.da ??
+          item.a;
         if (idx == null || ans == null) return;
         const idxInt = parseInt(idx, 10);
         if (isNaN(idxInt)) return;
@@ -131,19 +176,93 @@
   }
 
   /**
+   * Trích xuất đáp án từ từng object chunk với tracking độ sâu ngoặc nhọn
+   * Chống chịu tối đa với: unescaped quotes, cắt cụt chuỗi, nested brackets, sai cú pháp JSON
+   */
+  function extractFromObjectChunks(text) {
+    const answers = {};
+    let depth = 0;
+    let startIdx = -1;
+    const chunks = [];
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === '{') {
+        if (depth === 0) {
+          startIdx = i;
+        }
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0 && startIdx !== -1) {
+          chunks.push(text.substring(startIdx + 1, i));
+          startIdx = -1;
+        }
+      }
+    }
+
+    if (depth > 0 && startIdx !== -1) {
+      chunks.push(text.substring(startIdx + 1));
+    }
+
+    for (const chunk of chunks) {
+      const qMatch = chunk.match(/["']?(?:so_cau|soCau|cau|cau_so|cau_hoi|question|id|stt|q)["']?\s*:\s*(\d+)/i);
+      if (!qMatch) continue;
+      const qNum = parseInt(qMatch[1], 10);
+      if (!qNum) continue;
+
+      let ansMatch = chunk.match(/["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*)$/i);
+      if (ansMatch) {
+        let rawAns = ansMatch[1].trim();
+        if (rawAns.endsWith(',')) rawAns = rawAns.slice(0, -1).trim();
+        if (rawAns.startsWith('[') && rawAns.endsWith(']')) {
+          try {
+            const arr = JSON.parse(rawAns);
+            if (Array.isArray(arr)) rawAns = arr.join(', ');
+          } catch (e) {
+            rawAns = rawAns.slice(1, -1).trim();
+          }
+        } else {
+          if ((rawAns.startsWith('"') && rawAns.endsWith('"')) || (rawAns.startsWith("'") && rawAns.endsWith("'"))) {
+            rawAns = rawAns.slice(1, -1);
+          } else if (rawAns.startsWith('"')) {
+            rawAns = rawAns.replace(/^"/, '').replace(/"\s*$/, '');
+          }
+        }
+        answers[qNum] = rawAns.trim();
+      } else {
+        const ansBeforeMatch = chunk.match(
+          /["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*?)(?:,\s*["']?(?:so_cau|soCau|cau|question|id)\b)/i
+        );
+        if (ansBeforeMatch) {
+          let rawAns = ansBeforeMatch[1].trim();
+          if ((rawAns.startsWith('"') && rawAns.endsWith('"')) || (rawAns.startsWith("'") && rawAns.endsWith("'"))) {
+            rawAns = rawAns.slice(1, -1);
+          }
+          answers[qNum] = rawAns.trim();
+        }
+      }
+    }
+
+    return answers;
+  }
+
+  /**
    * Mô phỏng load_answers_from_jsonl_line() từ EDUX-TEST-SOLVER
-   * Hỗ trợ JSONL 1 dòng, JSON Array, JSON Object, concatenated JSON, và văn bản dòng (1. A, 2. B)
+   * Hỗ trợ JSONL 1 dòng, JSON Array, JSON Object, concatenated JSON, truncated JSON, và văn bản dòng (1. A, 2. B)
    */
   function loadAnswersFromInput(rawText) {
     let clean = sanitizeAiResponse(rawText);
-    if (clean.charCodeAt(0) === 0xfeff) {
-      clean = clean.substring(1).trim();
-    }
 
-    // 1. Thử parse JSON Array hoặc Object trực tiếp
+    // 1. Thử parse JSON Array hoặc Object trực tiếp (hỗ trợ double-encoded)
     if (clean.startsWith('[') || clean.startsWith('{')) {
       try {
         let data = JSON.parse(clean);
+        if (typeof data === 'string') {
+          try {
+            data = JSON.parse(data);
+          } catch (e) {}
+        }
         if (typeof data === 'object' && data !== null && !Array.isArray(data) && 'answers' in data) {
           data = data.answers;
         }
@@ -152,12 +271,34 @@
       } catch (e) {}
     }
 
-    // 2. Thử tách concatenated JSON objects: }{ -> }\n{ (giống hệt test_solver.py)
-    const normalizedJson = clean.replace(/}\s*{/g, '}\n{');
+    // 2. Thử làm sạch JSON (bỏ trailing comma, tự đóng ngoặc nếu bị cắt)
+    let repaired = clean.replace(/,\s*([\}\]])/g, '$1');
+    if (repaired.startsWith('[') && !repaired.endsWith(']')) {
+      const attemptEndings = [']', '"}]', '}]', '"\n}]'];
+      for (const ending of attemptEndings) {
+        try {
+          let data = JSON.parse(repaired + ending);
+          const parsed = normalizeAnswersPayload(data);
+          if (Object.keys(parsed).length > 0) return parsed;
+        } catch (e) {}
+      }
+    }
+
+    // 3. Object-by-object chunking (bất chấp unescaped quotes, cắt cụt, sai cú pháp)
+    const chunkAnswers = extractFromObjectChunks(clean);
+    if (Object.keys(chunkAnswers).length > 0) {
+      return chunkAnswers;
+    }
+
+    // 4. Thử tách concatenated JSON objects hoặc JSONL:
+    const normalizedJson = clean.replace(/}\s*,\s*{/g, '}\n{').replace(/}\s*{/g, '}\n{');
     const jsonItems = [];
     for (const chunk of normalizedJson.split('\n')) {
-      const trimmed = chunk.trim();
+      let trimmed = chunk.trim();
       if (!trimmed) continue;
+      if (trimmed.startsWith('[') && trimmed.length > 1) trimmed = trimmed.substring(1).trim();
+      if (trimmed.endsWith(']') && trimmed.length > 1) trimmed = trimmed.substring(0, trimmed.length - 1).trim();
+      if (trimmed.endsWith(',')) trimmed = trimmed.substring(0, trimmed.length - 1).trim();
       try {
         jsonItems.push(JSON.parse(trimmed));
       } catch (e) {}
@@ -167,11 +308,11 @@
       if (Object.keys(parsed).length > 0) return parsed;
     }
 
-    // 3. Fallback: Parse từng dòng dạng "1. A", "2: B", "3) Đúng, Sai"
+    // 5. Fallback: Parse từng dòng dạng "1. A", "2: B", "Câu 3: Đúng", "4 - C"
     const answers = {};
     const lines = clean.split('\n');
     lines.forEach((l) => {
-      const match = l.trim().match(/^(\d+)\s*[\.:\-\)]\s*(.+)$/);
+      const match = l.trim().match(/^(?:câu\s*)?(\d+)\s*[\.:\-\)]\s*(.+)$/i);
       if (match) {
         answers[parseInt(match[1], 10)] = match[2].trim();
       }
@@ -181,15 +322,28 @@
   }
 
   /**
-   * Cập nhật giá trị input/textarea cho React synthetic events
+   * Cập nhật giá trị input/textarea cho React synthetic events (hỗ trợ cả contenteditable)
    */
   function setNativeValue(el, value) {
+    if (!el) return;
+
+    if (el.isContentEditable) {
+      el.focus();
+      el.textContent = value;
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+      el.dispatchEvent(new Event('blur', { bubbles: true, composed: true }));
+      return;
+    }
+
     const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
     if (el._valueTracker) {
       el._valueTracker.setValue('');
     }
+
+    el.dispatchEvent(new Event('focus', { bubbles: true, composed: true }));
 
     if (setter) {
       setter.call(el, value);
@@ -199,6 +353,7 @@
 
     el.dispatchEvent(new InputEvent('input', { bubbles: true, composed: true }));
     el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+    el.dispatchEvent(new Event('blur', { bubbles: true, composed: true }));
   }
 
   /**
@@ -206,11 +361,28 @@
    * Mô phỏng extract_options() từ EDUX-TEST-SOLVER
    */
   function extractOptionsFromEls(optionEls) {
-    return optionEls.map((node) => ({
-      node,
-      letter: (node.querySelector('span.flex-shrink-0')?.textContent || '').trim(),
-      text: (node.querySelector('div.prose p, p')?.textContent || node.textContent || '').trim()
-    }));
+    return optionEls.map((node, index) => {
+      let letter = (
+        node.querySelector('span.flex-shrink-0, span[class*="rounded-full"], div[class*="rounded-full"]')?.textContent ||
+        ''
+      ).trim();
+      let text = (
+        node.querySelector('div.prose p, p, span.text-gray-900, div.text-gray-900')?.textContent ||
+        node.textContent ||
+        ''
+      ).trim();
+
+      if (!letter) {
+        const match = text.match(/^([A-D])[\.\)\:\s]/i);
+        if (match) {
+          letter = match[1].toUpperCase();
+        } else if (index < 4) {
+          letter = String.fromCharCode(65 + index);
+        }
+      }
+
+      return { node, letter, text };
+    });
   }
 
   /**
@@ -230,17 +402,22 @@
       return false;
     }
 
-    // Phải có ít nhất một dấu hiệu bài tập:
-    // 1. Nhãn "Câu 1", "Câu 2", ...
-    if (findQuestionLabel(el)) return true;
-    // 2. Nút "Nộp bài", "Câu tiếp", "Câu tiếp theo"
-    if (findButtonByText(['Nộp bài', 'Câu tiếp', 'Câu tiếp theo'], el, false)) return true;
-    // 3. Khung lựa chọn trắc nghiệm hoặc khối Đúng/Sai
+    // Bỏ qua các card kết quả lần làm trước hoặc phần tổng kết điểm số
+    const text = (el.textContent || '').toLowerCase();
     if (
-      el.querySelector(
-        "div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, div[class*='cursor-pointer'][class*='border'], textarea, input[type='text']"
-      )
+      text.includes('kết quả làm bài') ||
+      text.includes('bài kiểm tra lúc') ||
+      (text.includes('thời gian:') && text.includes('nhận xét:')) ||
+      text.includes('số lần đã làm')
     ) {
+      return false;
+    }
+
+    // Phải có nhãn câu hỏi "Câu X" HOẶC nút chuyển câu / nộp bài
+    const hasQLabel = !!findQuestionLabel(el);
+    const hasExamBtn = !!findButtonByText(['Nộp bài', 'Câu tiếp', 'Câu tiếp theo'], el, false);
+
+    if (hasQLabel || hasExamBtn) {
       return true;
     }
 
@@ -616,7 +793,126 @@
    * Bấm nút "Làm bài tập" hoặc "Bài tập AI" trên trang web
    */
   async function startExercise() {
-    // 1. Kiểm tra nếu dialog câu hỏi ĐÃ thực sự mở sẵn
+    // 1. Nếu trên trang đang thấy nút "Làm bài tập", "Làm lại", "Bài tập AI" thì luôn ưu tiên bấm nút
+    // để mở bài (kể cả khi đã có kết quả trước đó trên trang)
+    const match = findStartButton();
+
+    if (match && safeIsVisible(match.element)) {
+      // Xóa cache đề cũ để bắt buộc đợi đề mới của bài tập hiện tại
+      currentCapturedExamData = null;
+      try {
+        sessionStorage.removeItem('__EDUX_LAST_EXAM_DATA__');
+        sessionStorage.removeItem('__EDUX_LAST_EXAM_URL__');
+        chrome.storage.local.remove('lastExamData');
+      } catch (e) {}
+
+      if (match.type === 'start_quiz') {
+        const btnText = (match.element.textContent || 'Làm bài tập').trim();
+        logMessage(`Đã tìm thấy nút '${btnText}'. Đang bấm để mở bài...`, 'info');
+        safeClick(match.element);
+        try {
+          if (typeof match.element.click === 'function') match.element.click();
+        } catch (e) {}
+
+        // Chờ đề bài tập được bắt hoặc dialog xuất hiện (tối đa 12 giây)
+        for (let i = 0; i < 48; i++) {
+          await sleep(250);
+
+          // Kiểm tra nếu xuất hiện hộp thoại xác nhận làm bài (khi đã làm bài 1 lần trước đó):
+          const confirmBtn = findButtonByText(
+            ['bắt đầu làm bài', 'làm lại', 'xác nhận', 'đồng ý', 'bắt đầu'],
+            document,
+            true,
+            true
+          );
+          if (confirmBtn && confirmBtn !== match.element && safeIsVisible(confirmBtn)) {
+            logMessage("Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...", 'info');
+            safeClick(confirmBtn);
+          }
+
+          // Kiểm tra xem đã bắt được packet chưa
+          const captured = getCapturedExamData();
+          if (captured) {
+            const compact = buildCompactPromptPayload(captured);
+            logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
+            return { success: true, opened: true, questions: compact };
+          }
+
+          // Hoặc kiểm tra dialog câu hỏi đã xuất hiện
+          const dialog = getActiveExamDialog();
+          if (dialog) {
+            logMessage('🎉 Cửa sổ làm bài tập đã mở thành công!', 'success');
+            const extracted = extractQuestions();
+            return { success: true, opened: true, questions: extracted.questions };
+          }
+
+          // Sau 2 giây nếu vẫn chưa mở, thử kích hoạt lại nút bấm
+          if (i === 8 || i === 20) {
+            logMessage("Đang thử kích hoạt lại nút mở bài tập...", 'info');
+            safeClick(match.element);
+            try {
+              if (typeof match.element.click === 'function') match.element.click();
+            } catch (e) {}
+          }
+        }
+
+        return { success: true, opened: false, message: "Đã bấm 'Làm bài tập', đang chờ hệ thống tải câu hỏi..." };
+      }
+
+      if (match.type === 'open_lesson_exercise') {
+        logMessage("Đã tìm thấy bài học. Bấm 'Bài tập AI' để mở...", 'info');
+        safeClick(match.element);
+        try {
+          if (typeof match.element.click === 'function') match.element.click();
+        } catch (e) {}
+
+        // Chờ màn hình có nút "Làm bài tập" xuất hiện (tối đa 6 giây)
+        for (let i = 0; i < 30; i++) {
+          await sleep(200);
+          const nextMatch = findStartButton();
+          if (nextMatch && nextMatch.type === 'start_quiz') {
+            logMessage("Đã mở bài tập! Tiếp tục bấm nút 'Làm bài tập'...", 'info');
+            safeClick(nextMatch.element);
+            try {
+              if (typeof nextMatch.element.click === 'function') nextMatch.element.click();
+            } catch (e) {}
+
+            // Chờ dialog làm bài xuất hiện hoặc bắt được gói tin
+            for (let j = 0; j < 48; j++) {
+              await sleep(250);
+
+              const confirmBtn = findButtonByText(
+                ['bắt đầu làm bài', 'làm lại', 'xác nhận', 'đồng ý', 'bắt đầu'],
+                document,
+                true,
+                true
+              );
+              if (confirmBtn && confirmBtn !== nextMatch.element && safeIsVisible(confirmBtn)) {
+                logMessage("Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...", 'info');
+                safeClick(confirmBtn);
+              }
+
+              const captured = getCapturedExamData();
+              if (captured) {
+                const compact = buildCompactPromptPayload(captured);
+                logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
+                return { success: true, opened: true, questions: compact };
+              }
+              const dialog = getActiveExamDialog();
+              if (dialog) {
+                logMessage('🎉 Cửa sổ làm bài tập đã mở thành công!', 'success');
+                const extracted = extractQuestions();
+                return { success: true, opened: true, questions: extracted.questions };
+              }
+            }
+            return { success: true, opened: true };
+          }
+        }
+        return { success: true, opened: false, message: "Đã mở màn hình bài tập. Hãy bấm 'Làm bài tập' trên trang." };
+      }
+    }
+
+    // 2. Nếu không thấy nút bấm trên trang, kiểm tra nếu dialog câu hỏi ĐÃ thực sự mở sẵn
     const existingDialog = getActiveExamDialog();
     if (existingDialog) {
       const qLabel = findQuestionLabel(existingDialog);
@@ -628,105 +924,7 @@
       return { success: true, opened: true, questions: extracted.questions };
     }
 
-    // 2. Tìm nút bấm phù hợp
-    const match = findStartButton();
-    if (!match) {
-      logMessage(
-        "⚠️ Không tìm thấy nút 'Làm bài tập' hoặc 'Bài tập AI' trên trang. Hãy mở bài học trước!",
-        'warn'
-      );
-      return { success: false, message: "Không tìm thấy nút 'Làm bài tập' hoặc 'Bài tập AI' trên trang." };
-    }
-
-    // Xóa cache đề cũ để bắt buộc đợi đề mới của bài tập hiện tại
-    currentCapturedExamData = null;
-    try {
-      sessionStorage.removeItem('__EDUX_LAST_EXAM_DATA__');
-      sessionStorage.removeItem('__EDUX_LAST_EXAM_URL__');
-      chrome.storage.local.remove('lastExamData');
-    } catch (e) {}
-
-    if (match.type === 'start_quiz') {
-      logMessage("Đã tìm thấy nút 'Làm bài tập'. Đang bấm...", 'info');
-      safeClick(match.element);
-      try {
-        if (typeof match.element.click === 'function') match.element.click();
-      } catch (e) {}
-
-      // Chờ đề bài tập được bắt hoặc dialog xuất hiện (tối đa 12 giây)
-      for (let i = 0; i < 48; i++) {
-        await sleep(250);
-
-        // Kiểm tra xem đã bắt được packet chưa
-        const captured = getCapturedExamData();
-        if (captured) {
-          const compact = buildCompactPromptPayload(captured);
-          logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
-          return { success: true, opened: true, questions: compact };
-        }
-
-        // Hoặc kiểm tra dialog câu hỏi đã xuất hiện
-        const dialog = getActiveExamDialog();
-        if (dialog) {
-          logMessage('🎉 Cửa sổ làm bài tập đã mở thành công!', 'success');
-          const extracted = extractQuestions();
-          return { success: true, opened: true, questions: extracted.questions };
-        }
-
-        // Sau 2 giây nếu vẫn chưa mở, thử kích hoạt lại nút bấm
-        if (i === 8 || i === 20) {
-          logMessage("Đang thử kích hoạt lại nút 'Làm bài tập'...", 'info');
-          safeClick(match.element);
-          try {
-            if (typeof match.element.click === 'function') match.element.click();
-          } catch (e) {}
-        }
-      }
-
-      return { success: true, opened: false, message: "Đã bấm 'Làm bài tập', đang chờ hệ thống tải câu hỏi..." };
-    }
-
-    if (match.type === 'open_lesson_exercise') {
-      logMessage("Đã tìm thấy bài học. Bấm 'Bài tập AI' để mở...", 'info');
-      safeClick(match.element);
-      try {
-        if (typeof match.element.click === 'function') match.element.click();
-      } catch (e) {}
-
-      // Chờ màn hình có nút "Làm bài tập" xuất hiện (tối đa 6 giây)
-      for (let i = 0; i < 30; i++) {
-        await sleep(200);
-        const nextMatch = findStartButton();
-        if (nextMatch && nextMatch.type === 'start_quiz') {
-          logMessage("Đã mở bài tập! Tiếp tục bấm nút 'Làm bài tập'...", 'info');
-          safeClick(nextMatch.element);
-          try {
-            if (typeof nextMatch.element.click === 'function') nextMatch.element.click();
-          } catch (e) {}
-
-          // Chờ dialog làm bài xuất hiện hoặc bắt được gói tin
-          for (let j = 0; j < 48; j++) {
-            await sleep(250);
-            const captured = getCapturedExamData();
-            if (captured) {
-              const compact = buildCompactPromptPayload(captured);
-              logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
-              return { success: true, opened: true, questions: compact };
-            }
-            const dialog = getActiveExamDialog();
-            if (dialog) {
-              logMessage('🎉 Cửa sổ làm bài tập đã mở thành công!', 'success');
-              const extracted = extractQuestions();
-              return { success: true, opened: true, questions: extracted.questions };
-            }
-          }
-          return { success: true, opened: true };
-        }
-      }
-      return { success: true, opened: false, message: "Đã mở màn hình bài tập. Hãy bấm 'Làm bài tập' trên trang." };
-    }
-
-    return { success: false, message: 'Không thể kích hoạt bài tập.' };
+    return { success: false, message: "Không tìm thấy nút 'Làm bài tập' hoặc 'Bài tập AI' trên trang." };
   }
 
   /**
@@ -828,26 +1026,49 @@
       if (!answerValue) {
         logMessage(`[WARN] Không có đáp án cho câu ${questionIndex}, bỏ qua.`, 'warn');
       } else {
-        // Phân loại câu hỏi theo thứ tự ưu tiên của test_solver.py:
-        // 1. True/False blocks: Phải chứa các button 'Đúng' và 'Sai'
-        const trueFalseBlocks = Array.from(
-          dialog.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
-        ).filter((el) => {
-          if (!safeIsVisible(el)) return false;
-          const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
-          return btns.includes('Đúng') && btns.includes('Sai');
-        });
+        // Chờ ít nhất 1 phần tử tương tác của câu hỏi xuất hiện (True/False, Textarea, Input, ContentEditable, Options)
+        let trueFalseBlocks = [];
+        let textareaEl = null;
+        let inputEls = [];
+        let contentEditableEl = null;
+        let optionEls = [];
 
-        const textareaEl = dialog.querySelector('textarea');
-        const inputEls = Array.from(
-          dialog.querySelectorAll("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])")
-        ).filter(safeIsVisible);
+        for (let wait = 0; wait < 15; wait++) {
+          trueFalseBlocks = Array.from(
+            dialog.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
+          ).filter((el) => {
+            if (!safeIsVisible(el)) return false;
+            const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+            return btns.includes('Đúng') && btns.includes('Sai');
+          });
 
-        const optionEls = Array.from(
-          dialog.querySelectorAll(
-            "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
-          )
-        ).filter(safeIsVisible);
+          textareaEl = dialog.querySelector('textarea');
+          if (textareaEl && !safeIsVisible(textareaEl)) textareaEl = null;
+
+          inputEls = Array.from(
+            dialog.querySelectorAll("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])")
+          ).filter(safeIsVisible);
+
+          contentEditableEl = dialog.querySelector('[contenteditable="true"], [role="textbox"]');
+          if (contentEditableEl && !safeIsVisible(contentEditableEl)) contentEditableEl = null;
+
+          optionEls = Array.from(
+            dialog.querySelectorAll(
+              "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
+            )
+          ).filter(safeIsVisible);
+
+          if (
+            trueFalseBlocks.length > 0 ||
+            textareaEl ||
+            inputEls.length > 0 ||
+            contentEditableEl ||
+            optionEls.length > 0
+          ) {
+            break;
+          }
+          await sleep(200);
+        }
 
         if (trueFalseBlocks.length > 0) {
           const tfAnswers = parseTrueFalseAnswers(answerValue, trueFalseBlocks.length);
@@ -861,7 +1082,7 @@
             if (btn) safeClick(btn);
           }
           filledCount++;
-        } else if (textareaEl && safeIsVisible(textareaEl)) {
+        } else if (textareaEl) {
           logMessage(`[INFO] Câu ${questionIndex}: điền tự luận`, 'info');
           setNativeValue(textareaEl, answerValue);
           filledCount++;
@@ -884,20 +1105,13 @@
             }
           }
           filledCount++;
+        } else if (contentEditableEl) {
+          logMessage(`[INFO] Câu ${questionIndex}: điền vùng nhập văn bản (contenteditable)`, 'info');
+          setNativeValue(contentEditableEl, answerValue);
+          filledCount++;
         } else {
           // Trắc nghiệm nhiều lựa chọn
           let currentOptionEls = optionEls;
-          if (currentOptionEls.length === 0) {
-            for (let wait = 0; wait < 15; wait++) {
-              await sleep(200);
-              currentOptionEls = Array.from(
-                dialog.querySelectorAll(
-                  "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
-                )
-              ).filter(safeIsVisible);
-              if (currentOptionEls.length > 0) break;
-            }
-          }
 
           if (currentOptionEls.length === 0) {
             logMessage(`[WARN] Câu ${questionIndex}: không tìm thấy lựa chọn đáp án.`, 'warn');
@@ -1047,6 +1261,16 @@
     }
 
     logMessage(`🎉 Hoàn tất! Đã điền xong ${filledCount} câu trong bài tập.`, 'success');
+
+    // Dọn dẹp cache đề đã nộp và thông báo cho Popup cập nhật UI
+    currentCapturedExamData = null;
+    try {
+      sessionStorage.removeItem('__EDUX_LAST_EXAM_DATA__');
+      sessionStorage.removeItem('__EDUX_LAST_EXAM_URL__');
+      chrome.storage.local.remove('lastExamData');
+      chrome.runtime.sendMessage({ type: 'EXAM_SUBMITTED' });
+    } catch (e) {}
+
     return { success: true, filledCount };
   }
 
@@ -1105,6 +1329,14 @@
         setNativeValue(input, targetAns);
         filledCount++;
         logMessage(`✓ Câu ${qNum}: đã điền ô trống`, 'success');
+        return;
+      }
+
+      const contentEditable = container.querySelector('[contenteditable="true"], [role="textbox"]');
+      if (contentEditable && safeIsVisible(contentEditable)) {
+        setNativeValue(contentEditable, targetAns);
+        filledCount++;
+        logMessage(`✓ Câu ${qNum}: đã điền vùng nhập văn bản`, 'success');
         return;
       }
 

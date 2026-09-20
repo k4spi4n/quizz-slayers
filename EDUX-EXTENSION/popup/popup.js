@@ -128,12 +128,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         data.exam_data?.multiple_choice?.length ||
         '?';
       UI.examInfoBox.classList.add('active');
+      if (UI.examStatusDot) UI.examStatusDot.style.display = 'block';
+      UI.examInfoText.style.display = 'block';
       UI.examInfoText.textContent = `🎯 ${title} (${qCount} câu)`;
       UI.examInfoText.title = title;
+      if (UI.btnStartExercise) {
+        UI.btnStartExercise.style.width = 'auto';
+        UI.btnStartExercise.innerHTML = '<span>🚀</span> Mở bài';
+      }
     } else {
       UI.examInfoBox.classList.remove('active');
-      UI.examInfoText.textContent = "Chưa bắt được đề. Mở hoặc bấm 'Làm bài tập'.";
+      if (UI.examStatusDot) UI.examStatusDot.style.display = 'none';
+      UI.examInfoText.style.display = 'none';
+      UI.examInfoText.textContent = '';
       UI.examInfoText.title = '';
+      if (UI.btnStartExercise) {
+        UI.btnStartExercise.style.width = '100%';
+        UI.btnStartExercise.style.justifyContent = 'center';
+        UI.btnStartExercise.innerHTML = '<span>🚀</span> Mở bài tập';
+      }
     }
   }
 
@@ -754,9 +767,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     UI.retryCount.textContent = settings.slideStats.retries || 0;
   }
 
-  if (settings.lastExamData) {
-    updateExamInfoUI(settings.lastExamData);
-  }
+  // Khởi tạo trạng thái ban đầu: chỉ hiển thị nút "Mở bài tập"
+  updateExamInfoUI(null);
 
   // Check state from content script on popup open
   const activeTab = await getActiveTab();
@@ -776,8 +788,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           UI.btnStopSlide.classList.remove('hidden');
           setStatus('Đang giải Slide...', 'running');
         }
-        if (response.examData) {
+        if (response.isExamOpen && response.examData) {
           updateExamInfoUI(response.examData);
+        } else {
+          updateExamInfoUI(null);
+          chrome.storage.local.remove('lastExamData');
         }
       }
     } catch (e) {
@@ -798,6 +813,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else if (msg.type === 'EXAM_DATA_READY') {
       updateExamInfoUI(msg.payload);
       addLog(UI.testLog, '📡 Đã bắt được đề bài tập từ hệ thống!', 'success');
+    } else if (msg.type === 'EXAM_SUBMITTED') {
+      updateExamInfoUI(null);
+      chrome.storage.local.remove('lastExamData');
     } else if (msg.type === 'SLIDE_STATUS_CHANGE') {
       if (msg.isRunning) {
         UI.btnStartSlide.classList.add('hidden');
@@ -1328,6 +1346,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (fillRes && fillRes.success) {
           setStepperState(4); // Hoàn tất cả 3 bước
           addLog(UI.testLog, `🎉 Hoàn tất! Đã điền xong ${fillRes.filledCount} câu bài tập.`, 'success');
+          // Sau khi nộp thành công đề: ẩn tiêu đề, chỉ còn nút "Mở bài"
+          updateExamInfoUI(null);
+          await chrome.storage.local.remove('lastExamData');
         } else {
           setStepperState(0);
           addLog(UI.testLog, `Thông báo: ${fillRes?.message || 'Không thể điền bài.'}`, 'warn');
@@ -1440,6 +1461,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         if (res && res.success) {
           addLog(UI.testLog, `Hoàn tất! Đã điền ${res.filledCount} câu bài tập.`, 'success');
+          // Sau khi nộp thành công đề: ẩn tiêu đề, chỉ còn nút "Mở bài"
+          updateExamInfoUI(null);
+          await chrome.storage.local.remove('lastExamData');
         } else {
           addLog(UI.testLog, `Thông báo: ${res?.message || 'Không thể điền bài tập.'}`, 'warn');
         }
