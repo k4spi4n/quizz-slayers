@@ -93,11 +93,46 @@
 
   /**
    * Mô phỏng parse_true_false_answers() từ EDUX-TEST-SOLVER
+   * Hỗ trợ mảng boolean, chuỗi token tiếng Việt/Anh, số 1/0, JSON array/object
    */
   function parseTrueFalseAnswers(answerValue, expectedCount) {
-    const normalized = normalizeText(answerValue);
+    if (Array.isArray(answerValue)) {
+      const parsed = answerValue.slice(0, expectedCount).map((v) => {
+        if (typeof v === 'boolean') return v;
+        const s = normalizeText(String(v));
+        return ['đúng', 'd', 'đ', 'true', 't', '1'].includes(s);
+      });
+      return parsed;
+    }
+
+    if (typeof answerValue === 'object' && answerValue !== null) {
+      const vals = Object.entries(answerValue)
+        .sort(([k1], [k2]) => {
+          const n1 = parseInt(k1, 10);
+          const n2 = parseInt(k2, 10);
+          if (!isNaN(n1) && !isNaN(n2)) return n1 - n2;
+          return k1.localeCompare(k2);
+        })
+        .map(([_, v]) => v);
+      return parseTrueFalseAnswers(vals, expectedCount);
+    }
+
+    const raw = String(answerValue || '').trim();
+
+    // 1. Thử JSON.parse nếu chuỗi bắt đầu bằng [ hoặc {
+    if ((raw.startsWith('[') && raw.endsWith(']')) || (raw.startsWith('{') && raw.endsWith('}'))) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
+          return parseTrueFalseAnswers(parsed, expectedCount);
+        }
+      } catch (e) {}
+    }
+
+    const normalized = normalizeText(raw);
     const result = [];
 
+    // 2. Thử khớp dạng "1. Đúng, 2. Sai" hoặc "1: Đúng, 2: Sai"
     TF_TOKEN_RE.lastIndex = 0;
     let match;
     const regexMatches = [];
@@ -112,6 +147,7 @@
       return result;
     }
 
+    // 3. Quét tất cả token từ ngữ hoặc số
     const tokens = normalized.match(/[a-zà-ỹ]+|\d/g) || [];
     for (const token of tokens) {
       if (['đúng', 'd', 'đ', 'true', 't', '1'].includes(token)) {
@@ -119,7 +155,7 @@
       } else if (['sai', 's', 'false', 'f', '0'].includes(token)) {
         result.push(false);
       }
-      if (result.length >= expectedCount) break;
+      if (expectedCount && result.length >= expectedCount) break;
     }
     return result;
   }
@@ -127,9 +163,30 @@
   /**
    * Mô phỏng normalize_answers_payload() từ EDUX-TEST-SOLVER
    * Hỗ trợ đa dạng trường số câu (so_cau, cau, question, id, stt, q) và đáp án (dap_an, answer, ans, tra_loi, da, a)
+   * Hỗ trợ cả đáp án dạng mảng [true, false] hoặc object {"1": true, "2": false}
    */
   function normalizeAnswersPayload(data) {
     const answers = {};
+
+    function formatAnsValue(val) {
+      if (val == null) return '';
+      if (Array.isArray(val)) {
+        return val.map((x) => String(x)).join(', ');
+      }
+      if (typeof val === 'object' && val !== null) {
+        return Object.entries(val)
+          .sort(([k1], [k2]) => {
+            const n1 = parseInt(k1, 10);
+            const n2 = parseInt(k2, 10);
+            if (!isNaN(n1) && !isNaN(n2)) return n1 - n2;
+            return k1.localeCompare(k2);
+          })
+          .map(([_, v]) => String(v))
+          .join(', ');
+      }
+      return String(val).trim();
+    }
+
     if (Array.isArray(data)) {
       data.forEach((item) => {
         if (typeof item !== 'object' || item === null) return;
@@ -155,21 +212,13 @@
         if (idx == null || ans == null) return;
         const idxInt = parseInt(idx, 10);
         if (isNaN(idxInt)) return;
-        if (Array.isArray(ans)) {
-          answers[idxInt] = ans.map((x) => String(x)).join(', ');
-        } else {
-          answers[idxInt] = String(ans).trim();
-        }
+        answers[idxInt] = formatAnsValue(ans);
       });
     } else if (typeof data === 'object' && data !== null) {
       Object.entries(data).forEach(([key, value]) => {
         const idxInt = parseInt(key, 10);
         if (isNaN(idxInt)) return;
-        if (Array.isArray(value)) {
-          answers[idxInt] = value.map((x) => String(x)).join(', ');
-        } else {
-          answers[idxInt] = String(value).trim();
-        }
+        answers[idxInt] = formatAnsValue(value);
       });
     }
     return answers;
@@ -383,6 +432,72 @@
 
       return { node, letter, text };
     });
+  }
+
+  /**
+   * Tìm danh sách các khối mệnh đề Đúng/Sai thực sự (loại trừ hoàn toàn container cha)
+   * Mỗi block hợp lệ phải chứa đúng 1 nút 'Đúng' và 1 nút 'Sai'
+   */
+  function findTrueFalseBlocks(root) {
+    if (!root) return [];
+
+    // 1. Tìm tất cả button có nhãn 'Đúng' hoặc 'Sai' đang hiển thị
+    const allButtons = Array.from(root.querySelectorAll('button')).filter((b) => {
+      const text = (b.textContent || '').trim();
+      return safeIsVisible(b) && (text === 'Đúng' || text === 'Sai');
+    });
+
+    if (allButtons.length < 2) return [];
+
+    // 2. Tìm khối bọc trực tiếp của từng cặp nút
+    const candidateRows = new Set();
+    for (const btn of allButtons) {
+      const row = btn.closest(
+        'div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, ' +
+        'div.border.border-gray-200, ' +
+        'div.border.rounded-lg, ' +
+        'div.border, ' +
+        'div[class*="bg-gray"]'
+      );
+      if (row && safeIsVisible(row)) {
+        candidateRows.add(row);
+      }
+    }
+
+    // 3. Lọc chỉ lấy các phần tử chứa đúng 1 nút 'Đúng' và 1 nút 'Sai'
+    let blocks = Array.from(candidateRows).filter((row) => {
+      const btns = Array.from(row.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+      const dungCount = btns.filter((t) => t === 'Đúng').length;
+      const saiCount = btns.filter((t) => t === 'Sai').length;
+      return dungCount === 1 && saiCount === 1;
+    });
+
+    // 4. Nếu không tìm thấy qua candidateRows (ví dụ layout tùy biến), quét từ các div con
+    if (blocks.length === 0) {
+      const parentDivs = Array.from(root.querySelectorAll('div')).filter((d) => {
+        if (!safeIsVisible(d)) return false;
+        const btns = Array.from(d.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+        const dungCount = btns.filter((t) => t === 'Đúng').length;
+        const saiCount = btns.filter((t) => t === 'Sai').length;
+        return dungCount === 1 && saiCount === 1;
+      });
+      blocks = parentDivs;
+    }
+
+    // 5. Loại bỏ các phần tử cha nếu còn bao bọc phần tử con khác trong danh sách (chỉ giữ leaf blocks)
+    blocks = blocks.filter((row) => {
+      return !blocks.some((other) => other !== row && row.contains(other));
+    });
+
+    // 6. Sắp xếp các block theo thứ tự xuất hiện trên trang (top-down)
+    blocks.sort((a, b) => {
+      const pos = a.compareDocumentPosition(b);
+      if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+      if (pos & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+      return 0;
+    });
+
+    return blocks;
   }
 
   /**
@@ -601,6 +716,10 @@
   /**
    * Mô phỏng build_compact_prompt_payload() từ EDUX-TEST-SOLVER
    */
+  /**
+   * Mô phỏng build_compact_prompt_payload() từ EDUX-TEST-SOLVER
+   * Chuẩn hóa gán ID tuần tự liên tục (1..N), tránh va chạm ID giữa các phần trắc nghiệm và đúng/sai
+   */
   function buildCompactPromptPayload(payloadJson) {
     const data = (payloadJson && payloadJson.data) || (payloadJson || {});
     const examData = data.exam_data || (typeof data === 'object' && !data.multiple_choice ? {} : data);
@@ -614,42 +733,104 @@
       true_false: []
     };
 
+    let nextFallbackIndex = 1;
+    const usedIds = new Set();
+
+    function resolveQuestionId(item) {
+      const rawId = item?.id ?? item?.so_cau ?? item?.question_id ?? item?.stt ?? item?.order;
+      const parsed = parseInt(rawId, 10);
+      if (!isNaN(parsed) && parsed > 0 && !usedIds.has(parsed)) {
+        usedIds.add(parsed);
+        if (parsed >= nextFallbackIndex) {
+          nextFallbackIndex = parsed + 1;
+        }
+        return parsed;
+      }
+      while (usedIds.has(nextFallbackIndex)) {
+        nextFallbackIndex++;
+      }
+      const assigned = nextFallbackIndex;
+      usedIds.add(assigned);
+      nextFallbackIndex++;
+      return assigned;
+    }
+
+    // 1. Trắc nghiệm (multiple_choice)
     for (const item of examData.multiple_choice || (Array.isArray(data) ? data : []) || []) {
-      if (item && (item.question || item.options)) {
+      if (item && (item.question || item.options || item.title || item.content)) {
         compact.multiple_choice.push({
-          id: item.id || item.so_cau,
-          question: item.question,
-          options: item.options
+          id: resolveQuestionId(item),
+          question: item.question || item.title || item.content || '',
+          options: item.options || item.choices || {}
         });
       }
     }
 
+    // 2. Điền khuyết (fill_in_blank)
     for (const item of examData.fill_in_blank || []) {
-      if (item && item.question) {
+      if (item && (item.question || item.title || item.content)) {
         compact.fill_in_blank.push({
-          id: item.id || item.so_cau,
-          question: item.question
+          id: resolveQuestionId(item),
+          question: item.question || item.title || item.content || ''
         });
       }
     }
 
+    // 3. Tự luận (essay)
     for (const item of examData.essay || []) {
-      if (item && item.question) {
+      if (item && (item.question || item.title || item.content)) {
         compact.essay.push({
-          id: item.id || item.so_cau,
-          question: item.question
+          id: resolveQuestionId(item),
+          question: item.question || item.title || item.content || ''
         });
       }
     }
 
+    // 4. Đúng / Sai (true_false)
     for (const item of examData.true_false || []) {
-      if (item && (item.question || item.statements)) {
-        const statements = (item.statements || []).map((s) => (typeof s === 'string' ? s : s?.text || ''));
+      if (item && (item.question || item.statements || item.title || item.content || item.items)) {
+        const rawStatements = item.statements || item.items || item.sub_questions || [];
+        const statements = rawStatements.map((s) => {
+          if (typeof s === 'string') return s;
+          return s?.text || s?.statement || s?.content || s?.title || '';
+        });
         compact.true_false.push({
-          id: item.id || item.so_cau,
-          question: item.question,
+          id: resolveQuestionId(item),
+          question: item.question || item.title || item.content || '',
           statements
         });
+      }
+    }
+
+    // 5. Mảng câu hỏi tổng hợp (examData.questions) nếu có
+    if (Array.isArray(examData.questions) && compact.multiple_choice.length === 0 && compact.true_false.length === 0) {
+      for (const item of examData.questions) {
+        const qType = (item.question_type || item.type || '').toLowerCase();
+        if (qType.includes('choice') || item.options || item.choices) {
+          compact.multiple_choice.push({
+            id: resolveQuestionId(item),
+            question: item.question || item.question_text || item.title || '',
+            options: item.options || item.choices || {}
+          });
+        } else if (qType.includes('true') || qType.includes('false') || item.statements || item.items) {
+          const rawStatements = item.statements || item.items || item.sub_questions || [];
+          const statements = rawStatements.map((s) => (typeof s === 'string' ? s : s?.text || s?.statement || ''));
+          compact.true_false.push({
+            id: resolveQuestionId(item),
+            question: item.question || item.question_text || item.title || '',
+            statements
+          });
+        } else if (qType.includes('essay')) {
+          compact.essay.push({
+            id: resolveQuestionId(item),
+            question: item.question || item.question_text || item.title || ''
+          });
+        } else {
+          compact.fill_in_blank.push({
+            id: resolveQuestionId(item),
+            question: item.question || item.question_text || item.title || ''
+          });
+        }
       }
     }
 
@@ -729,20 +910,16 @@
         if (qNum === null) return;
 
         let container =
-          labelEl.closest('div.border, div.rounded-xl, div.shadow, section, article') || labelEl.parentElement;
+          labelEl.closest('div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article') ||
+          labelEl.parentElement?.parentElement?.parentElement ||
+          labelEl.parentElement;
         if (!container) return;
 
         const questionText =
           (container.querySelector('div.prose p, p.text-gray-800') || {}).textContent?.trim() ||
           labelEl.textContent.trim();
 
-        const tfBlocks = Array.from(
-          container.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
-        ).filter((el) => {
-          if (!safeIsVisible(el)) return false;
-          const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
-          return btns.includes('Đúng') && btns.includes('Sai');
-        });
+        const tfBlocks = findTrueFalseBlocks(container);
 
         const textarea = container.querySelector('textarea');
         const input = container.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])");
@@ -753,7 +930,10 @@
         ).filter(safeIsVisible);
 
         if (tfBlocks.length > 0) {
-          const statements = tfBlocks.map((b) => (b.querySelector('p, span') || b).textContent?.trim() || '');
+          const statements = tfBlocks.map((b) => {
+            const textEl = b.querySelector('div.prose p, p, div.text-sm');
+            return (textEl || b).textContent?.trim().replace(/^\d+\.\s*/, '') || '';
+          });
           compact.true_false.push({ id: qNum, question: questionText, statements });
         } else if (textarea) {
           compact.essay.push({ id: qNum, question: questionText });
@@ -1034,13 +1214,7 @@
         let optionEls = [];
 
         for (let wait = 0; wait < 15; wait++) {
-          trueFalseBlocks = Array.from(
-            dialog.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
-          ).filter((el) => {
-            if (!safeIsVisible(el)) return false;
-            const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
-            return btns.includes('Đúng') && btns.includes('Sai');
-          });
+          trueFalseBlocks = findTrueFalseBlocks(dialog);
 
           textareaEl = dialog.querySelector('textarea');
           if (textareaEl && !safeIsVisible(textareaEl)) textareaEl = null;
@@ -1072,14 +1246,25 @@
 
         if (trueFalseBlocks.length > 0) {
           const tfAnswers = parseTrueFalseAnswers(answerValue, trueFalseBlocks.length);
-          logMessage(`[INFO] Câu ${questionIndex}: điền Đúng/Sai (${tfAnswers.length} mệnh đề)`, 'info');
+          logMessage(`[INFO] Câu ${questionIndex}: điền Đúng/Sai (${tfAnswers.length}/${trueFalseBlocks.length} mệnh đề)`, 'info');
           for (let i = 0; i < trueFalseBlocks.length; i++) {
             const block = trueFalseBlocks[i];
-            const targetName = (i < tfAnswers.length ? tfAnswers[i] : true) ? 'Đúng' : 'Sai';
+            const shouldBeTrue = i < tfAnswers.length ? tfAnswers[i] : true;
+            const targetName = shouldBeTrue ? 'Đúng' : 'Sai';
             const btn = Array.from(block.querySelectorAll('button')).find(
               (b) => (b.textContent || '').trim() === targetName
             );
-            if (btn) safeClick(btn);
+            if (btn) {
+              const isAlreadyActive =
+                btn.classList.contains('bg-green-500') ||
+                btn.classList.contains('bg-red-500') ||
+                btn.getAttribute('data-state') === 'active' ||
+                btn.getAttribute('aria-pressed') === 'true';
+              if (!isAlreadyActive) {
+                safeClick(btn);
+                await sleep(120);
+              }
+            }
           }
           filledCount++;
         } else if (textareaEl) {
@@ -1171,7 +1356,9 @@
       await sleep(250);
 
       // Kiểm tra nút "Nộp bài" và "Câu tiếp"
-      const submitBtn = findButtonByText(['Nộp bài'], dialog, true, true);
+      const submitBtn =
+        findButtonByText(['Nộp bài', 'Nộp'], dialog, true, true) ||
+        findButtonByText(['Nộp bài', 'Nộp'], document, true, true);
       const nextBtn = findButtonByText(['Câu tiếp', 'Câu tiếp theo'], dialog, true, true);
 
       // Nếu chỉ có nút Nộp bài hoặc không còn Câu tiếp
@@ -1180,8 +1367,8 @@
           logMessage("🎉 Đã đến câu cuối. Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
           await sleep(500);
-          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
-          if (confirmBtn) {
+          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài'], document, true, true);
+          if (confirmBtn && confirmBtn !== submitBtn) {
             logMessage("✓ Bấm xác nhận nộp bài...", 'info');
             safeClick(confirmBtn);
           }
@@ -1232,15 +1419,44 @@
         }
 
         if (!changed) {
-          const endSubmitBtn = findButtonByText(['Nộp bài'], dialog, true, true);
+          // Khi bấm "Câu tiếp" mà không đổi câu, có thể đã đến câu cuối cùng
+          let endSubmitBtn =
+            findButtonByText(['Nộp bài', 'Nộp'], dialog, true, true) ||
+            findButtonByText(['Nộp bài', 'Nộp'], document, true, true);
+
           if (endSubmitBtn && autoSubmit) {
             logMessage("🎉 Không còn câu tiếp theo. Tự động bấm nút 'Nộp bài'...", 'success');
             safeClick(endSubmitBtn);
             await sleep(500);
-            const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
-            if (confirmBtn) safeClick(confirmBtn);
+            const confirmBtn = findButtonByText(
+              ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'],
+              document,
+              true,
+              true
+            );
+            if (confirmBtn && confirmBtn !== endSubmitBtn) {
+              logMessage("✓ Bấm xác nhận nộp bài...", 'info');
+              safeClick(confirmBtn);
+            }
           } else {
-            logMessage('[WARN] Câu tiếp theo chưa hiển thị kịp hoặc đã đến cuối bài.', 'warn');
+            // Kiểm tra xem sau khi bấm "Câu tiếp" có xuất hiện modal xác nhận nộp bài không
+            let confirmModalBtn = null;
+            for (let c = 0; c < 8; c++) {
+              await sleep(150);
+              confirmModalBtn = findButtonByText(
+                ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'],
+                document,
+                true,
+                true
+              );
+              if (confirmModalBtn && confirmModalBtn !== nextBtn) break;
+            }
+            if (confirmModalBtn && autoSubmit) {
+              logMessage("✓ Đã phát hiện hộp thoại xác nhận nộp bài. Bấm xác nhận...", 'info');
+              safeClick(confirmModalBtn);
+            } else {
+              logMessage('[WARN] Câu tiếp theo chưa hiển thị kịp hoặc đã đến cuối bài.', 'warn');
+            }
           }
           break;
         }
@@ -1249,8 +1465,8 @@
           logMessage("🎉 Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
           await sleep(500);
-          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn'], document, true, true);
-          if (confirmBtn) safeClick(confirmBtn);
+          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'], document, true, true);
+          if (confirmBtn && confirmBtn !== submitBtn) safeClick(confirmBtn);
         }
         break;
       } else {
@@ -1291,16 +1507,12 @@
       if (!targetAns) return;
 
       let container =
-        labelEl.closest('div.border, div.rounded-xl, div.shadow, section, article') || labelEl.parentElement;
+        labelEl.closest('div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article') ||
+        labelEl.parentElement?.parentElement?.parentElement ||
+        labelEl.parentElement;
       if (!container) return;
 
-      const tfBlocks = Array.from(
-        container.querySelectorAll("div.border, div.rounded-lg, div[class*='bg-gray']")
-      ).filter((el) => {
-        if (!safeIsVisible(el)) return false;
-        const btns = Array.from(el.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
-        return btns.includes('Đúng') && btns.includes('Sai');
-      });
+      const tfBlocks = findTrueFalseBlocks(container);
 
       if (tfBlocks.length > 0) {
         const tfAnswers = parseTrueFalseAnswers(targetAns, tfBlocks.length);
