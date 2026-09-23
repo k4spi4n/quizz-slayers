@@ -1,395 +1,781 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EDUX Slayers Control</title>
-  <link rel="stylesheet" href="popup.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div class="app-container">
-    <!-- Header -->
-    <header class="header">
-      <div class="brand">
-        <div class="logo-badge">
-          <img src="../icons/icon48.png" alt="Logo" style="width: 24px; height: 24px; object-fit: contain;">
-        </div>
-        <div>
-          <h1>EDUX Slayers</h1>
-          <span class="version">v2.3.1 • Manifest V3</span>
-        </div>
-      </div>
-      <div class="status-indicator" id="globalStatus">
-        <span class="status-dot"></span>
-        <span class="status-text">Sẵn sàng</span>
-      </div>
-    </header>
-
-    <!-- Navigation Tabs -->
-    <nav class="tabs">
-      <button class="tab-btn active" data-tab="tab-slide">
-        <span class="tab-icon">⚡</span> Slide
-      </button>
-      <button class="tab-btn" data-tab="tab-test">
-        <span class="tab-icon">📝</span> Bài tập
-      </button>
-      <button class="tab-btn" data-tab="tab-scores">
-        <span class="tab-icon">📊</span> Điểm số
-      </button>
-      <button class="tab-btn" data-tab="tab-settings">
-        <span class="tab-icon">⚙️</span> Cài đặt
-      </button>
-    </nav>
-
-    <!-- Tab 1: Slide Solver -->
-    <section id="tab-slide" class="tab-content active">
-      <div class="card card-hero">
-        <div class="card-header">
-          <h3>⚡ Tự động giải Slide</h3>
-          <p class="subtitle">Tự động trả lời câu hỏi tương tác & chuyển trang slide bài giảng</p>
-        </div>
-        
-        <div class="stats-grid">
-          <div class="stat-box">
-            <span class="stat-value" id="slideCount">0</span>
-            <span class="stat-label">Câu đã giải</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EDUX Slayers Control</title>
+    <link rel="stylesheet" href="popup.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Header -->
+      <header class="header">
+        <div class="brand">
+          <div class="logo-badge">
+            <img
+              src="../icons/icon48.png"
+              alt="Logo"
+              style="width: 24px; height: 24px; object-fit: contain"
+            />
           </div>
-          <div class="stat-box">
-            <span class="stat-value" id="retryCount">0</span>
-            <span class="stat-label">Lần thử sai</span>
-          </div>
-        </div>
-
-        <!-- Bộ chọn phương pháp tự động hóa Slide -->
-        <div class="slide-method-selector">
-          <label style="font-size: 11px; font-weight: 700; color: #cbd5e1; margin-bottom: 5px; display: block;">
-            Phương pháp tự động hóa:
-          </label>
-          <div class="segmented-control">
-            <button type="button" class="segmented-btn active" id="btnSlideMethodAi" data-method="ai">
-              <span>🧠 AI Chuẩn xác</span>
-            </button>
-            <button type="button" class="segmented-btn" id="btnSlideMethodBrute" data-method="bruteforce">
-              <span>⚡ Thử sai nhanh</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Chi tiết phương pháp đã chọn -->
-        <div id="slideMethodDesc" style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 8px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 8px;">
-          <span id="slideMethodIcon" style="font-size: 16px;">🧠</span>
-          <div style="flex: 1;">
-            <div id="slideMethodTitle" style="font-size: 11px; font-weight: 700; color: #c7d2fe;">AI Siêu Chuẩn Xác (Độ chính xác 100%)</div>
-            <div id="slideMethodDetail" style="font-size: 10px; color: #94a3b8; margin-top: 2px;">Chờ AI phân tích câu hỏi và click đáp án đúng, ít lần thử sai.</div>
-          </div>
-        </div>
-
-        <div class="action-buttons">
-          <button class="btn btn-primary" id="btnStartSlide">
-            <span>▶️</span> Bắt đầu giải Slide
-          </button>
-          <button class="btn btn-danger hidden" id="btnStopSlide">
-            <span>⏹️</span> Dừng lại
-          </button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h4>📋 Nhật ký hoạt động</h4>
-        <div class="log-box" id="slideLog">
-          <div class="log-entry info">Chưa bắt đầu. Mở trang Slide EDUX và bấm 'Bắt đầu'.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Tab 2: Test Solver (Bài tập - Mô phỏng EDUX-TEST-SOLVER) -->
-    <section id="tab-test" class="tab-content">
-      <!-- Card 1: Exam Status & Session Header -->
-      <div class="card card-hero">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
           <div>
-            <h3>📝 Giải Bài Tập (Test Solver)</h3>
-            <p class="subtitle">Bắt đề bài tập, AI giải & tự động điền đáp án</p>
-          </div>
-          <button class="btn btn-secondary btn-sm" id="btnNewSession" title="Bắt đầu phiên làm việc mới (xóa trắng đáp án cũ, reset trạng thái)" style="width: auto; padding: 4px 8px; font-size: 11px;">
-            <span>🔄</span> Phiên mới
-          </button>
-        </div>
-
-        <!-- Trạng thái bắt đề bài tập -->
-        <div class="exercise-info-box" id="examInfoBox">
-          <span class="exercise-status-dot" id="examStatusDot" style="display: none;"></span>
-          <span id="examInfoText" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: none;"></span>
-          <button class="btn btn-secondary btn-xs" id="btnStartExercise" title="Tìm và bấm nút 'Làm bài tập' trên trang" style="width: 100%; justify-content: center; padding: 4px 8px; font-size: 11px; white-space: nowrap;">
-            <span>🚀</span> Mở bài tập
-          </button>
-        </div>
-
-        <!-- Segmented Mode Switcher -->
-        <div class="segmented-control">
-          <button type="button" class="segmented-btn active" id="btnModeAuto" data-mode="auto">
-            <span>⚡ Tự động (1-Click AI)</span>
-          </button>
-          <button type="button" class="segmented-btn" id="btnModeManual" data-mode="manual">
-            <span>📋 Thủ công (Web AI)</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Mode 1: ⚡ Tự động (1-Click AI) -->
-      <div id="testAutoSection" class="mode-section active">
-        <div class="card">
-          <!-- Stepper: 3-step pipeline tracker -->
-          <div class="stepper" id="autoStepper">
-            <div class="step-item" id="step1">
-              <div class="step-circle">1</div>
-              <div class="step-text">Bắt đề</div>
-            </div>
-            <div class="step-line" id="stepLine1"></div>
-            <div class="step-item" id="step2">
-              <div class="step-circle">2</div>
-              <div class="step-text">AI giải</div>
-            </div>
-            <div class="step-line" id="stepLine2"></div>
-            <div class="step-item" id="step3">
-              <div class="step-circle">3</div>
-              <div class="step-text">Điền & Nộp</div>
-            </div>
-          </div>
-
-          <!-- Hero CTA Button -->
-          <button class="btn btn-primary btn-hero-solve" id="btnSolveAI" title="Tự động mở bài, gửi đề cho AI giải, điền và nộp bài">
-            <span class="hero-btn-icon">⚡</span>
-            <div class="hero-btn-content">
-              <span class="hero-btn-title">GIẢI BÀI TẬP BẰNG AI (1-CLICK)</span>
-              <span class="hero-btn-subtitle">Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài</span>
-            </div>
-          </button>
-
-          <!-- Model Info Strip -->
-          <div class="model-info-strip">
-            <div class="model-badge">
-              <span class="model-badge-icon">🤖</span>
-              <span id="activeModelLabel">Model: gemini-2.0-flash</span>
-            </div>
-            <button class="btn-link" id="btnGoToSettings" style="font-size: 11px; color: #a5b4fc; background: none; border: none; cursor: pointer; text-decoration: underline;">
-              ⚙️ Đổi Model
-            </button>
-          </div>
-
-          <!-- Collapsible AI Answers Preview -->
-          <div id="autoAnswersContainer" style="display: none; margin-top: 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 11px; font-weight: 600; color: #34d399;">✓ Đáp án AI đã tạo:</span>
-              <button class="btn-link" id="btnHideAutoAnswers" style="font-size: 11px; color: #94a3b8; background: none; border: none; cursor: pointer;">Đóng ✕</button>
-            </div>
-            <textarea id="autoAnswersBox" rows="3" readonly style="font-size: 11px; color: #cbd5e1; font-family: monospace;"></textarea>
-          </div>
-          <button class="btn-link" id="btnToggleAutoAnswers" style="display: none; font-size: 11px; color: #38bdf8; background: none; border: none; cursor: pointer; text-align: left; padding: 0;">
-            👁️ Xem đáp án vừa giải
-          </button>
-        </div>
-      </div>
-
-      <!-- Mode 2: 📋 Thủ công (Web AI / Dán đáp án ngoài) -->
-      <div id="testManualSection" class="mode-section" style="display: none;">
-        <!-- Bước 1: Lấy đề -->
-        <div class="card">
-          <div class="step-header">
-            <span class="step-badge">Bước 1</span>
-            <strong>Lấy đề bài tập</strong>
-          </div>
-          <div class="action-grid">
-            <button class="btn btn-secondary" id="btnExtractQuestions" title="Trích xuất đề và copy prompt AI vào clipboard">
-              <span>📋</span> Copy Prompt đề
-            </button>
-            <button class="btn btn-secondary" id="btnTogglePrompt" title="Xem trước nội dung Prompt">
-              <span>👁️</span> Xem đề
-            </button>
-          </div>
-
-          <!-- Khung xem trước Prompt (Collapsible) -->
-          <div id="promptPreviewCard" style="display: none; flex-direction: column; gap: 6px; margin-top: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label style="font-size: 11px; color: #a5b4fc;">Nội dung Prompt đề:</label>
-              <button class="btn-link" id="btnHidePrompt" style="font-size: 11px; background: none; border: none; color: #94a3b8; cursor: pointer;">Đóng ✕</button>
-            </div>
-            <textarea id="promptPreviewBox" rows="4" readonly style="font-size: 11px; color: #cbd5e1; font-family: monospace;"></textarea>
+            <h1>EDUX Slayers</h1>
+            <span class="version">v2.3.1 • Manifest V3</span>
           </div>
         </div>
+        <div class="status-indicator" id="globalStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Sẵn sàng</span>
+        </div>
+      </header>
 
-        <!-- Bước 2 & 3: Dán đáp án & Điền bài tập -->
-        <div class="card">
-          <div class="step-header">
-            <span class="step-badge">Bước 2</span>
-            <strong>Dán đáp án từ AI</strong>
+      <!-- Navigation Tabs -->
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="tab-slide">
+          <span class="tab-icon">⚡</span> Slide
+        </button>
+        <button class="tab-btn" data-tab="tab-test">
+          <span class="tab-icon">📝</span> Bài tập
+        </button>
+        <button class="tab-btn" data-tab="tab-scores">
+          <span class="tab-icon">📊</span> Điểm số
+        </button>
+        <button class="tab-btn" data-tab="tab-settings">
+          <span class="tab-icon">⚙️</span> Cài đặt
+        </button>
+      </nav>
+
+      <!-- Tab 1: Slide Solver -->
+      <section id="tab-slide" class="tab-content active">
+        <div class="card card-hero">
+          <div class="card-header">
+            <h3>⚡ Tự động giải Slide</h3>
+            <p class="subtitle">
+              Tự động trả lời câu hỏi tương tác & chuyển trang slide bài giảng
+            </p>
           </div>
-          <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 11px; color: var(--text-muted);">JSONL / JSON / "1. A, 2. B":</span>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn-link" id="btnPasteClipboard" style="font-size: 11px; background: none; border: none; color: #34d399; cursor: pointer; font-weight: 600;">📥 Dán Clipboard</button>
-                <button class="btn-link" id="btnClearAnswers" style="font-size: 11px; background: none; border: none; color: #f87171; cursor: pointer; font-weight: 600;" title="Xóa trắng ô đáp án">🗑️ Xóa</button>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-value" id="slideCount">0</span>
+              <span class="stat-label">Câu đã giải</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-value" id="retryCount">0</span>
+              <span class="stat-label">Lần thử sai</span>
+            </div>
+          </div>
+
+          <!-- Bộ chọn phương pháp tự động hóa Slide -->
+          <div class="slide-method-selector">
+            <label
+              style="
+                font-size: 11px;
+                font-weight: 700;
+                color: #cbd5e1;
+                margin-bottom: 5px;
+                display: block;
+              "
+            >
+              Phương pháp tự động hóa:
+            </label>
+            <div class="segmented-control">
+              <button
+                type="button"
+                class="segmented-btn active"
+                id="btnSlideMethodAi"
+                data-method="ai"
+              >
+                <span>🧠 AI Chuẩn xác</span>
+              </button>
+              <button
+                type="button"
+                class="segmented-btn"
+                id="btnSlideMethodBrute"
+                data-method="bruteforce"
+              >
+                <span>⚡ Thử sai nhanh</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Chi tiết phương pháp đã chọn -->
+          <div
+            id="slideMethodDesc"
+            style="
+              background: rgba(99, 102, 241, 0.12);
+              border: 1px solid rgba(99, 102, 241, 0.3);
+              border-radius: 8px;
+              padding: 8px 10px;
+              display: flex;
+              align-items: flex-start;
+              gap: 8px;
+            "
+          >
+            <span id="slideMethodIcon" style="font-size: 16px">🧠</span>
+            <div style="flex: 1">
+              <div
+                id="slideMethodTitle"
+                style="font-size: 11px; font-weight: 700; color: #c7d2fe"
+              >
+                AI Siêu Chuẩn Xác (Độ chính xác 100%)
+              </div>
+              <div
+                id="slideMethodDetail"
+                style="font-size: 10px; color: #94a3b8; margin-top: 2px"
+              >
+                Chờ AI phân tích câu hỏi và click đáp án đúng, ít lần thử sai.
               </div>
             </div>
-            <textarea id="answerInput" placeholder="Dán kết quả AI vào đây...&#10;Hỗ trợ:&#10;- JSONL / JSON: [{&quot;so_cau&quot;: 1, &quot;dap_an&quot;: &quot;A&quot;}, ...]&#10;- Dạng chữ: 1. A&#10;2. C&#10;3. Đúng, Sai..." rows="4"></textarea>
           </div>
 
-          <div class="step-header" style="margin-top: 4px;">
-            <span class="step-badge">Bước 3</span>
-            <strong>Điền bài tập</strong>
-          </div>
-          <button class="btn btn-success" id="btnFillAnswers">
-            <span>✨</span> Bắt đầu điền bài tập
-          </button>
-        </div>
-      </div>
-
-      <!-- Shared Log Box -->
-      <div class="card">
-        <h4>📊 Nhật ký bài tập</h4>
-        <div class="log-box" id="testLog">
-          <div class="log-entry info">Sẵn sàng. Mở bài tập trên EDUX và chọn thao tác.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Tab 3: Exercise Scores -->
-    <section id="tab-scores" class="tab-content">
-      <div class="card card-hero">
-        <div class="card-header">
-          <h3>📊 Bảng Điểm & Tiến Độ Bài Tập</h3>
-          <p class="subtitle" id="scoresSubjectTitle">Đang nhận diện môn học...</p>
-        </div>
-
-        <div class="stats-grid">
-          <div class="stat-box">
-            <span class="stat-value" id="scoresCompleted">0/0</span>
-            <span class="stat-label">Bài tập đã nộp</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-value" id="scoresHighest">--</span>
-            <span class="stat-label">Điểm cao nhất</span>
-          </div>
-        </div>
-
-        <div id="scoresAlertBox" class="log-entry warn" style="margin-top: 10px; display: none;"></div>
-
-        <div class="action-buttons" style="margin-top: 10px;">
-          <button class="btn btn-secondary" id="btnRefreshScores" style="width: 100%;">
-            <span>🔄</span> Quét lại điểm số môn học
-          </button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h4>📋 Chi tiết từng bài tập</h4>
-        <div class="log-box" id="scoresList" style="max-height: 230px; overflow-y: auto;">
-          <div class="log-entry info">Chưa tải dữ liệu. Mở trang môn học EDUX và bấm 'Quét lại'.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Tab 4: Settings -->
-    <section id="tab-settings" class="tab-content">
-      <div class="card">
-        <h3>⚙️ Cấu hình hoạt động</h3>
-
-        <div class="setting-item">
-          <div>
-            <label class="setting-label">Thời gian delay giữa các bước (ms)</label>
-            <span class="setting-desc">Tốc độ cao (khuyên dùng: 50ms - 100ms)</span>
-          </div>
-          <input type="number" id="settingDelay" value="100" min="25" max="3000" step="25">
-        </div>
-
-        <div class="setting-item">
-          <div>
-            <label class="setting-label">Tự động chuyển slide (Next Page)</label>
-            <span class="setting-desc">Tự click nút Trang sau khi giải xong slide</span>
-          </div>
-          <input type="checkbox" id="settingAutoNext" checked>
-        </div>
-
-        <div class="setting-item">
-          <div>
-            <label class="setting-label">Tự động nộp bài khi làm xong</label>
-            <span class="setting-desc">Tự click 'Nộp bài' ở câu cuối bài tập</span>
-          </div>
-          <input type="checkbox" id="settingAutoSubmit" checked>
-        </div>
-
-        <div class="setting-item">
-          <div>
-            <label class="setting-label">Dùng AI giải Slide bài giảng</label>
-            <span class="setting-desc">Chờ AI phân tích câu hỏi & chọn đáp án chính xác nhất</span>
-          </div>
-          <input type="checkbox" id="settingUseAiSlide" checked>
-        </div>
-
-        <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-          <div>
-            <label class="setting-label">Nhà cung cấp / Cấu hình mẫu (Preset)</label>
-            <span class="setting-desc">Chọn nhanh nền tảng AI hoặc tùy chỉnh</span>
-          </div>
-          <select id="settingApiProvider" style="width: 100%;">
-            <option value="gemini">Google Gemini (Mặc định)</option>
-            <option value="openai">OpenAI (Official)</option>
-            <option value="deepseek">DeepSeek API</option>
-            <option value="openrouter">OpenRouter</option>
-            <option value="ollama">Ollama Local (Offline)</option>
-            <option value="custom">Tùy chỉnh (Custom Base URL / Proxy)</option>
-          </select>
-        </div>
-
-        <div class="setting-item" id="settingApiEndpointGroup" style="flex-direction: column; align-items: flex-start; gap: 6px; display: none;">
-          <div>
-            <label class="setting-label">Nguồn API (Base URL / Endpoint)</label>
-            <span class="setting-desc">Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span>
-          </div>
-          <input type="text" id="settingApiEndpoint" placeholder="http://localhost:20128/v1" style="width: 100%;">
-        </div>
-
-        <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-          <div>
-            <label class="setting-label">Mô hình AI (Model)</label>
-            <span class="setting-desc">Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span>
-          </div>
-          <div style="display: flex; gap: 6px; width: 100%;">
-            <select id="settingModelSelect" style="flex: 1; min-width: 0;">
-              <!-- Danh sách model được nạp tự động -->
-            </select>
-            <button type="button" class="btn btn-secondary" id="btnFetchModels" style="width: auto; white-space: nowrap; padding: 0 10px; font-size: 11px;" title="Lấy danh sách model từ API server (OpenAI-compatible /models)">
-              <span>🔄</span> Lấy DS
+          <div class="action-buttons">
+            <button class="btn btn-primary" id="btnStartSlide">
+              <span>▶️</span> Bắt đầu giải Slide
+            </button>
+            <button class="btn btn-danger hidden" id="btnStopSlide">
+              <span>⏹️</span> Dừng lại
             </button>
           </div>
-          <div id="customModelGroup" style="width: 100%; display: none; margin-top: 4px;">
-            <input type="text" id="settingModelCustom" placeholder="Nhập mã model tùy chỉnh (VD: ag/gemini-3.8-flash-high)..." style="width: 100%;">
-          </div>
-          <span id="fetchModelsStatus" style="font-size: 10px; display: none;"></span>
         </div>
 
-        <div class="setting-item" style="flex-direction: column; align-items: flex-start; gap: 6px;">
-          <div>
-            <label class="setting-label">Khóa API (API Key)</label>
-            <span class="setting-desc">Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu dùng local</span>
+        <div class="card">
+          <h4>📋 Nhật ký hoạt động</h4>
+          <div class="log-box" id="slideLog">
+            <div class="log-entry info">
+              Chưa bắt đầu. Mở trang Slide EDUX và bấm 'Bắt đầu'.
+            </div>
           </div>
-          <input type="password" id="settingApiKey" placeholder="Nhập API Key để giải tự động..." style="width: 100%;">
+        </div>
+      </section>
+
+      <!-- Tab 2: Test Solver (Bài tập - Mô phỏng EDUX-TEST-SOLVER) -->
+      <section id="tab-test" class="tab-content">
+        <!-- Card 1: Exam Status & Session Header -->
+        <div class="card card-hero">
+          <div
+            class="card-header"
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <div>
+              <h3>📝 Giải Bài Tập (Test Solver)</h3>
+              <p class="subtitle">
+                Bắt đề bài tập, AI giải & tự động điền đáp án
+              </p>
+            </div>
+            <button
+              class="btn btn-secondary btn-sm"
+              id="btnNewSession"
+              title="Bắt đầu phiên làm việc mới (xóa trắng đáp án cũ, reset trạng thái)"
+              style="width: auto; padding: 4px 8px; font-size: 11px"
+            >
+              <span>🔄</span> Phiên mới
+            </button>
+          </div>
+
+          <!-- Trạng thái bắt đề bài tập -->
+          <div class="exercise-info-box" id="examInfoBox">
+            <span
+              class="exercise-status-dot"
+              id="examStatusDot"
+              style="display: none"
+            ></span>
+            <span
+              id="examInfoText"
+              style="
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: none;
+              "
+            ></span>
+            <button
+              class="btn btn-secondary btn-xs"
+              id="btnStartExercise"
+              title="Tìm và bấm nút 'Làm bài tập' trên trang"
+              style="
+                width: 100%;
+                justify-content: center;
+                padding: 4px 8px;
+                font-size: 11px;
+                white-space: nowrap;
+              "
+            >
+              <span>🚀</span> Mở bài tập
+            </button>
+          </div>
+
+          <!-- Segmented Mode Switcher -->
+          <div class="segmented-control">
+            <button
+              type="button"
+              class="segmented-btn active"
+              id="btnModeAuto"
+              data-mode="auto"
+            >
+              <span>⚡ Tự động (API)</span>
+            </button>
+            <button
+              type="button"
+              class="segmented-btn"
+              id="btnModeManual"
+              data-mode="manual"
+              title="Giải bằng ChatGPT / Gemini / Claude trên web"
+            >
+              <span>💬 Chatbot</span>
+            </button>
+          </div>
         </div>
 
-        <button class="btn btn-primary" id="btnSaveSettings">
-          <span>💾</span> Lưu cài đặt
-        </button>
-      </div>
-    </section>
+        <!-- Mode 1: ⚡ Tự động (API) -->
+        <div id="testAutoSection" class="mode-section active">
+          <div class="card">
+            <!-- Stepper: 3-step pipeline tracker -->
+            <div class="stepper" id="autoStepper">
+              <div class="step-item" id="step1">
+                <div class="step-circle">1</div>
+                <div class="step-text">Bắt đề</div>
+              </div>
+              <div class="step-line" id="stepLine1"></div>
+              <div class="step-item" id="step2">
+                <div class="step-circle">2</div>
+                <div class="step-text">AI giải</div>
+              </div>
+              <div class="step-line" id="stepLine2"></div>
+              <div class="step-item" id="step3">
+                <div class="step-circle">3</div>
+                <div class="step-text">Điền & Nộp</div>
+              </div>
+            </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <span>Quizz Slayers • EDUX Automation</span>
-    </footer>
-  </div>
+            <!-- Hero CTA Button -->
+            <button
+              class="btn btn-primary btn-hero-solve"
+              id="btnSolveAI"
+              title="Tự động mở bài, gửi đề cho AI giải, điền và nộp bài"
+            >
+              <span class="hero-btn-icon">⚡</span>
+              <div class="hero-btn-content">
+                <span class="hero-btn-title">GIẢI BÀI TẬP BẰNG AI (API)</span>
+                <span class="hero-btn-subtitle"
+                  >Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài</span
+                >
+              </div>
+            </button>
 
-  <script src="popup.js"></script>
-</body>
+            <!-- Model Info Strip -->
+            <div class="model-info-strip">
+              <div class="model-badge">
+                <span class="model-badge-icon">🤖</span>
+                <span id="activeModelLabel">Model: gemini-2.0-flash</span>
+              </div>
+              <button
+                class="btn-link"
+                id="btnGoToSettings"
+                style="
+                  font-size: 11px;
+                  color: #a5b4fc;
+                  background: none;
+                  border: none;
+                  cursor: pointer;
+                  text-decoration: underline;
+                "
+              >
+                ⚙️ Đổi Model
+              </button>
+            </div>
+
+            <!-- Collapsible AI Answers Preview -->
+            <div
+              id="autoAnswersContainer"
+              style="display: none; margin-top: 4px"
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  margin-bottom: 4px;
+                "
+              >
+                <span style="font-size: 11px; font-weight: 600; color: #34d399"
+                  >✓ Đáp án AI đã tạo:</span
+                >
+                <button
+                  class="btn-link"
+                  id="btnHideAutoAnswers"
+                  style="
+                    font-size: 11px;
+                    color: #94a3b8;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                  "
+                >
+                  Đóng ✕
+                </button>
+              </div>
+              <textarea
+                id="autoAnswersBox"
+                rows="3"
+                readonly
+                style="font-size: 11px; color: #cbd5e1; font-family: monospace"
+              ></textarea>
+            </div>
+            <button
+              class="btn-link"
+              id="btnToggleAutoAnswers"
+              style="
+                display: none;
+                font-size: 11px;
+                color: #38bdf8;
+                background: none;
+                border: none;
+                cursor: pointer;
+                text-align: left;
+                padding: 0;
+              "
+            >
+              👁️ Xem đáp án vừa giải
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode 2: 💬 Chatbot (Dán đáp án từ Web AI) -->
+        <div id="testManualSection" class="mode-section" style="display: none">
+          <!-- Hướng dẫn nhanh: Chatbot 3 bước -->
+          <div class="card chatbot-guide-card">
+            <div class="guide-title">
+              <span>💬</span>
+              <div>
+                <strong>Giải bằng Chatbot AI</strong>
+                <span class="guide-subtitle"
+                  >Dùng ChatGPT / Gemini / Claude miễn phí trên web —
+                  không cần API Key</span
+                >
+              </div>
+            </div>
+            <div class="ai-quick-links">
+              <span class="ai-quick-label">Mở nhanh AI:</span>
+              <button
+                type="button"
+                class="ai-link-btn"
+                data-ai-url="https://chatgpt.com/"
+                title="Mở ChatGPT trong tab mới"
+              >
+                🤖 ChatGPT
+              </button>
+              <button
+                type="button"
+                class="ai-link-btn"
+                data-ai-url="https://gemini.google.com/"
+                title="Mở Gemini trong tab mới"
+              >
+                ✨ Gemini
+              </button>
+              <button
+                type="button"
+                class="ai-link-btn"
+                data-ai-url="https://claude.ai/"
+                title="Mở Claude trong tab mới"
+              >
+                🧠 Claude
+              </button>
+            </div>
+          </div>
+
+          <!-- Bước 1: Lấy đề -->
+          <div class="card">
+            <div class="step-header">
+              <span class="step-badge step-badge-1">Bước 1</span>
+              <strong>Copy đề bài tập</strong>
+            </div>
+            <p class="step-desc">
+              Bấm nút bên dưới để trích đề, copy sẵn vào clipboard và
+              xem trước nội dung — rồi dán vào chatbot ở trên.
+            </p>
+            <button
+              class="btn btn-secondary"
+              id="btnExtractQuestions"
+              title="Trích xuất đề, copy vào clipboard và xem trước"
+              style="width: 100%"
+            >
+              <span>📋</span> Copy đề & xem trước
+            </button>
+
+            <!-- Khung xem trước Prompt (Collapsible) -->
+            <div
+              id="promptPreviewCard"
+              style="
+                display: none;
+                flex-direction: column;
+                gap: 6px;
+                margin-top: 6px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <label style="font-size: 11px; color: #a5b4fc"
+                  >Nội dung Prompt đề:</label
+                >
+                <button
+                  class="btn-link"
+                  id="btnHidePrompt"
+                  style="
+                    font-size: 11px;
+                    background: none;
+                    border: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                  "
+                >
+                  Đóng ✕
+                </button>
+              </div>
+              <textarea
+                id="promptPreviewBox"
+                rows="4"
+                readonly
+                style="font-size: 11px; color: #cbd5e1; font-family: monospace"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Bước 2 & 3: Dán đáp án & Điền bài tập -->
+          <div class="card">
+            <div class="step-header">
+              <span class="step-badge step-badge-2">Bước 2</span>
+              <strong>Dán đáp án từ chatbot</strong>
+            </div>
+            <p class="step-desc">
+              Copy kết quả từ ChatGPT / Gemini / Claude rồi
+              <b>Dán</b> vào ô bên dưới. Hỗ trợ JSON, JSONL hoặc
+              <code>1. A, 2. B…</code>
+            </p>
+            <div class="form-group">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <span style="font-size: 11px; color: var(--text-muted)"
+                  >JSONL / JSON / "1. A, 2. B":</span
+                >
+                <div style="display: flex; gap: 8px">
+                  <button
+                    class="btn-link"
+                    id="btnPasteClipboard"
+                    style="
+                      font-size: 11px;
+                      background: none;
+                      border: none;
+                      color: #34d399;
+                      cursor: pointer;
+                      font-weight: 600;
+                    "
+                  >
+                    📥 Dán Clipboard
+                  </button>
+                  <button
+                    class="btn-link"
+                    id="btnClearAnswers"
+                    style="
+                      font-size: 11px;
+                      background: none;
+                      border: none;
+                      color: #f87171;
+                      cursor: pointer;
+                      font-weight: 600;
+                    "
+                    title="Xóa trắng ô đáp án"
+                  >
+                    🗑️ Xóa
+                  </button>
+                </div>
+              </div>
+              <textarea
+                id="answerInput"
+                placeholder='Dán kết quả AI vào đây...&#10;Hỗ trợ:&#10;- JSONL / JSON: [{"so_cau": 1, "dap_an": "A"}, ...]&#10;- Dạng chữ: 1. A&#10;2. C&#10;3. Đúng, Sai...'
+                rows="4"
+              ></textarea>
+            </div>
+
+            <div class="step-header" style="margin-top: 4px">
+              <span class="step-badge step-badge-3">Bước 3</span>
+              <strong>Điền vào bài tập</strong>
+            </div>
+            <p class="step-desc">
+              Bấm nút bên dưới để tự động chọn đáp án & nộp bài trên
+              trang EDUX.
+            </p>
+            <button class="btn btn-success" id="btnFillAnswers">
+              <span>✨</span> Bắt đầu điền bài tập
+            </button>
+          </div>
+        </div>
+
+        <!-- Shared Log Box -->
+        <div class="card">
+          <h4>📊 Nhật ký bài tập</h4>
+          <div class="log-box" id="testLog">
+            <div class="log-entry info">
+              Sẵn sàng. Mở bài tập trên EDUX và chọn thao tác.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Exercise Scores -->
+      <section id="tab-scores" class="tab-content">
+        <div class="card card-hero">
+          <div class="card-header">
+            <h3>📊 Bảng Điểm & Tiến Độ Bài Tập</h3>
+            <p class="subtitle" id="scoresSubjectTitle">
+              Đang nhận diện môn học...
+            </p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="stat-value" id="scoresCompleted">0/0</span>
+              <span class="stat-label">Bài tập đã nộp</span>
+            </div>
+            <div class="stat-box">
+              <span class="stat-value" id="scoresHighest">--</span>
+              <span class="stat-label">Điểm cao nhất</span>
+            </div>
+          </div>
+
+          <div
+            id="scoresAlertBox"
+            class="log-entry warn"
+            style="margin-top: 10px; display: none"
+          ></div>
+
+          <div class="action-buttons" style="margin-top: 10px">
+            <button
+              class="btn btn-secondary"
+              id="btnRefreshScores"
+              style="width: 100%"
+            >
+              <span>🔄</span> Quét lại điểm số môn học
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h4>📋 Chi tiết từng bài tập</h4>
+          <div
+            class="log-box"
+            id="scoresList"
+            style="max-height: 230px; overflow-y: auto"
+          >
+            <div class="log-entry info">
+              Chưa tải dữ liệu. Mở trang môn học EDUX và bấm 'Quét lại'.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Settings -->
+      <section id="tab-settings" class="tab-content">
+        <div class="card">
+          <h3>⚙️ Cấu hình hoạt động</h3>
+
+          <div class="setting-item">
+            <div>
+              <label class="setting-label"
+                >Thời gian delay giữa các bước (ms)</label
+              >
+              <span class="setting-desc"
+                >Tốc độ cao (khuyên dùng: 50ms - 100ms)</span
+              >
+            </div>
+            <input
+              type="number"
+              id="settingDelay"
+              value="100"
+              min="25"
+              max="3000"
+              step="25"
+            />
+          </div>
+
+          <div class="setting-item">
+            <div>
+              <label class="setting-label"
+                >Tự động chuyển slide (Next Page)</label
+              >
+              <span class="setting-desc"
+                >Tự click nút Trang sau khi giải xong slide</span
+              >
+            </div>
+            <input type="checkbox" id="settingAutoNext" checked />
+          </div>
+
+          <div class="setting-item">
+            <div>
+              <label class="setting-label">Tự động nộp bài khi làm xong</label>
+              <span class="setting-desc"
+                >Tự click 'Nộp bài' ở câu cuối bài tập</span
+              >
+            </div>
+            <input type="checkbox" id="settingAutoSubmit" checked />
+          </div>
+
+          <div class="setting-item">
+            <div>
+              <label class="setting-label">Dùng AI giải Slide bài giảng</label>
+              <span class="setting-desc"
+                >Chờ AI phân tích câu hỏi & chọn đáp án chính xác nhất</span
+              >
+            </div>
+            <input type="checkbox" id="settingUseAiSlide" checked />
+          </div>
+
+          <div
+            class="setting-item"
+            style="flex-direction: column; align-items: flex-start; gap: 6px"
+          >
+            <div>
+              <label class="setting-label"
+                >Nhà cung cấp / Cấu hình mẫu (Preset)</label
+              >
+              <span class="setting-desc"
+                >Chọn nhanh nền tảng AI hoặc tùy chỉnh</span
+              >
+            </div>
+            <select id="settingApiProvider" style="width: 100%">
+              <option value="gemini">Google Gemini (Mặc định)</option>
+              <option value="openai">OpenAI (Official)</option>
+              <option value="deepseek">DeepSeek API</option>
+              <option value="openrouter">OpenRouter</option>
+              <option value="ollama">Ollama Local (Offline)</option>
+              <option value="custom">
+                Tùy chỉnh (Custom Base URL / Proxy)
+              </option>
+            </select>
+          </div>
+
+          <div
+            class="setting-item"
+            id="settingApiEndpointGroup"
+            style="
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 6px;
+              display: none;
+            "
+          >
+            <div>
+              <label class="setting-label"
+                >Nguồn API (Base URL / Endpoint)</label
+              >
+              <span class="setting-desc"
+                >Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span
+              >
+            </div>
+            <input
+              type="text"
+              id="settingApiEndpoint"
+              placeholder="http://localhost:20128/v1"
+              style="width: 100%"
+            />
+          </div>
+
+          <div
+            class="setting-item"
+            style="flex-direction: column; align-items: flex-start; gap: 6px"
+          >
+            <div>
+              <label class="setting-label">Mô hình AI (Model)</label>
+              <span class="setting-desc"
+                >Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span
+              >
+            </div>
+            <div style="display: flex; gap: 6px; width: 100%">
+              <select id="settingModelSelect" style="flex: 1; min-width: 0">
+                <!-- Danh sách model được nạp tự động -->
+              </select>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnFetchModels"
+                style="
+                  width: auto;
+                  white-space: nowrap;
+                  padding: 0 10px;
+                  font-size: 11px;
+                "
+                title="Lấy danh sách model từ API server (OpenAI-compatible /models)"
+              >
+                <span>🔄</span> Lấy DS
+              </button>
+            </div>
+            <div
+              id="customModelGroup"
+              style="width: 100%; display: none; margin-top: 4px"
+            >
+              <input
+                type="text"
+                id="settingModelCustom"
+                placeholder="Nhập mã model tùy chỉnh (VD: ag/gemini-3.8-flash-high)..."
+                style="width: 100%"
+              />
+            </div>
+            <span
+              id="fetchModelsStatus"
+              style="font-size: 10px; display: none"
+            ></span>
+          </div>
+
+          <div
+            class="setting-item"
+            style="flex-direction: column; align-items: flex-start; gap: 6px"
+          >
+            <div>
+              <label class="setting-label">Khóa API (API Key)</label>
+              <span class="setting-desc"
+                >Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu
+                dùng local</span
+              >
+            </div>
+            <input
+              type="password"
+              id="settingApiKey"
+              placeholder="Nhập API Key để giải tự động..."
+              style="width: 100%"
+            />
+          </div>
+
+          <button class="btn btn-primary" id="btnSaveSettings">
+            <span>💾</span> Lưu cài đặt
+          </button>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <span>Quizz Slayers • EDUX Automation</span>
+      </footer>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
 </html>

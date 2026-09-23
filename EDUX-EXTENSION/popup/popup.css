@@ -679,6 +679,108 @@ textarea:focus, input:focus, select:focus {
   font-weight: 700;
 }
 
+.step-badge-1 {
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.step-badge-2 {
+  background: rgba(168, 85, 247, 0.15);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.4);
+}
+
+.step-badge-3 {
+  background: rgba(16, 185, 129, 0.15);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.step-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.step-desc b {
+  color: var(--text-main);
+}
+
+.step-desc code {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 10px;
+  color: #7dd3fc;
+}
+
+/* Chatbot guide card */
+.chatbot-guide-card {
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.12),
+    rgba(168, 85, 247, 0.12)
+  );
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  gap: 8px;
+}
+
+.guide-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 16px;
+}
+
+.guide-title strong {
+  font-size: 12px;
+  color: var(--text-main);
+  display: block;
+}
+
+.guide-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  display: block;
+  margin-top: 1px;
+  font-weight: 500;
+}
+
+.ai-quick-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ai-quick-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ai-link-btn {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--text-main);
+  border-radius: 16px;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ai-link-btn:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
 /* Footer */
 .footer {
   text-align: center;

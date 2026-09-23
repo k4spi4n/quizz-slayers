@@ -4,148 +4,148 @@
  * và theo dõi điểm số môn học.
  */
 
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // Ordered content scripts for tab re-injection
   const CONTENT_SCRIPTS = [
-    'scripts/dom-utils.js',
-    'scripts/slide-solver.js',
-    'scripts/test-solver.js',
-    'scripts/score-tracker.js',
-    'content.js'
+    "scripts/dom-utils.js",
+    "scripts/slide-solver.js",
+    "scripts/test-solver.js",
+    "scripts/score-tracker.js",
+    "content.js",
   ];
 
   // =========================================================================
   // 1. UI Elements Mapping
   // =========================================================================
   const UI = {
-    tabs: document.querySelectorAll('.tab-btn'),
-    tabContents: document.querySelectorAll('.tab-content'),
-    globalStatus: document.getElementById('globalStatus'),
+    tabs: document.querySelectorAll(".tab-btn"),
+    tabContents: document.querySelectorAll(".tab-content"),
+    globalStatus: document.getElementById("globalStatus"),
 
     // Slide Solver UI
-    btnStartSlide: document.getElementById('btnStartSlide'),
-    btnStopSlide: document.getElementById('btnStopSlide'),
-    slideCount: document.getElementById('slideCount'),
-    retryCount: document.getElementById('retryCount'),
-    slideLog: document.getElementById('slideLog'),
-    btnSlideMethodAi: document.getElementById('btnSlideMethodAi'),
-    btnSlideMethodBrute: document.getElementById('btnSlideMethodBrute'),
-    slideMethodDesc: document.getElementById('slideMethodDesc'),
-    slideMethodIcon: document.getElementById('slideMethodIcon'),
-    slideMethodTitle: document.getElementById('slideMethodTitle'),
-    slideMethodDetail: document.getElementById('slideMethodDetail'),
+    btnStartSlide: document.getElementById("btnStartSlide"),
+    btnStopSlide: document.getElementById("btnStopSlide"),
+    slideCount: document.getElementById("slideCount"),
+    retryCount: document.getElementById("retryCount"),
+    slideLog: document.getElementById("slideLog"),
+    btnSlideMethodAi: document.getElementById("btnSlideMethodAi"),
+    btnSlideMethodBrute: document.getElementById("btnSlideMethodBrute"),
+    slideMethodDesc: document.getElementById("slideMethodDesc"),
+    slideMethodIcon: document.getElementById("slideMethodIcon"),
+    slideMethodTitle: document.getElementById("slideMethodTitle"),
+    slideMethodDetail: document.getElementById("slideMethodDetail"),
 
     // Test Solver (Bài tập) UI
-    examInfoBox: document.getElementById('examInfoBox'),
-    examInfoText: document.getElementById('examInfoText'),
-    examStatusDot: document.getElementById('examStatusDot'),
-    btnStartExercise: document.getElementById('btnStartExercise'),
-    btnNewSession: document.getElementById('btnNewSession'),
-    btnModeAuto: document.getElementById('btnModeAuto'),
-    btnModeManual: document.getElementById('btnModeManual'),
-    testAutoSection: document.getElementById('testAutoSection'),
-    testManualSection: document.getElementById('testManualSection'),
-    autoStepper: document.getElementById('autoStepper'),
-    step1: document.getElementById('step1'),
-    step2: document.getElementById('step2'),
-    step3: document.getElementById('step3'),
-    stepLine1: document.getElementById('stepLine1'),
-    stepLine2: document.getElementById('stepLine2'),
-    btnExtractQuestions: document.getElementById('btnExtractQuestions'),
-    btnSolveAI: document.getElementById('btnSolveAI'),
-    activeModelLabel: document.getElementById('activeModelLabel'),
-    btnGoToSettings: document.getElementById('btnGoToSettings'),
-    autoAnswersContainer: document.getElementById('autoAnswersContainer'),
-    autoAnswersBox: document.getElementById('autoAnswersBox'),
-    btnHideAutoAnswers: document.getElementById('btnHideAutoAnswers'),
-    btnToggleAutoAnswers: document.getElementById('btnToggleAutoAnswers'),
-    promptPreviewCard: document.getElementById('promptPreviewCard'),
-    promptPreviewBox: document.getElementById('promptPreviewBox'),
-    btnHidePrompt: document.getElementById('btnHidePrompt'),
-    btnTogglePrompt: document.getElementById('btnTogglePrompt'),
-    btnPasteClipboard: document.getElementById('btnPasteClipboard'),
-    btnClearAnswers: document.getElementById('btnClearAnswers'),
-    answerInput: document.getElementById('answerInput'),
-    btnFillAnswers: document.getElementById('btnFillAnswers'),
-    testLog: document.getElementById('testLog'),
+    examInfoBox: document.getElementById("examInfoBox"),
+    examInfoText: document.getElementById("examInfoText"),
+    examStatusDot: document.getElementById("examStatusDot"),
+    btnStartExercise: document.getElementById("btnStartExercise"),
+    btnNewSession: document.getElementById("btnNewSession"),
+    btnModeAuto: document.getElementById("btnModeAuto"),
+    btnModeManual: document.getElementById("btnModeManual"),
+    testAutoSection: document.getElementById("testAutoSection"),
+    testManualSection: document.getElementById("testManualSection"),
+    autoStepper: document.getElementById("autoStepper"),
+    step1: document.getElementById("step1"),
+    step2: document.getElementById("step2"),
+    step3: document.getElementById("step3"),
+    stepLine1: document.getElementById("stepLine1"),
+    stepLine2: document.getElementById("stepLine2"),
+    btnExtractQuestions: document.getElementById("btnExtractQuestions"),
+    btnSolveAI: document.getElementById("btnSolveAI"),
+    activeModelLabel: document.getElementById("activeModelLabel"),
+    btnGoToSettings: document.getElementById("btnGoToSettings"),
+    autoAnswersContainer: document.getElementById("autoAnswersContainer"),
+    autoAnswersBox: document.getElementById("autoAnswersBox"),
+    btnHideAutoAnswers: document.getElementById("btnHideAutoAnswers"),
+    btnToggleAutoAnswers: document.getElementById("btnToggleAutoAnswers"),
+    promptPreviewCard: document.getElementById("promptPreviewCard"),
+    promptPreviewBox: document.getElementById("promptPreviewBox"),
+    btnHidePrompt: document.getElementById("btnHidePrompt"),
+    btnTogglePrompt: document.getElementById("btnTogglePrompt"),
+    btnPasteClipboard: document.getElementById("btnPasteClipboard"),
+    btnClearAnswers: document.getElementById("btnClearAnswers"),
+    answerInput: document.getElementById("answerInput"),
+    btnFillAnswers: document.getElementById("btnFillAnswers"),
+    testLog: document.getElementById("testLog"),
 
     // Exercise Scores UI
-    scoresSubjectTitle: document.getElementById('scoresSubjectTitle'),
-    scoresCompleted: document.getElementById('scoresCompleted'),
-    scoresHighest: document.getElementById('scoresHighest'),
-    scoresAlertBox: document.getElementById('scoresAlertBox'),
-    btnRefreshScores: document.getElementById('btnRefreshScores'),
-    scoresList: document.getElementById('scoresList'),
+    scoresSubjectTitle: document.getElementById("scoresSubjectTitle"),
+    scoresCompleted: document.getElementById("scoresCompleted"),
+    scoresHighest: document.getElementById("scoresHighest"),
+    scoresAlertBox: document.getElementById("scoresAlertBox"),
+    btnRefreshScores: document.getElementById("btnRefreshScores"),
+    scoresList: document.getElementById("scoresList"),
 
     // Settings UI
-    settingDelay: document.getElementById('settingDelay'),
-    settingAutoNext: document.getElementById('settingAutoNext'),
-    settingAutoSubmit: document.getElementById('settingAutoSubmit'),
-    settingUseAiSlide: document.getElementById('settingUseAiSlide'),
-    settingApiProvider: document.getElementById('settingApiProvider'),
-    settingApiEndpointGroup: document.getElementById('settingApiEndpointGroup'),
-    settingApiEndpoint: document.getElementById('settingApiEndpoint'),
-    settingApiKey: document.getElementById('settingApiKey'),
-    settingModel: document.getElementById('settingModel'),
-    settingModelSelect: document.getElementById('settingModelSelect'),
-    settingModelCustom: document.getElementById('settingModelCustom'),
-    customModelGroup: document.getElementById('customModelGroup'),
-    btnFetchModels: document.getElementById('btnFetchModels'),
-    modelDatalist: document.getElementById('modelDatalist'),
-    fetchModelsStatus: document.getElementById('fetchModelsStatus'),
-    btnSaveSettings: document.getElementById('btnSaveSettings')
+    settingDelay: document.getElementById("settingDelay"),
+    settingAutoNext: document.getElementById("settingAutoNext"),
+    settingAutoSubmit: document.getElementById("settingAutoSubmit"),
+    settingUseAiSlide: document.getElementById("settingUseAiSlide"),
+    settingApiProvider: document.getElementById("settingApiProvider"),
+    settingApiEndpointGroup: document.getElementById("settingApiEndpointGroup"),
+    settingApiEndpoint: document.getElementById("settingApiEndpoint"),
+    settingApiKey: document.getElementById("settingApiKey"),
+    settingModel: document.getElementById("settingModel"),
+    settingModelSelect: document.getElementById("settingModelSelect"),
+    settingModelCustom: document.getElementById("settingModelCustom"),
+    customModelGroup: document.getElementById("customModelGroup"),
+    btnFetchModels: document.getElementById("btnFetchModels"),
+    modelDatalist: document.getElementById("modelDatalist"),
+    fetchModelsStatus: document.getElementById("fetchModelsStatus"),
+    btnSaveSettings: document.getElementById("btnSaveSettings"),
   };
 
   // =========================================================================
   // 2. Logging & Status Helpers
   // =========================================================================
-  function addLog(container, message, type = 'info') {
+  function addLog(container, message, type = "info") {
     if (!container) return;
-    const entry = document.createElement('div');
+    const entry = document.createElement("div");
     entry.className = `log-entry ${type}`;
-    const timeStr = new Date().toLocaleTimeString('vi-VN', { hour12: false });
+    const timeStr = new Date().toLocaleTimeString("vi-VN", { hour12: false });
     entry.textContent = `[${timeStr}] ${message}`;
     container.appendChild(entry);
     container.scrollTop = container.scrollHeight;
   }
 
-  function setStatus(text, state = 'idle') {
+  function setStatus(text, state = "idle") {
     if (!UI.globalStatus) return;
     UI.globalStatus.className = `status-indicator ${state}`;
-    const textEl = UI.globalStatus.querySelector('.status-text');
+    const textEl = UI.globalStatus.querySelector(".status-text");
     if (textEl) textEl.textContent = text;
   }
 
   function updateExamInfoUI(data) {
     if (!UI.examInfoBox || !UI.examInfoText) return;
-    if (data && typeof data === 'object') {
+    if (data && typeof data === "object") {
       const payloadData = data.data || data;
-      const title = payloadData.title || data.title || 'Bài tập phát hiện';
+      const title = payloadData.title || data.title || "Bài tập phát hiện";
       const qCount =
         payloadData.total_questions ||
         data.total_questions ||
         payloadData.exam_data?.multiple_choice?.length ||
         data.exam_data?.multiple_choice?.length ||
-        '?';
-      UI.examInfoBox.classList.add('active');
-      if (UI.examStatusDot) UI.examStatusDot.style.display = 'block';
-      UI.examInfoText.style.display = 'block';
+        "?";
+      UI.examInfoBox.classList.add("active");
+      if (UI.examStatusDot) UI.examStatusDot.style.display = "block";
+      UI.examInfoText.style.display = "block";
       UI.examInfoText.textContent = `🎯 ${title} (${qCount} câu)`;
       UI.examInfoText.title = title;
       if (UI.btnStartExercise) {
-        UI.btnStartExercise.style.width = 'auto';
-        UI.btnStartExercise.innerHTML = '<span>🚀</span> Mở bài';
+        UI.btnStartExercise.style.width = "auto";
+        UI.btnStartExercise.innerHTML = "<span>🚀</span> Mở bài";
       }
     } else {
-      UI.examInfoBox.classList.remove('active');
-      if (UI.examStatusDot) UI.examStatusDot.style.display = 'none';
-      UI.examInfoText.style.display = 'none';
-      UI.examInfoText.textContent = '';
-      UI.examInfoText.title = '';
+      UI.examInfoBox.classList.remove("active");
+      if (UI.examStatusDot) UI.examStatusDot.style.display = "none";
+      UI.examInfoText.style.display = "none";
+      UI.examInfoText.textContent = "";
+      UI.examInfoText.title = "";
       if (UI.btnStartExercise) {
-        UI.btnStartExercise.style.width = '100%';
-        UI.btnStartExercise.style.justifyContent = 'center';
-        UI.btnStartExercise.innerHTML = '<span>🚀</span> Mở bài tập';
+        UI.btnStartExercise.style.width = "100%";
+        UI.btnStartExercise.style.justifyContent = "center";
+        UI.btnStartExercise.innerHTML = "<span>🚀</span> Mở bài tập";
       }
     }
   }
@@ -157,53 +157,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     steps.forEach((s) => {
       if (s) {
-        s.classList.remove('active', 'done');
+        s.classList.remove("active", "done");
       }
     });
     lines.forEach((l) => {
       if (l) {
-        l.classList.remove('done');
+        l.classList.remove("done");
       }
     });
 
     if (step === 1) {
-      if (UI.step1) UI.step1.classList.add('active');
+      if (UI.step1) UI.step1.classList.add("active");
     } else if (step === 2) {
-      if (UI.step1) UI.step1.classList.add('done');
-      if (UI.stepLine1) UI.stepLine1.classList.add('done');
-      if (UI.step2) UI.step2.classList.add('active');
+      if (UI.step1) UI.step1.classList.add("done");
+      if (UI.stepLine1) UI.stepLine1.classList.add("done");
+      if (UI.step2) UI.step2.classList.add("active");
     } else if (step === 3) {
-      if (UI.step1) UI.step1.classList.add('done');
-      if (UI.stepLine1) UI.stepLine1.classList.add('done');
-      if (UI.step2) UI.step2.classList.add('done');
-      if (UI.stepLine2) UI.stepLine2.classList.add('done');
-      if (UI.step3) UI.step3.classList.add('active');
+      if (UI.step1) UI.step1.classList.add("done");
+      if (UI.stepLine1) UI.stepLine1.classList.add("done");
+      if (UI.step2) UI.step2.classList.add("done");
+      if (UI.stepLine2) UI.stepLine2.classList.add("done");
+      if (UI.step3) UI.step3.classList.add("active");
     } else if (step >= 4) {
-      steps.forEach((s) => s && s.classList.add('done'));
-      lines.forEach((l) => l && l.classList.add('done'));
+      steps.forEach((s) => s && s.classList.add("done"));
+      lines.forEach((l) => l && l.classList.add("done"));
     }
   }
 
   function updateActiveModelBadge(model, provider) {
     if (!UI.activeModelLabel) return;
-    const prov = provider || UI.settingApiProvider?.value || 'gemini';
-    const rawModel = model || UI.settingModel?.value || '';
+    const prov = provider || UI.settingApiProvider?.value || "gemini";
+    const rawModel = model || UI.settingModel?.value || "";
     let display = rawModel;
     if (!display) {
-      if (prov === 'gemini') display = 'gemini-2.0-flash';
-      else if (prov === 'deepseek') display = 'deepseek-chat';
-      else if (prov === 'ollama') display = 'llama3.2';
-      else display = 'gpt-4o-mini';
+      if (prov === "gemini") display = "gemini-2.0-flash";
+      else if (prov === "deepseek") display = "deepseek-chat";
+      else if (prov === "ollama") display = "llama3.2";
+      else display = "gpt-4o-mini";
     }
     UI.activeModelLabel.textContent = `Model: ${display}`;
   }
 
   function switchTestMode(mode) {
-    const isAuto = mode === 'auto';
-    if (UI.btnModeAuto) UI.btnModeAuto.classList.toggle('active', isAuto);
-    if (UI.btnModeManual) UI.btnModeManual.classList.toggle('active', !isAuto);
-    if (UI.testAutoSection) UI.testAutoSection.style.display = isAuto ? 'flex' : 'none';
-    if (UI.testManualSection) UI.testManualSection.style.display = isAuto ? 'none' : 'flex';
+    const isAuto = mode === "auto";
+    if (UI.btnModeAuto) UI.btnModeAuto.classList.toggle("active", isAuto);
+    if (UI.btnModeManual) UI.btnModeManual.classList.toggle("active", !isAuto);
+    if (UI.testAutoSection)
+      UI.testAutoSection.style.display = isAuto ? "flex" : "none";
+    if (UI.testManualSection)
+      UI.testManualSection.style.display = isAuto ? "none" : "flex";
     chrome.storage.local.set({ testWorkflowMode: mode });
   }
 
@@ -212,78 +214,83 @@ document.addEventListener('DOMContentLoaded', async () => {
    * Xóa sạch ô đáp án, prompt xem trước, và reset stepper.
    */
   async function resetSolveSession(keepExamInfo = true) {
-    if (UI.answerInput) UI.answerInput.value = '';
-    await chrome.storage.local.remove('savedAnswers');
+    if (UI.answerInput) UI.answerInput.value = "";
+    await chrome.storage.local.remove("savedAnswers");
 
-    if (UI.promptPreviewBox) UI.promptPreviewBox.value = '';
-    if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'none';
+    if (UI.promptPreviewBox) UI.promptPreviewBox.value = "";
+    if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = "none";
 
-    if (UI.autoAnswersBox) UI.autoAnswersBox.value = '';
-    if (UI.autoAnswersContainer) UI.autoAnswersContainer.style.display = 'none';
-    if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'none';
+    if (UI.autoAnswersBox) UI.autoAnswersBox.value = "";
+    if (UI.autoAnswersContainer) UI.autoAnswersContainer.style.display = "none";
+    if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = "none";
 
     setStepperState(0);
     setHeroBtnLoading(false);
 
     if (!keepExamInfo) {
       updateExamInfoUI(null);
-      await chrome.storage.local.remove('lastExamData');
+      await chrome.storage.local.remove("lastExamData");
     }
   }
 
   function setHeroBtnLoading(isLoading, title, subtitle) {
     if (!UI.btnSolveAI) return;
-    const iconEl = UI.btnSolveAI.querySelector('.hero-btn-icon');
-    const titleEl = UI.btnSolveAI.querySelector('.hero-btn-title');
-    const subtitleEl = UI.btnSolveAI.querySelector('.hero-btn-subtitle');
+    const iconEl = UI.btnSolveAI.querySelector(".hero-btn-icon");
+    const titleEl = UI.btnSolveAI.querySelector(".hero-btn-title");
+    const subtitleEl = UI.btnSolveAI.querySelector(".hero-btn-subtitle");
 
     if (isLoading) {
-      UI.btnSolveAI.classList.add('loading');
+      UI.btnSolveAI.classList.add("loading");
       if (iconEl) iconEl.innerHTML = '<span class="spinner"></span>';
       if (titleEl && title) titleEl.textContent = title;
       if (subtitleEl && subtitle) subtitleEl.textContent = subtitle;
     } else {
-      UI.btnSolveAI.classList.remove('loading');
-      if (iconEl) iconEl.textContent = '⚡';
-      if (titleEl) titleEl.textContent = 'GIẢI BÀI TẬP BẰNG AI (1-CLICK)';
-      if (subtitleEl) subtitleEl.textContent = 'Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài';
+      UI.btnSolveAI.classList.remove("loading");
+      if (iconEl) iconEl.textContent = "⚡";
+      if (titleEl) titleEl.textContent = "GIẢI BÀI TẬP BẰNG AI (API)";
+      if (subtitleEl)
+        subtitleEl.textContent = "Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài";
     }
   }
 
   function setSlideMethod(method, saveToStorage = true) {
-    const isAi = method === 'ai';
-    if (UI.btnSlideMethodAi) UI.btnSlideMethodAi.classList.toggle('active', isAi);
-    if (UI.btnSlideMethodBrute) UI.btnSlideMethodBrute.classList.toggle('active', !isAi);
+    const isAi = method === "ai";
+    if (UI.btnSlideMethodAi)
+      UI.btnSlideMethodAi.classList.toggle("active", isAi);
+    if (UI.btnSlideMethodBrute)
+      UI.btnSlideMethodBrute.classList.toggle("active", !isAi);
 
     if (UI.settingUseAiSlide) UI.settingUseAiSlide.checked = isAi;
 
-    const model = UI.settingModel?.value || 'gemini-2.0-flash';
+    const model = UI.settingModel?.value || "gemini-2.0-flash";
 
     if (isAi) {
-      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = '🧠';
+      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = "🧠";
       if (UI.slideMethodTitle) {
-        UI.slideMethodTitle.textContent = 'AI Siêu Chuẩn Xác (Độ chính xác 100%)';
-        UI.slideMethodTitle.style.color = '#c7d2fe';
+        UI.slideMethodTitle.textContent =
+          "AI Siêu Chuẩn Xác (Độ chính xác 100%)";
+        UI.slideMethodTitle.style.color = "#c7d2fe";
       }
       if (UI.slideMethodDesc) {
-        UI.slideMethodDesc.style.borderColor = 'rgba(99, 102, 241, 0.3)';
-        UI.slideMethodDesc.style.background = 'rgba(99, 102, 241, 0.12)';
+        UI.slideMethodDesc.style.borderColor = "rgba(99, 102, 241, 0.3)";
+        UI.slideMethodDesc.style.background = "rgba(99, 102, 241, 0.12)";
       }
       if (UI.slideMethodDetail) {
         UI.slideMethodDetail.textContent = `Chờ AI (${model}) phân tích câu hỏi và click đáp án đúng, ít thử sai.`;
       }
     } else {
-      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = '⚡';
+      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = "⚡";
       if (UI.slideMethodTitle) {
-        UI.slideMethodTitle.textContent = 'Thử sai siêu tốc (Brute-force)';
-        UI.slideMethodTitle.style.color = '#fbbf24';
+        UI.slideMethodTitle.textContent = "Thử sai siêu tốc (Brute-force)";
+        UI.slideMethodTitle.style.color = "#fbbf24";
       }
       if (UI.slideMethodDesc) {
-        UI.slideMethodDesc.style.borderColor = 'rgba(251, 191, 36, 0.3)';
-        UI.slideMethodDesc.style.background = 'rgba(251, 191, 36, 0.08)';
+        UI.slideMethodDesc.style.borderColor = "rgba(251, 191, 36, 0.3)";
+        UI.slideMethodDesc.style.background = "rgba(251, 191, 36, 0.08)";
       }
       if (UI.slideMethodDetail) {
-        UI.slideMethodDetail.textContent = 'Thử lần lượt các đáp án với tốc độ cao, không cần API Key AI.';
+        UI.slideMethodDetail.textContent =
+          "Thử lần lượt các đáp án với tốc độ cao, không cần API Key AI.";
       }
     }
 
@@ -296,12 +303,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 3. Tab Communication
   // =========================================================================
   async function getActiveTab() {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.url && (tab.url.includes('cmcu.edu.vn') || tab.url.includes('edux'))) {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (
+      tab &&
+      tab.url &&
+      (tab.url.includes("cmcu.edu.vn") || tab.url.includes("edux"))
+    ) {
       return tab;
     }
     const allTabs = await chrome.tabs.query({});
-    const eduxTab = allTabs.find((t) => t.url && (t.url.includes('cmcu.edu.vn') || t.url.includes('edux')));
+    const eduxTab = allTabs.find(
+      (t) => t.url && (t.url.includes("cmcu.edu.vn") || t.url.includes("edux")),
+    );
     return eduxTab || tab;
   }
 
@@ -311,19 +327,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (err) {
       // Content script not loaded or tab disconnected: inject required scripts
       try {
-        await chrome.scripting.executeScript({
-          target: { tabId },
-          files: ['injected.js'],
-          world: 'MAIN'
-        }).catch(() => {});
+        await chrome.scripting
+          .executeScript({
+            target: { tabId },
+            files: ["injected.js"],
+            world: "MAIN",
+          })
+          .catch(() => {});
 
         await chrome.scripting.executeScript({
           target: { tabId },
-          files: CONTENT_SCRIPTS
+          files: CONTENT_SCRIPTS,
         });
         await chrome.scripting.insertCSS({
           target: { tabId },
-          files: ['content.css']
+          files: ["content.css"],
         });
         await new Promise((r) => setTimeout(r, 200));
         return await chrome.tabs.sendMessage(tabId, message);
@@ -337,16 +355,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 4. Tab Navigation
   // =========================================================================
   UI.tabs.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const tabId = btn.getAttribute('data-tab');
-      UI.tabs.forEach((b) => b.classList.remove('active'));
-      UI.tabContents.forEach((c) => c.classList.remove('active'));
+    btn.addEventListener("click", () => {
+      const tabId = btn.getAttribute("data-tab");
+      UI.tabs.forEach((b) => b.classList.remove("active"));
+      UI.tabContents.forEach((c) => c.classList.remove("active"));
 
-      btn.classList.add('active');
+      btn.classList.add("active");
       const targetContent = document.getElementById(tabId);
-      if (targetContent) targetContent.classList.add('active');
+      if (targetContent) targetContent.classList.add("active");
 
-      if (tabId === 'tab-scores') {
+      if (tabId === "tab-scores") {
         loadExerciseScores();
       }
     });
@@ -357,41 +375,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   const API_PRESETS = {
     gemini: {
-      endpoint: '',
-      model: 'gemini-2.0-flash',
-      placeholderEndpoint: 'Mặc định: https://generativelanguage.googleapis.com',
-      keyPlaceholder: 'Nhập Google Gemini API Key (AIza...)'
+      endpoint: "",
+      model: "gemini-2.0-flash",
+      placeholderEndpoint:
+        "Mặc định: https://generativelanguage.googleapis.com",
+      keyPlaceholder: "Nhập Google Gemini API Key (AIza...)",
     },
     openai: {
-      endpoint: 'https://api.openai.com/v1',
-      model: 'gpt-4o-mini',
-      placeholderEndpoint: 'https://api.openai.com/v1',
-      keyPlaceholder: 'Nhập OpenAI API Key (sk-...)'
+      endpoint: "https://api.openai.com/v1",
+      model: "gpt-4o-mini",
+      placeholderEndpoint: "https://api.openai.com/v1",
+      keyPlaceholder: "Nhập OpenAI API Key (sk-...)",
     },
     deepseek: {
-      endpoint: 'https://api.deepseek.com/v1',
-      model: 'deepseek-chat',
-      placeholderEndpoint: 'https://api.deepseek.com/v1',
-      keyPlaceholder: 'Nhập DeepSeek API Key (sk-...)'
+      endpoint: "https://api.deepseek.com/v1",
+      model: "deepseek-chat",
+      placeholderEndpoint: "https://api.deepseek.com/v1",
+      keyPlaceholder: "Nhập DeepSeek API Key (sk-...)",
     },
     openrouter: {
-      endpoint: 'https://openrouter.ai/api/v1',
-      model: 'google/gemini-2.0-flash-001',
-      placeholderEndpoint: 'https://openrouter.ai/api/v1',
-      keyPlaceholder: 'Nhập OpenRouter API Key (sk-or-v1-...)'
+      endpoint: "https://openrouter.ai/api/v1",
+      model: "google/gemini-2.0-flash-001",
+      placeholderEndpoint: "https://openrouter.ai/api/v1",
+      keyPlaceholder: "Nhập OpenRouter API Key (sk-or-v1-...)",
     },
     ollama: {
-      endpoint: 'http://localhost:11434/v1',
-      model: 'llama3.2',
-      placeholderEndpoint: 'http://localhost:11434/v1',
-      keyPlaceholder: 'Không cần API Key đối với Ollama (để trống)'
+      endpoint: "http://localhost:11434/v1",
+      model: "llama3.2",
+      placeholderEndpoint: "http://localhost:11434/v1",
+      keyPlaceholder: "Không cần API Key đối với Ollama (để trống)",
     },
     custom: {
-      endpoint: 'http://localhost:20128/v1',
-      model: '',
-      placeholderEndpoint: 'http://localhost:20128/v1',
-      keyPlaceholder: 'Nhập API Key nếu có (hoặc để trống)...'
-    }
+      endpoint: "http://localhost:20128/v1",
+      model: "",
+      placeholderEndpoint: "http://localhost:20128/v1",
+      keyPlaceholder: "Nhập API Key nếu có (hoặc để trống)...",
+    },
   };
 
   // =========================================================================
@@ -399,49 +418,67 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   const DEFAULT_MODELS_BY_PROVIDER = {
     gemini: [
-      { id: 'gemini-2.0-flash', label: 'gemini-2.0-flash (Khuyên dùng - Nhanh & Chuẩn)' },
-      { id: 'gemini-2.0-pro-exp-02-05', label: 'gemini-2.0-pro-exp-02-05 (Suy luận sâu)' },
-      { id: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
-      { id: 'gemini-1.5-pro', label: 'gemini-1.5-pro' }
+      {
+        id: "gemini-2.0-flash",
+        label: "gemini-2.0-flash (Khuyên dùng - Nhanh & Chuẩn)",
+      },
+      {
+        id: "gemini-2.0-pro-exp-02-05",
+        label: "gemini-2.0-pro-exp-02-05 (Suy luận sâu)",
+      },
+      { id: "gemini-1.5-flash", label: "gemini-1.5-flash" },
+      { id: "gemini-1.5-pro", label: "gemini-1.5-pro" },
     ],
     openai: [
-      { id: 'gpt-4o-mini', label: 'gpt-4o-mini (Khuyên dùng - Nhanh & Rẻ)' },
-      { id: 'gpt-4o', label: 'gpt-4o (Toàn diện nhất)' },
-      { id: 'o3-mini', label: 'o3-mini (Lý luận cao cấp)' },
-      { id: 'gpt-4-turbo', label: 'gpt-4-turbo' }
+      { id: "gpt-4o-mini", label: "gpt-4o-mini (Khuyên dùng - Nhanh & Rẻ)" },
+      { id: "gpt-4o", label: "gpt-4o (Toàn diện nhất)" },
+      { id: "o3-mini", label: "o3-mini (Lý luận cao cấp)" },
+      { id: "gpt-4-turbo", label: "gpt-4-turbo" },
     ],
     deepseek: [
-      { id: 'deepseek-chat', label: 'deepseek-chat (DeepSeek-V3)' },
-      { id: 'deepseek-reasoner', label: 'deepseek-reasoner (DeepSeek-R1)' }
+      { id: "deepseek-chat", label: "deepseek-chat (DeepSeek-V3)" },
+      { id: "deepseek-reasoner", label: "deepseek-reasoner (DeepSeek-R1)" },
     ],
     openrouter: [
-      { id: 'google/gemini-2.0-flash-001', label: 'google/gemini-2.0-flash-001' },
-      { id: 'deepseek/deepseek-r1', label: 'deepseek/deepseek-r1' },
-      { id: 'meta-llama/llama-3.3-70b-instruct', label: 'meta-llama/llama-3.3-70b-instruct' },
-      { id: 'anthropic/claude-3.5-sonnet', label: 'anthropic/claude-3.5-sonnet' }
+      {
+        id: "google/gemini-2.0-flash-001",
+        label: "google/gemini-2.0-flash-001",
+      },
+      { id: "deepseek/deepseek-r1", label: "deepseek/deepseek-r1" },
+      {
+        id: "meta-llama/llama-3.3-70b-instruct",
+        label: "meta-llama/llama-3.3-70b-instruct",
+      },
+      {
+        id: "anthropic/claude-3.5-sonnet",
+        label: "anthropic/claude-3.5-sonnet",
+      },
     ],
     ollama: [
-      { id: 'llama3.2', label: 'llama3.2' },
-      { id: 'qwen2.5:7b', label: 'qwen2.5:7b' },
-      { id: 'deepseek-r1:7b', label: 'deepseek-r1:7b' },
-      { id: 'mistral', label: 'mistral' }
+      { id: "llama3.2", label: "llama3.2" },
+      { id: "qwen2.5:7b", label: "qwen2.5:7b" },
+      { id: "deepseek-r1:7b", label: "deepseek-r1:7b" },
+      { id: "mistral", label: "mistral" },
     ],
-    custom: []
+    custom: [],
   };
 
   let cachedModelsByProvider = {};
 
   function getActiveModel() {
-    if (!UI.settingModelSelect) return '';
-    if (UI.settingModelSelect.value === '__custom__') {
-      return (UI.settingModelCustom?.value || '').trim();
+    if (!UI.settingModelSelect) return "";
+    if (UI.settingModelSelect.value === "__custom__") {
+      return (UI.settingModelCustom?.value || "").trim();
     }
-    return (UI.settingModelSelect.value || '').trim() || (UI.settingModelCustom?.value || '').trim();
+    return (
+      (UI.settingModelSelect.value || "").trim() ||
+      (UI.settingModelCustom?.value || "").trim()
+    );
   }
 
-  function renderModelDropdown(provider, targetModel = '') {
+  function renderModelDropdown(provider, targetModel = "") {
     if (!UI.settingModelSelect) return;
-    const currentVal = targetModel || getActiveModel() || '';
+    const currentVal = targetModel || getActiveModel() || "";
     const presets = DEFAULT_MODELS_BY_PROVIDER[provider] || [];
     const cached = cachedModelsByProvider[provider] || [];
 
@@ -449,9 +486,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const options = [];
 
     // 1. Thêm models đã tải từ server API
-    cached.forEach(m => {
-      const id = typeof m === 'string' ? m : m.id;
-      const label = typeof m === 'string' ? m : (m.label || m.name || m.id);
+    cached.forEach((m) => {
+      const id = typeof m === "string" ? m : m.id;
+      const label = typeof m === "string" ? m : m.label || m.name || m.id;
       if (id && !seen.has(id)) {
         seen.add(id);
         options.push({ id, label: `🌐 ${label}` });
@@ -459,7 +496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 2. Thêm models preset mặc định
-    presets.forEach(m => {
+    presets.forEach((m) => {
       if (m.id && !seen.has(m.id)) {
         seen.add(m.id);
         options.push(m);
@@ -467,47 +504,52 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 3. Nếu model hiện tại chưa có trong list, thêm vào đầu
-    if (currentVal && currentVal !== '__custom__' && !seen.has(currentVal)) {
+    if (currentVal && currentVal !== "__custom__" && !seen.has(currentVal)) {
       seen.add(currentVal);
-      options.unshift({ id: currentVal, label: `⭐ ${currentVal} (Đang dùng)` });
+      options.unshift({
+        id: currentVal,
+        label: `⭐ ${currentVal} (Đang dùng)`,
+      });
     }
 
-    UI.settingModelSelect.innerHTML = '';
-    options.forEach(opt => {
-      const el = document.createElement('option');
+    UI.settingModelSelect.innerHTML = "";
+    options.forEach((opt) => {
+      const el = document.createElement("option");
       el.value = opt.id;
       el.textContent = opt.label;
       UI.settingModelSelect.appendChild(el);
     });
 
     // Option nhập tùy chỉnh thủ công
-    const customOpt = document.createElement('option');
-    customOpt.value = '__custom__';
-    customOpt.textContent = '✏️ Nhập model tùy chỉnh khác...';
+    const customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.textContent = "✏️ Nhập model tùy chỉnh khác...";
     UI.settingModelSelect.appendChild(customOpt);
 
     if (currentVal && seen.has(currentVal)) {
       UI.settingModelSelect.value = currentVal;
-      if (UI.customModelGroup) UI.customModelGroup.style.display = 'none';
+      if (UI.customModelGroup) UI.customModelGroup.style.display = "none";
       if (UI.settingModelCustom) UI.settingModelCustom.value = currentVal;
     } else if (currentVal) {
-      UI.settingModelSelect.value = '__custom__';
-      if (UI.customModelGroup) UI.customModelGroup.style.display = 'block';
+      UI.settingModelSelect.value = "__custom__";
+      if (UI.customModelGroup) UI.customModelGroup.style.display = "block";
       if (UI.settingModelCustom) UI.settingModelCustom.value = currentVal;
     } else {
       if (options.length > 0) {
         UI.settingModelSelect.value = options[0].id;
-        if (UI.customModelGroup) UI.customModelGroup.style.display = 'none';
+        if (UI.customModelGroup) UI.customModelGroup.style.display = "none";
         if (UI.settingModelCustom) UI.settingModelCustom.value = options[0].id;
       } else {
-        UI.settingModelSelect.value = '__custom__';
-        if (UI.customModelGroup) UI.customModelGroup.style.display = 'block';
+        UI.settingModelSelect.value = "__custom__";
+        if (UI.customModelGroup) UI.customModelGroup.style.display = "block";
       }
     }
   }
 
   function setActiveModel(val) {
-    const provider = UI.settingApiProvider ? UI.settingApiProvider.value : 'gemini';
+    const provider = UI.settingApiProvider
+      ? UI.settingApiProvider.value
+      : "gemini";
     renderModelDropdown(provider, val);
   }
 
@@ -518,57 +560,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     set value(v) {
       setActiveModel(v);
-    }
+    },
   };
 
   if (UI.settingModelSelect) {
-    UI.settingModelSelect.addEventListener('change', () => {
-      if (UI.settingModelSelect.value === '__custom__') {
-        if (UI.customModelGroup) UI.customModelGroup.style.display = 'block';
+    UI.settingModelSelect.addEventListener("change", () => {
+      if (UI.settingModelSelect.value === "__custom__") {
+        if (UI.customModelGroup) UI.customModelGroup.style.display = "block";
         if (UI.settingModelCustom) UI.settingModelCustom.focus();
       } else {
-        if (UI.customModelGroup) UI.customModelGroup.style.display = 'none';
-        if (UI.settingModelCustom) UI.settingModelCustom.value = UI.settingModelSelect.value;
+        if (UI.customModelGroup) UI.customModelGroup.style.display = "none";
+        if (UI.settingModelCustom)
+          UI.settingModelCustom.value = UI.settingModelSelect.value;
       }
     });
   }
 
   if (UI.settingModelCustom) {
-    UI.settingModelCustom.addEventListener('input', () => {
-      if (UI.settingModelSelect && UI.settingModelSelect.value !== '__custom__') {
-        UI.settingModelSelect.value = '__custom__';
+    UI.settingModelCustom.addEventListener("input", () => {
+      if (
+        UI.settingModelSelect &&
+        UI.settingModelSelect.value !== "__custom__"
+      ) {
+        UI.settingModelSelect.value = "__custom__";
       }
     });
   }
 
   function updateEndpointVisibility() {
-    const provider = UI.settingApiProvider ? UI.settingApiProvider.value : 'gemini';
+    const provider = UI.settingApiProvider
+      ? UI.settingApiProvider.value
+      : "gemini";
     if (UI.settingApiEndpointGroup) {
-      if (provider === 'custom') {
-        UI.settingApiEndpointGroup.style.display = 'flex';
+      if (provider === "custom") {
+        UI.settingApiEndpointGroup.style.display = "flex";
       } else {
-        UI.settingApiEndpointGroup.style.display = 'none';
+        UI.settingApiEndpointGroup.style.display = "none";
       }
     }
   }
 
   if (UI.settingApiProvider) {
-    UI.settingApiProvider.addEventListener('change', () => {
+    UI.settingApiProvider.addEventListener("change", () => {
       const selected = UI.settingApiProvider.value;
       const preset = API_PRESETS[selected];
       if (preset) {
-        if (selected !== 'custom') {
-          if (UI.settingApiEndpoint) UI.settingApiEndpoint.value = preset.endpoint;
+        if (selected !== "custom") {
+          if (UI.settingApiEndpoint)
+            UI.settingApiEndpoint.value = preset.endpoint;
           if (UI.settingModel) UI.settingModel.value = preset.model;
           renderModelDropdown(selected, preset.model);
         } else {
           if (UI.settingApiEndpoint && !UI.settingApiEndpoint.value.trim()) {
             UI.settingApiEndpoint.value = preset.endpoint;
           }
-          renderModelDropdown(selected, getActiveModel() || '');
+          renderModelDropdown(selected, getActiveModel() || "");
         }
-        if (UI.settingApiEndpoint) UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
-        if (UI.settingApiKey) UI.settingApiKey.placeholder = preset.keyPlaceholder;
+        if (UI.settingApiEndpoint)
+          UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
+        if (UI.settingApiKey)
+          UI.settingApiKey.placeholder = preset.keyPlaceholder;
       }
       updateEndpointVisibility();
     });
@@ -576,56 +627,73 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Nút lấy danh sách models (OpenAI-compatible /models)
   if (UI.btnFetchModels) {
-    UI.btnFetchModels.addEventListener('click', async () => {
-      const provider = UI.settingApiProvider ? UI.settingApiProvider.value : 'gemini';
-      const key = (UI.settingApiKey?.value || '').trim();
-      let rawEndpoint = (UI.settingApiEndpoint?.value || '').trim();
+    UI.btnFetchModels.addEventListener("click", async () => {
+      const provider = UI.settingApiProvider
+        ? UI.settingApiProvider.value
+        : "gemini";
+      const key = (UI.settingApiKey?.value || "").trim();
+      let rawEndpoint = (UI.settingApiEndpoint?.value || "").trim();
 
-      if (provider === 'custom' && !rawEndpoint) {
-        rawEndpoint = 'http://localhost:20128/v1';
+      if (provider === "custom" && !rawEndpoint) {
+        rawEndpoint = "http://localhost:20128/v1";
         if (UI.settingApiEndpoint) UI.settingApiEndpoint.value = rawEndpoint;
       } else if (!rawEndpoint) {
-        if (provider === 'openai') rawEndpoint = 'https://api.openai.com/v1';
-        else if (provider === 'deepseek') rawEndpoint = 'https://api.deepseek.com/v1';
-        else if (provider === 'openrouter') rawEndpoint = 'https://openrouter.ai/api/v1';
-        else if (provider === 'ollama') rawEndpoint = 'http://localhost:11434/v1';
+        if (provider === "openai") rawEndpoint = "https://api.openai.com/v1";
+        else if (provider === "deepseek")
+          rawEndpoint = "https://api.deepseek.com/v1";
+        else if (provider === "openrouter")
+          rawEndpoint = "https://openrouter.ai/api/v1";
+        else if (provider === "ollama")
+          rawEndpoint = "http://localhost:11434/v1";
       }
 
       const showStatus = (text, isError = false) => {
         if (!UI.fetchModelsStatus) return;
-        UI.fetchModelsStatus.style.display = 'block';
-        UI.fetchModelsStatus.style.color = isError ? '#f87171' : '#34d399';
+        UI.fetchModelsStatus.style.display = "block";
+        UI.fetchModelsStatus.style.color = isError ? "#f87171" : "#34d399";
         UI.fetchModelsStatus.textContent = text;
       };
 
-      showStatus('⏳ Đang tải danh sách model...');
+      showStatus("⏳ Đang tải danh sách model...");
 
       try {
         let modelIds = [];
 
-        if (provider === 'gemini') {
-          if (!key) throw new Error('Cần nhập API Key để lấy danh sách model Gemini.');
+        if (provider === "gemini") {
+          if (!key)
+            throw new Error("Cần nhập API Key để lấy danh sách model Gemini.");
           const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`;
           const res = await fetch(url);
           if (!res.ok) {
             const errJson = await res.json().catch(() => ({}));
-            throw new Error(`Gemini API (${res.status}): ${errJson.error?.message || res.statusText}`);
+            throw new Error(
+              `Gemini API (${res.status}): ${errJson.error?.message || res.statusText}`,
+            );
           }
           const data = await res.json();
           if (Array.isArray(data.models)) {
             modelIds = data.models
-              .filter(m => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent'))
-              .map(m => m.name.replace(/^models\//, ''));
+              .filter(
+                (m) =>
+                  !m.supportedGenerationMethods ||
+                  m.supportedGenerationMethods.includes("generateContent"),
+              )
+              .map((m) => m.name.replace(/^models\//, ""));
           }
         } else {
           // Chuẩn OpenAI-compatible /models
-          const cleanEndpoint = (rawEndpoint || 'http://localhost:20128/v1').replace(/\/+$/, '');
-          let modelsUrl = '';
-          if (cleanEndpoint.endsWith('/chat/completions')) {
-            modelsUrl = cleanEndpoint.replace(/\/chat\/completions$/, '/models');
-          } else if (cleanEndpoint.endsWith('/models')) {
+          const cleanEndpoint = (
+            rawEndpoint || "http://localhost:20128/v1"
+          ).replace(/\/+$/, "");
+          let modelsUrl = "";
+          if (cleanEndpoint.endsWith("/chat/completions")) {
+            modelsUrl = cleanEndpoint.replace(
+              /\/chat\/completions$/,
+              "/models",
+            );
+          } else if (cleanEndpoint.endsWith("/models")) {
             modelsUrl = cleanEndpoint;
-          } else if (cleanEndpoint.endsWith('/v1')) {
+          } else if (cleanEndpoint.endsWith("/v1")) {
             modelsUrl = `${cleanEndpoint}/models`;
           } else {
             modelsUrl = `${cleanEndpoint}/v1/models`;
@@ -633,39 +701,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
           const headers = {};
           if (key) {
-            headers['Authorization'] = `Bearer ${key}`;
+            headers["Authorization"] = `Bearer ${key}`;
           }
-          if (modelsUrl.includes('openrouter.ai')) {
-            headers['HTTP-Referer'] = 'https://edux.cmcu.edu.vn';
-            headers['X-Title'] = 'EDUX Slayers';
+          if (modelsUrl.includes("openrouter.ai")) {
+            headers["HTTP-Referer"] = "https://edux.cmcu.edu.vn";
+            headers["X-Title"] = "EDUX Slayers";
           }
 
-          const res = await fetch(modelsUrl, { method: 'GET', headers });
+          const res = await fetch(modelsUrl, { method: "GET", headers });
           if (!res.ok) {
             const errJson = await res.json().catch(() => ({}));
-            throw new Error(`API (${res.status}): ${errJson.error?.message || errJson.message || res.statusText}`);
+            throw new Error(
+              `API (${res.status}): ${errJson.error?.message || errJson.message || res.statusText}`,
+            );
           }
 
           const resJson = await res.json();
           if (Array.isArray(resJson)) {
-            modelIds = resJson.map(m => typeof m === 'string' ? m : (m.id || m.name)).filter(Boolean);
+            modelIds = resJson
+              .map((m) => (typeof m === "string" ? m : m.id || m.name))
+              .filter(Boolean);
           } else if (Array.isArray(resJson?.data)) {
-            modelIds = resJson.data.map(m => typeof m === 'string' ? m : (m.id || m.name)).filter(Boolean);
+            modelIds = resJson.data
+              .map((m) => (typeof m === "string" ? m : m.id || m.name))
+              .filter(Boolean);
           } else if (Array.isArray(resJson?.models)) {
-            modelIds = resJson.models.map(m => typeof m === 'string' ? m : (m.name || m.id)).filter(Boolean);
+            modelIds = resJson.models
+              .map((m) => (typeof m === "string" ? m : m.name || m.id))
+              .filter(Boolean);
           }
         }
 
         if (modelIds.length === 0) {
-          showStatus('⚠️ Server không trả về danh sách model.', true);
+          showStatus("⚠️ Server không trả về danh sách model.", true);
           return;
         }
 
         // Cập nhật datalist cho ô input Model
         if (UI.modelDatalist) {
-          UI.modelDatalist.innerHTML = '';
-          modelIds.forEach(id => {
-            const opt = document.createElement('option');
+          UI.modelDatalist.innerHTML = "";
+          modelIds.forEach((id) => {
+            const opt = document.createElement("option");
             opt.value = id;
             UI.modelDatalist.appendChild(opt);
           });
@@ -680,87 +756,127 @@ document.addEventListener('DOMContentLoaded', async () => {
           UI.settingModel.value = modelIds[0];
         }
 
-        showStatus(`✓ Đã tải ${modelIds.length} models! (Bấm đúp ô nhập để chọn)`);
-        addLog(UI.testLog, `✓ Đã cập nhật danh sách ${modelIds.length} models từ server API.`, 'success');
+        showStatus(
+          `✓ Đã tải ${modelIds.length} models! (Bấm đúp ô nhập để chọn)`,
+        );
+        addLog(
+          UI.testLog,
+          `✓ Đã cập nhật danh sách ${modelIds.length} models từ server API.`,
+          "success",
+        );
         showStatus(`✓ Đã tải ${modelIds.length} models vào menu dropdown!`);
-        addLog(UI.testLog, `✓ Đã cập nhật ${modelIds.length} models từ server API vào menu dropdown.`, 'success');
+        addLog(
+          UI.testLog,
+          `✓ Đã cập nhật ${modelIds.length} models từ server API vào menu dropdown.`,
+          "success",
+        );
       } catch (err) {
         showStatus(`❌ Lỗi: ${err.message}`, true);
-        addLog(UI.testLog, `Không thể lấy danh sách model: ${err.message}`, 'error');
+        addLog(
+          UI.testLog,
+          `Không thể lấy danh sách model: ${err.message}`,
+          "error",
+        );
       }
     });
   }
 
   const settings = await chrome.storage.local.get([
-    'delayMs',
-    'autoNext',
-    'autoSubmit',
-    'useAiSlide',
-    'savedAnswers',
-    'slideStats',
-    'lastExamData',
-    'apiProvider',
-    'apiEndpoint',
-    'apiKey',
-    'apiModel',
-    'cachedModelsByProvider',
-    'testWorkflowMode'
+    "delayMs",
+    "autoNext",
+    "autoSubmit",
+    "useAiSlide",
+    "savedAnswers",
+    "slideStats",
+    "lastExamData",
+    "apiProvider",
+    "apiEndpoint",
+    "apiKey",
+    "apiModel",
+    "cachedModelsByProvider",
+    "testWorkflowMode",
   ]);
 
-  if (settings.cachedModelsByProvider && typeof settings.cachedModelsByProvider === 'object') {
+  if (
+    settings.cachedModelsByProvider &&
+    typeof settings.cachedModelsByProvider === "object"
+  ) {
     cachedModelsByProvider = settings.cachedModelsByProvider;
   }
 
-  UI.settingDelay.value = settings.delayMs !== undefined ? settings.delayMs : 100;
-  UI.settingAutoNext.checked = settings.autoNext !== undefined ? settings.autoNext : true;
-  if (UI.settingAutoSubmit) UI.settingAutoSubmit.checked = settings.autoSubmit !== undefined ? settings.autoSubmit : true;
-  if (UI.settingUseAiSlide) UI.settingUseAiSlide.checked = settings.useAiSlide !== undefined ? settings.useAiSlide : true;
-  setSlideMethod(settings.useAiSlide !== undefined ? (settings.useAiSlide ? 'ai' : 'bruteforce') : 'ai', false);
+  UI.settingDelay.value =
+    settings.delayMs !== undefined ? settings.delayMs : 100;
+  UI.settingAutoNext.checked =
+    settings.autoNext !== undefined ? settings.autoNext : true;
+  if (UI.settingAutoSubmit)
+    UI.settingAutoSubmit.checked =
+      settings.autoSubmit !== undefined ? settings.autoSubmit : true;
+  if (UI.settingUseAiSlide)
+    UI.settingUseAiSlide.checked =
+      settings.useAiSlide !== undefined ? settings.useAiSlide : true;
+  setSlideMethod(
+    settings.useAiSlide !== undefined
+      ? settings.useAiSlide
+        ? "ai"
+        : "bruteforce"
+      : "ai",
+    false,
+  );
 
   if (UI.btnSlideMethodAi) {
-    UI.btnSlideMethodAi.addEventListener('click', () => setSlideMethod('ai'));
+    UI.btnSlideMethodAi.addEventListener("click", () => setSlideMethod("ai"));
   }
   if (UI.btnSlideMethodBrute) {
-    UI.btnSlideMethodBrute.addEventListener('click', () => setSlideMethod('bruteforce'));
+    UI.btnSlideMethodBrute.addEventListener("click", () =>
+      setSlideMethod("bruteforce"),
+    );
   }
   if (UI.settingUseAiSlide) {
-    UI.settingUseAiSlide.addEventListener('change', () => {
-      setSlideMethod(UI.settingUseAiSlide.checked ? 'ai' : 'bruteforce');
+    UI.settingUseAiSlide.addEventListener("change", () => {
+      setSlideMethod(UI.settingUseAiSlide.checked ? "ai" : "bruteforce");
     });
   }
   if (UI.settingApiProvider && settings.apiProvider) {
     UI.settingApiProvider.value = settings.apiProvider;
     const preset = API_PRESETS[settings.apiProvider];
     if (preset) {
-      if (UI.settingApiEndpoint) UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
-      if (UI.settingApiKey) UI.settingApiKey.placeholder = preset.keyPlaceholder;
+      if (UI.settingApiEndpoint)
+        UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
+      if (UI.settingApiKey)
+        UI.settingApiKey.placeholder = preset.keyPlaceholder;
     }
   }
   if (UI.settingApiEndpoint) {
-    if (settings.apiEndpoint !== undefined && settings.apiEndpoint !== '') {
+    if (settings.apiEndpoint !== undefined && settings.apiEndpoint !== "") {
       UI.settingApiEndpoint.value = settings.apiEndpoint;
-    } else if (UI.settingApiProvider && UI.settingApiProvider.value === 'custom') {
-      UI.settingApiEndpoint.value = 'http://localhost:20128/v1';
+    } else if (
+      UI.settingApiProvider &&
+      UI.settingApiProvider.value === "custom"
+    ) {
+      UI.settingApiEndpoint.value = "http://localhost:20128/v1";
     }
   }
   updateEndpointVisibility();
 
-  if (UI.settingApiKey && settings.apiKey) UI.settingApiKey.value = settings.apiKey;
-  if (UI.settingModel && settings.apiModel) UI.settingModel.value = settings.apiModel;
-  const activeProvider = settings.apiProvider || 'gemini';
-  renderModelDropdown(activeProvider, settings.apiModel || '');
+  if (UI.settingApiKey && settings.apiKey)
+    UI.settingApiKey.value = settings.apiKey;
+  if (UI.settingModel && settings.apiModel)
+    UI.settingModel.value = settings.apiModel;
+  const activeProvider = settings.apiProvider || "gemini";
+  renderModelDropdown(activeProvider, settings.apiModel || "");
   updateActiveModelBadge(settings.apiModel, activeProvider);
 
   if (settings.testWorkflowMode) {
     switchTestMode(settings.testWorkflowMode);
   } else {
-    switchTestMode('auto');
+    switchTestMode("auto");
   }
 
   if (settings.savedAnswers) {
     UI.answerInput.value = settings.savedAnswers;
     if (UI.autoAnswersBox) UI.autoAnswersBox.value = settings.savedAnswers;
-    if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'block';
+    if (UI.btnToggleAutoAnswers)
+      UI.btnToggleAutoAnswers.style.display = "block";
   }
   if (settings.slideStats) {
     UI.slideCount.textContent = settings.slideStats.solved || 0;
@@ -772,59 +888,69 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Check state from content script on popup open
   const activeTab = await getActiveTab();
-  if (activeTab && activeTab.url && (activeTab.url.includes('cmcu.edu.vn') || activeTab.url.includes('edux'))) {
+  if (
+    activeTab &&
+    activeTab.url &&
+    (activeTab.url.includes("cmcu.edu.vn") || activeTab.url.includes("edux"))
+  ) {
     // Đảm bảo network interceptor luôn hoạt động trong MAIN world
-    chrome.scripting.executeScript({
-      target: { tabId: activeTab.id },
-      files: ['injected.js'],
-      world: 'MAIN'
-    }).catch(() => {});
+    chrome.scripting
+      .executeScript({
+        target: { tabId: activeTab.id },
+        files: ["injected.js"],
+        world: "MAIN",
+      })
+      .catch(() => {});
 
     try {
-      const response = await sendTabMessage(activeTab.id, { action: 'GET_STATUS' });
+      const response = await sendTabMessage(activeTab.id, {
+        action: "GET_STATUS",
+      });
       if (response) {
         if (response.isSlideRunning) {
-          UI.btnStartSlide.classList.add('hidden');
-          UI.btnStopSlide.classList.remove('hidden');
-          setStatus('Đang giải Slide...', 'running');
+          UI.btnStartSlide.classList.add("hidden");
+          UI.btnStopSlide.classList.remove("hidden");
+          setStatus("Đang giải Slide...", "running");
         }
         if (response.isExamOpen && response.examData) {
           updateExamInfoUI(response.examData);
         } else {
           updateExamInfoUI(null);
-          chrome.storage.local.remove('lastExamData');
+          chrome.storage.local.remove("lastExamData");
         }
       }
     } catch (e) {
-      addLog(UI.slideLog, 'Mở slide hoặc bài tập để bắt đầu.', 'info');
+      addLog(UI.slideLog, "Mở slide hoặc bài tập để bắt đầu.", "info");
     }
   } else {
-    addLog(UI.slideLog, 'Vui lòng chuyển sang trang EDUX để sử dụng.', 'warn');
+    addLog(UI.slideLog, "Vui lòng chuyển sang trang EDUX để sử dụng.", "warn");
   }
 
   // Listen for progress updates from content script
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === 'SLIDE_LOG') {
-      addLog(UI.slideLog, msg.message, msg.logType || 'info');
-      if (msg.solvedCount !== undefined) UI.slideCount.textContent = msg.solvedCount;
-      if (msg.retryCount !== undefined) UI.retryCount.textContent = msg.retryCount;
-    } else if (msg.type === 'TEST_LOG') {
-      addLog(UI.testLog, msg.message, msg.logType || 'info');
-    } else if (msg.type === 'EXAM_DATA_READY') {
+    if (msg.type === "SLIDE_LOG") {
+      addLog(UI.slideLog, msg.message, msg.logType || "info");
+      if (msg.solvedCount !== undefined)
+        UI.slideCount.textContent = msg.solvedCount;
+      if (msg.retryCount !== undefined)
+        UI.retryCount.textContent = msg.retryCount;
+    } else if (msg.type === "TEST_LOG") {
+      addLog(UI.testLog, msg.message, msg.logType || "info");
+    } else if (msg.type === "EXAM_DATA_READY") {
       updateExamInfoUI(msg.payload);
-      addLog(UI.testLog, '📡 Đã bắt được đề bài tập từ hệ thống!', 'success');
-    } else if (msg.type === 'EXAM_SUBMITTED') {
+      addLog(UI.testLog, "📡 Đã bắt được đề bài tập từ hệ thống!", "success");
+    } else if (msg.type === "EXAM_SUBMITTED") {
       updateExamInfoUI(null);
-      chrome.storage.local.remove('lastExamData');
-    } else if (msg.type === 'SLIDE_STATUS_CHANGE') {
+      chrome.storage.local.remove("lastExamData");
+    } else if (msg.type === "SLIDE_STATUS_CHANGE") {
       if (msg.isRunning) {
-        UI.btnStartSlide.classList.add('hidden');
-        UI.btnStopSlide.classList.remove('hidden');
-        setStatus('Đang giải Slide...', 'running');
+        UI.btnStartSlide.classList.add("hidden");
+        UI.btnStopSlide.classList.remove("hidden");
+        setStatus("Đang giải Slide...", "running");
       } else {
-        UI.btnStartSlide.classList.remove('hidden');
-        UI.btnStopSlide.classList.add('hidden');
-        setStatus('Sẵn sàng', 'idle');
+        UI.btnStartSlide.classList.remove("hidden");
+        UI.btnStopSlide.classList.add("hidden");
+        setStatus("Sẵn sàng", "idle");
       }
     }
   });
@@ -832,130 +958,172 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   // 6. Slide Brute-force Actions
   // =========================================================================
-  UI.btnStartSlide.addEventListener('click', async () => {
+  UI.btnStartSlide.addEventListener("click", async () => {
     const tab = await getActiveTab();
     if (!tab) return;
 
-    let useAi = UI.btnSlideMethodAi ? UI.btnSlideMethodAi.classList.contains('active') : (UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true);
+    let useAi = UI.btnSlideMethodAi
+      ? UI.btnSlideMethodAi.classList.contains("active")
+      : UI.settingUseAiSlide
+        ? UI.settingUseAiSlide.checked
+        : true;
 
-    const apiKey = (UI.settingApiKey?.value || '').trim();
-    const apiProvider = (UI.settingApiProvider?.value || 'gemini').trim();
-    const isLocal = apiProvider === 'ollama' || (UI.settingApiEndpoint?.value || '').includes('localhost');
+    const apiKey = (UI.settingApiKey?.value || "").trim();
+    const apiProvider = (UI.settingApiProvider?.value || "gemini").trim();
+    const isLocal =
+      apiProvider === "ollama" ||
+      (UI.settingApiEndpoint?.value || "").includes("localhost");
 
     if (useAi && !apiKey && !isLocal) {
-      addLog(UI.slideLog, '⚠️ Chưa có API Key để giải Slide bằng AI. Đang tự động chuyển sang phương pháp Thử sai nhanh...', 'warn');
-      setSlideMethod('bruteforce');
+      addLog(
+        UI.slideLog,
+        "⚠️ Chưa có API Key để giải Slide bằng AI. Đang tự động chuyển sang phương pháp Thử sai nhanh...",
+        "warn",
+      );
+      setSlideMethod("bruteforce");
       useAi = false;
     }
 
     const origHtml = UI.btnStartSlide.innerHTML;
-    UI.btnStartSlide.innerHTML = '<span class="spinner spinner-sm"></span> Đang khởi động...';
+    UI.btnStartSlide.innerHTML =
+      '<span class="spinner spinner-sm"></span> Đang khởi động...';
     UI.btnStartSlide.disabled = true;
 
     try {
       await sendTabMessage(tab.id, {
-        action: 'START_SLIDE_BRUTEFORCE',
+        action: "START_SLIDE_BRUTEFORCE",
         config: {
           delayMs: parseInt(UI.settingDelay.value, 10) || 100,
           autoNext: UI.settingAutoNext.checked,
-          useAi
-        }
+          useAi,
+        },
       });
-      UI.btnStartSlide.classList.add('hidden');
-      UI.btnStopSlide.classList.remove('hidden');
-      setStatus('Đang giải Slide...', 'running');
+      UI.btnStartSlide.classList.add("hidden");
+      UI.btnStopSlide.classList.remove("hidden");
+      setStatus("Đang giải Slide...", "running");
       addLog(
         UI.slideLog,
         useAi
-          ? '🧠 Đã bật giải Slide bằng AI (Chờ AI phân tích câu hỏi -> Click)'
-          : '⚡ Đã bật giải Slide chế độ thử sai nhanh.',
-        'success'
+          ? "🧠 Đã bật giải Slide bằng AI (Chờ AI phân tích câu hỏi -> Click)"
+          : "⚡ Đã bật giải Slide chế độ thử sai nhanh.",
+        "success",
       );
     } catch (err) {
-      addLog(UI.slideLog, 'Lỗi kết nối với trang EDUX: ' + err.message, 'error');
+      addLog(
+        UI.slideLog,
+        "Lỗi kết nối với trang EDUX: " + err.message,
+        "error",
+      );
     } finally {
       UI.btnStartSlide.innerHTML = origHtml;
       UI.btnStartSlide.disabled = false;
     }
   });
 
-  UI.btnStopSlide.addEventListener('click', async () => {
+  UI.btnStopSlide.addEventListener("click", async () => {
     const tab = await getActiveTab();
     if (!tab) return;
     try {
-      await sendTabMessage(tab.id, { action: 'STOP_SLIDE_BRUTEFORCE' });
-      UI.btnStartSlide.classList.remove('hidden');
-      UI.btnStopSlide.classList.add('hidden');
-      setStatus('Đã dừng', 'stopped');
-      addLog(UI.slideLog, 'Đã dừng giải Slide.', 'warn');
+      await sendTabMessage(tab.id, { action: "STOP_SLIDE_BRUTEFORCE" });
+      UI.btnStartSlide.classList.remove("hidden");
+      UI.btnStopSlide.classList.add("hidden");
+      setStatus("Đã dừng", "stopped");
+      addLog(UI.slideLog, "Đã dừng giải Slide.", "warn");
     } catch (err) {
-      addLog(UI.slideLog, 'Không thể dừng tiến trình.', 'error');
+      addLog(UI.slideLog, "Không thể dừng tiến trình.", "error");
     }
   });
 
   // =========================================================================
   // 7. AI Solver Service (Hỗ trợ tùy chỉnh nguồn API: Gemini, OpenAI, DeepSeek, OpenRouter, Ollama...)
   // =========================================================================
-  async function solveWithAI(promptContent, apiKey, model, apiEndpoint, apiProvider) {
-    const key = (apiKey || '').trim();
-    const rawModel = (model || '').trim();
-    let customEndpoint = (apiEndpoint || '').trim();
-    const provider = (apiProvider || 'gemini').toLowerCase().trim();
+  async function solveWithAI(
+    promptContent,
+    apiKey,
+    model,
+    apiEndpoint,
+    apiProvider,
+  ) {
+    const key = (apiKey || "").trim();
+    const rawModel = (model || "").trim();
+    let customEndpoint = (apiEndpoint || "").trim();
+    const provider = (apiProvider || "gemini").toLowerCase().trim();
 
-    if (provider === 'custom' && !customEndpoint) {
-      customEndpoint = 'http://localhost:20128/v1';
+    if (provider === "custom" && !customEndpoint) {
+      customEndpoint = "http://localhost:20128/v1";
     }
 
-    const isLocal = provider === 'ollama' || customEndpoint.includes('localhost') || customEndpoint.includes('127.0.0.1');
+    const isLocal =
+      provider === "ollama" ||
+      customEndpoint.includes("localhost") ||
+      customEndpoint.includes("127.0.0.1");
 
     if (!key && !isLocal) {
-      throw new Error('Chưa cấu hình API Key. Vui lòng vào tab Cài đặt để nhập key.');
+      throw new Error(
+        "Chưa cấu hình API Key. Vui lòng vào tab Cài đặt để nhập key.",
+      );
     }
 
     // Xác định giao thức API: Gemini format hay OpenAI Chat Completions format
     let isGemini = false;
-    if (provider === 'gemini') {
+    if (provider === "gemini") {
       isGemini = true;
-    } else if (provider === 'openai' || provider === 'deepseek' || provider === 'openrouter' || provider === 'ollama') {
+    } else if (
+      provider === "openai" ||
+      provider === "deepseek" ||
+      provider === "openrouter" ||
+      provider === "ollama"
+    ) {
       isGemini = false;
     } else {
       // provider là 'custom' hoặc auto
       if (customEndpoint) {
-        if (customEndpoint.includes('googleapis.com') || customEndpoint.includes(':generateContent')) {
+        if (
+          customEndpoint.includes("googleapis.com") ||
+          customEndpoint.includes(":generateContent")
+        ) {
           isGemini = true;
         } else {
           isGemini = false;
         }
-      } else if (key.startsWith('AIza') || rawModel.toLowerCase().includes('gemini') || !rawModel) {
+      } else if (
+        key.startsWith("AIza") ||
+        rawModel.toLowerCase().includes("gemini") ||
+        !rawModel
+      ) {
         isGemini = true;
       }
     }
 
     const systemPrompt =
-      'Bạn là chuyên gia khảo thí và học thuật cao cấp hàng đầu, có độ chính xác tuyệt đối 100% trong việc giải quyết các bài kiểm tra trắc nghiệm, đúng/sai, điền khuyết và tự luận.\n' +
-      'Yêu cầu:\n' +
-      '1. Phân tích cẩn thận từng câu hỏi và các lựa chọn loại trừ để chọn phương án đúng tuyệt đối.\n' +
-      '2. Trả về JSONL một dòng duy nhất (hoặc JSON Array các object);\n' +
+      "Bạn là chuyên gia khảo thí và học thuật cao cấp hàng đầu, có độ chính xác tuyệt đối 100% trong việc giải quyết các bài kiểm tra trắc nghiệm, đúng/sai, điền khuyết và tự luận.\n" +
+      "Yêu cầu:\n" +
+      "1. Phân tích cẩn thận từng câu hỏi và các lựa chọn loại trừ để chọn phương án đúng tuyệt đối.\n" +
+      "2. Trả về JSONL một dòng duy nhất (hoặc JSON Array các object);\n" +
       '3. Mỗi phần tử có "so_cau" và "dap_an";\n' +
       '4. "dap_an" là A/B/C/D hoặc từ/cụm từ cần điền;\n' +
       '5. Với câu đúng/sai, "dap_an" là mảng giá trị Đúng/Sai theo thứ tự từng mệnh đề (ví dụ: [true, false, true, true]);\n' +
-      '6. Tuyệt đối không thêm lời dẫn hay giải thích.';
+      "6. Tuyệt đối không thêm lời dẫn hay giải thích.";
 
-    let responseText = '';
+    let responseText = "";
 
     if (isGemini) {
-      const geminiModel = rawModel ? rawModel.replace(/^gemini\//i, '') : 'gemini-2.0-flash';
-      let endpoint = '';
+      const geminiModel = rawModel
+        ? rawModel.replace(/^gemini\//i, "")
+        : "gemini-2.0-flash";
+      let endpoint = "";
 
       if (customEndpoint) {
-        if (customEndpoint.includes(':generateContent')) {
+        if (customEndpoint.includes(":generateContent")) {
           endpoint = customEndpoint;
-          if (key && !endpoint.includes('key=')) {
-            endpoint += (endpoint.includes('?') ? '&' : '?') + `key=${encodeURIComponent(key)}`;
+          if (key && !endpoint.includes("key=")) {
+            endpoint +=
+              (endpoint.includes("?") ? "&" : "?") +
+              `key=${encodeURIComponent(key)}`;
           }
         } else {
-          const base = customEndpoint.replace(/\/+$/, '');
-          if (base.endsWith('/v1beta') || base.endsWith('/v1')) {
+          const base = customEndpoint.replace(/\/+$/, "");
+          if (base.endsWith("/v1beta") || base.endsWith("/v1")) {
             endpoint = `${base}/models/${geminiModel}:generateContent?key=${encodeURIComponent(key)}`;
           } else {
             endpoint = `${base}/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(key)}`;
@@ -966,74 +1134,76 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: promptContent }] }],
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0 }
-        })
+          generationConfig: { temperature: 0 },
+        }),
       });
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(`Lỗi Gemini API (${res.status}): ${errJson.error?.message || res.statusText}`);
+        throw new Error(
+          `Lỗi Gemini API (${res.status}): ${errJson.error?.message || res.statusText}`,
+        );
       }
 
       const resJson = await res.json();
-      responseText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      responseText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     } else {
       // OpenAI / OpenAI-Compatible (DeepSeek, OpenRouter, Ollama, Groq, custom proxy...)
       let openAiModel = rawModel;
       if (!openAiModel) {
-        if (provider === 'deepseek') openAiModel = 'deepseek-chat';
-        else if (provider === 'ollama') openAiModel = 'llama3.2';
-        else openAiModel = 'gpt-4o-mini';
+        if (provider === "deepseek") openAiModel = "deepseek-chat";
+        else if (provider === "ollama") openAiModel = "llama3.2";
+        else openAiModel = "gpt-4o-mini";
       }
 
-      let endpoint = '';
+      let endpoint = "";
       if (customEndpoint) {
-        const base = customEndpoint.replace(/\/+$/, '');
-        if (base.endsWith('/chat/completions')) {
+        const base = customEndpoint.replace(/\/+$/, "");
+        if (base.endsWith("/chat/completions")) {
           endpoint = base;
-        } else if (base.endsWith('/v1')) {
+        } else if (base.endsWith("/v1")) {
           endpoint = `${base}/chat/completions`;
         } else {
           endpoint = `${base}/v1/chat/completions`;
         }
       } else {
-        if (provider === 'deepseek') {
-          endpoint = 'https://api.deepseek.com/v1/chat/completions';
-        } else if (provider === 'openrouter') {
-          endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-        } else if (provider === 'ollama') {
-          endpoint = 'http://localhost:11434/v1/chat/completions';
+        if (provider === "deepseek") {
+          endpoint = "https://api.deepseek.com/v1/chat/completions";
+        } else if (provider === "openrouter") {
+          endpoint = "https://openrouter.ai/api/v1/chat/completions";
+        } else if (provider === "ollama") {
+          endpoint = "http://localhost:11434/v1/chat/completions";
         } else {
-          endpoint = 'https://api.openai.com/v1/chat/completions';
+          endpoint = "https://api.openai.com/v1/chat/completions";
         }
       }
 
-      const headers = { 'Content-Type': 'application/json' };
+      const headers = { "Content-Type": "application/json" };
       if (key) {
-        headers['Authorization'] = `Bearer ${key}`;
+        headers["Authorization"] = `Bearer ${key}`;
       }
-      if (endpoint.includes('openrouter.ai')) {
-        headers['HTTP-Referer'] = 'https://edux.cmcu.edu.vn';
-        headers['X-Title'] = 'EDUX Slayers';
+      if (endpoint.includes("openrouter.ai")) {
+        headers["HTTP-Referer"] = "https://edux.cmcu.edu.vn";
+        headers["X-Title"] = "EDUX Slayers";
       }
 
       const res = await fetch(endpoint, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify({
           model: openAiModel,
           messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: promptContent }
+            { role: "system", content: systemPrompt },
+            { role: "user", content: promptContent },
           ],
           temperature: 0,
-          stream: false
-        })
+          stream: false,
+        }),
       });
 
       const rawText = await res.text();
@@ -1046,17 +1216,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         throw new Error(`Lỗi API (${res.status}): ${errMessage}`);
       }
 
-      if (rawText.trim().startsWith('data:') || rawText.includes('\ndata:')) {
-        let accumulated = '';
-        const lines = rawText.split('\n');
+      if (rawText.trim().startsWith("data:") || rawText.includes("\ndata:")) {
+        let accumulated = "";
+        const lines = rawText.split("\n");
         for (const line of lines) {
           const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-          const dataStr = trimmed.replace(/^data:\s*/, '').trim();
-          if (dataStr === '[DONE]') break;
+          if (!trimmed.startsWith("data:")) continue;
+          const dataStr = trimmed.replace(/^data:\s*/, "").trim();
+          if (dataStr === "[DONE]") break;
           try {
             const chunk = JSON.parse(dataStr);
-            const delta = chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
+            const delta =
+              chunk.choices?.[0]?.delta?.content ||
+              chunk.choices?.[0]?.message?.content ||
+              "";
             accumulated += delta;
           } catch (e) {}
         }
@@ -1065,7 +1238,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const resJson = JSON.parse(rawText);
           const choiceMessage = resJson?.choices?.[0]?.message;
-          responseText = choiceMessage?.content || choiceMessage?.reasoning_content || '';
+          responseText =
+            choiceMessage?.content || choiceMessage?.reasoning_content || "";
         } catch (e) {
           responseText = rawText;
         }
@@ -1074,7 +1248,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Mô phỏng sanitize_ai_response()
     let cleaned = responseText.trim();
-    if (cleaned.startsWith('```')) {
+    if (cleaned.startsWith("```")) {
       const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
       if (match) {
         cleaned = match[1].trim();
@@ -1087,61 +1261,83 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 8. Test Solver Actions (Bài tập)
   // =========================================================================
 
-  // Chuyển đổi chế độ: Tự động (1-Click) vs Thủ công (Web AI)
+  // Chuyển đổi chế độ: Tự động (API) vs Chatbot
   if (UI.btnModeAuto) {
-    UI.btnModeAuto.addEventListener('click', () => switchTestMode('auto'));
+    UI.btnModeAuto.addEventListener("click", () => switchTestMode("auto"));
   }
   if (UI.btnModeManual) {
-    UI.btnModeManual.addEventListener('click', () => switchTestMode('manual'));
+    UI.btnModeManual.addEventListener("click", () => switchTestMode("manual"));
   }
+
+  // Nút mở nhanh Chatbot AI (ChatGPT / Gemini / Claude) trong tab mới
+  document.querySelectorAll(".ai-link-btn[data-ai-url]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const url = btn.getAttribute("data-ai-url");
+      if (!url) return;
+      if (window.chrome?.tabs?.create) {
+        chrome.tabs.create({ url });
+      } else {
+        window.open(url, "_blank");
+      }
+      addLog(UI.testLog, `🔗 Đã mở ${btn.textContent.trim()} — hãy dán đề vào đó.`, "info");
+    });
+  });
 
   // Nút liên kết chuyển sang tab Cài đặt đổi Model
   if (UI.btnGoToSettings) {
-    UI.btnGoToSettings.addEventListener('click', () => {
-      const settingsTabBtn = document.querySelector('.tab-btn[data-tab="tab-settings"]');
+    UI.btnGoToSettings.addEventListener("click", () => {
+      const settingsTabBtn = document.querySelector(
+        '.tab-btn[data-tab="tab-settings"]',
+      );
       if (settingsTabBtn) settingsTabBtn.click();
     });
   }
 
   // Nút Phiên mới: Xóa trắng ô đáp án, prompt xem trước và reset tiến trình
   if (UI.btnNewSession) {
-    UI.btnNewSession.addEventListener('click', async () => {
+    UI.btnNewSession.addEventListener("click", async () => {
       await resetSolveSession(true);
-      addLog(UI.testLog, '🔄 Đã bắt đầu phiên làm việc mới (ô đáp án đã được xóa trắng).', 'info');
+      addLog(
+        UI.testLog,
+        "🔄 Đã bắt đầu phiên làm việc mới (ô đáp án đã được xóa trắng).",
+        "info",
+      );
     });
   }
 
-  // Nút Xóa nhanh ô đáp án trong chế độ thủ công
+  // Nút Xóa nhanh ô đáp án trong chế độ chatbot
   if (UI.btnClearAnswers) {
-    UI.btnClearAnswers.addEventListener('click', async () => {
+    UI.btnClearAnswers.addEventListener("click", async () => {
       await resetSolveSession(true);
-      addLog(UI.testLog, '🗑️ Đã xóa trắng ô đáp án.', 'info');
+      addLog(UI.testLog, "🗑️ Đã xóa trắng ô đáp án.", "info");
     });
   }
 
   // Xem/ẩn đáp án vừa giải ở chế độ Tự động
   if (UI.btnToggleAutoAnswers) {
-    UI.btnToggleAutoAnswers.addEventListener('click', () => {
+    UI.btnToggleAutoAnswers.addEventListener("click", () => {
       if (!UI.autoAnswersContainer) return;
-      const isHidden = UI.autoAnswersContainer.style.display === 'none';
-      UI.autoAnswersContainer.style.display = isHidden ? 'block' : 'none';
+      const isHidden = UI.autoAnswersContainer.style.display === "none";
+      UI.autoAnswersContainer.style.display = isHidden ? "block" : "none";
     });
   }
   if (UI.btnHideAutoAnswers) {
-    UI.btnHideAutoAnswers.addEventListener('click', () => {
-      if (UI.autoAnswersContainer) UI.autoAnswersContainer.style.display = 'none';
+    UI.btnHideAutoAnswers.addEventListener("click", () => {
+      if (UI.autoAnswersContainer)
+        UI.autoAnswersContainer.style.display = "none";
     });
   }
 
   // Nút Mở bài tập (Bấm "Làm bài tập" trên trang)
   if (UI.btnStartExercise) {
-    UI.btnStartExercise.addEventListener('click', async () => {
+    UI.btnStartExercise.addEventListener("click", async () => {
       // Khi bắt đầu một phiên bài tập mới -> Xóa trắng ô đáp án cũ
       await resetSolveSession(true);
       setStepperState(1);
 
       const origHtml = UI.btnStartExercise.innerHTML;
-      UI.btnStartExercise.innerHTML = '<span class="spinner spinner-sm"></span> Đang mở...';
+      UI.btnStartExercise.innerHTML =
+        '<span class="spinner spinner-sm"></span> Đang mở...';
       UI.btnStartExercise.disabled = true;
 
       const tab = await getActiveTab();
@@ -1152,21 +1348,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       try {
-        addLog(UI.testLog, "Đang tìm nút 'Làm bài tập' trên trang...", 'info');
-        const res = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+        addLog(UI.testLog, "Đang tìm nút 'Làm bài tập' trên trang...", "info");
+        const res = await sendTabMessage(tab.id, { action: "START_EXERCISE" });
         if (res && res.success) {
           if (res.questions) {
             updateExamInfoUI(res.questions);
-            addLog(UI.testLog, `🎉 Cửa sổ bài tập đã sẵn sàng (${res.questions.total_questions || 0} câu)!`, 'success');
+            addLog(
+              UI.testLog,
+              `🎉 Cửa sổ bài tập đã sẵn sàng (${res.questions.total_questions || 0} câu)!`,
+              "success",
+            );
           } else {
-            addLog(UI.testLog, res.opened ? 'Cửa sổ bài tập đã sẵn sàng!' : 'Đã bấm nút làm bài tập.', 'success');
+            addLog(
+              UI.testLog,
+              res.opened
+                ? "Cửa sổ bài tập đã sẵn sàng!"
+                : "Đã bấm nút làm bài tập.",
+              "success",
+            );
           }
         } else {
-          addLog(UI.testLog, res?.message || 'Không tìm thấy nút làm bài tập.', 'warn');
+          addLog(
+            UI.testLog,
+            res?.message || "Không tìm thấy nút làm bài tập.",
+            "warn",
+          );
           setStepperState(0);
         }
       } catch (err) {
-        addLog(UI.testLog, 'Lỗi: ' + err.message, 'error');
+        addLog(UI.testLog, "Lỗi: " + err.message, "error");
         setStepperState(0);
       } finally {
         UI.btnStartExercise.innerHTML = origHtml;
@@ -1175,54 +1385,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Nút: Copy Prompt câu hỏi chuẩn theo EDUX-TEST-SOLVER (Chế độ thủ công)
+  // Nút: Copy Prompt câu hỏi chuẩn theo EDUX-TEST-SOLVER (Chế độ chatbot)
   if (UI.btnExtractQuestions) {
-    UI.btnExtractQuestions.addEventListener('click', async () => {
+    UI.btnExtractQuestions.addEventListener("click", async () => {
       const tab = await getActiveTab();
       if (!tab) return;
 
       const origHtml = UI.btnExtractQuestions.innerHTML;
-      UI.btnExtractQuestions.innerHTML = '<span class="spinner spinner-sm"></span> Đang trích xuất...';
+      UI.btnExtractQuestions.innerHTML =
+        '<span class="spinner spinner-sm"></span> Đang trích xuất...';
       UI.btnExtractQuestions.disabled = true;
 
       try {
         // 1. Kiểm tra xem bài tập đã mở trên trang chưa
-        const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+        const checkRes = await sendTabMessage(tab.id, {
+          action: "CHECK_EXAM_OPEN",
+        });
         let res = null;
 
         if (!checkRes || !checkRes.isOpen) {
-          addLog(UI.testLog, "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...", 'info');
-          const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+          addLog(
+            UI.testLog,
+            "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...",
+            "info",
+          );
+          const startRes = await sendTabMessage(tab.id, {
+            action: "START_EXERCISE",
+          });
           if (startRes && startRes.questions) {
             res = startRes;
             updateExamInfoUI(startRes.questions);
           } else if (!startRes || !startRes.opened) {
-            addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            addLog(
+              UI.testLog,
+              startRes?.message || "Không thể mở bài tập trên trang.",
+              "warn",
+            );
             return;
           }
         }
 
         // 2. Trích xuất đề nếu chưa có
         if (!res || !res.promptText) {
-          addLog(UI.testLog, 'Đang trích xuất đề bài tập...', 'info');
-          res = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+          addLog(UI.testLog, "Đang trích xuất đề bài tập...", "info");
+          res = await sendTabMessage(tab.id, { action: "EXTRACT_QUESTIONS" });
         }
 
         if (res && res.promptText) {
           await navigator.clipboard.writeText(res.promptText);
           if (UI.promptPreviewBox) UI.promptPreviewBox.value = res.promptText;
-          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = "flex";
           updateExamInfoUI(res.questions);
           addLog(
             UI.testLog,
             `Thành công! Đã copy Prompt (${res.questions?.total_questions || 0} câu) vào Clipboard.`,
-            'success'
+            "success",
           );
         } else {
-          addLog(UI.testLog, 'Chưa tìm thấy câu hỏi bài tập nào trên trang.', 'warn');
+          addLog(
+            UI.testLog,
+            "Chưa tìm thấy câu hỏi bài tập nào trên trang.",
+            "warn",
+          );
         }
       } catch (err) {
-        addLog(UI.testLog, 'Lỗi trích xuất câu hỏi: ' + err.message, 'error');
+        addLog(UI.testLog, "Lỗi trích xuất câu hỏi: " + err.message, "error");
       } finally {
         UI.btnExtractQuestions.innerHTML = origHtml;
         UI.btnExtractQuestions.disabled = false;
@@ -1230,41 +1457,60 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Nút Hero CTA: Giải tự động bằng AI (1-Click)
+  // Nút Hero CTA: Giải tự động bằng AI (API)
   if (UI.btnSolveAI) {
-    UI.btnSolveAI.addEventListener('click', async () => {
+    UI.btnSolveAI.addEventListener("click", async () => {
       const tab = await getActiveTab();
       if (!tab) return;
 
-      const apiKey = (UI.settingApiKey?.value || '').trim();
-      const model = (UI.settingModel?.value || '').trim();
-      const apiEndpoint = (UI.settingApiEndpoint?.value || '').trim();
-      const apiProvider = (UI.settingApiProvider?.value || 'gemini').trim();
+      const apiKey = (UI.settingApiKey?.value || "").trim();
+      const model = (UI.settingModel?.value || "").trim();
+      const apiEndpoint = (UI.settingApiEndpoint?.value || "").trim();
+      const apiProvider = (UI.settingApiProvider?.value || "gemini").trim();
 
-      const isLocal = apiProvider === 'ollama' || apiEndpoint.includes('localhost') || apiEndpoint.includes('127.0.0.1');
+      const isLocal =
+        apiProvider === "ollama" ||
+        apiEndpoint.includes("localhost") ||
+        apiEndpoint.includes("127.0.0.1");
 
       if (!apiKey && !isLocal) {
-        addLog(UI.testLog, '⚠️ Chưa cấu hình API Key để giải tự động.', 'warn');
-        addLog(UI.testLog, '📋 Đang tự động chuyển sang chế độ Thủ công (Web AI) để bạn tự giải...', 'info');
-        switchTestMode('manual');
+        addLog(UI.testLog, "⚠️ Chưa cấu hình API Key để giải tự động.", "warn");
+        addLog(
+          UI.testLog,
+          "💬 Đang tự động chuyển sang chế độ Chatbot để bạn tự giải...",
+          "info",
+        );
+        switchTestMode("manual");
 
         // Hỗ trợ người dùng: tự động mở bài và copy prompt sang chế độ thủ công
         try {
-          const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+          const checkRes = await sendTabMessage(tab.id, {
+            action: "CHECK_EXAM_OPEN",
+          });
           let extRes = null;
           if (!checkRes || !checkRes.isOpen) {
-            const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+            const startRes = await sendTabMessage(tab.id, {
+              action: "START_EXERCISE",
+            });
             if (startRes && startRes.questions) extRes = startRes;
           }
           if (!extRes || !extRes.promptText) {
-            extRes = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+            extRes = await sendTabMessage(tab.id, {
+              action: "EXTRACT_QUESTIONS",
+            });
           }
           if (extRes && extRes.promptText) {
             await navigator.clipboard.writeText(extRes.promptText);
-            if (UI.promptPreviewBox) UI.promptPreviewBox.value = extRes.promptText;
-            if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+            if (UI.promptPreviewBox)
+              UI.promptPreviewBox.value = extRes.promptText;
+            if (UI.promptPreviewCard)
+              UI.promptPreviewCard.style.display = "flex";
             updateExamInfoUI(extRes.questions);
-            addLog(UI.testLog, `✓ Đã tự động copy Prompt (${extRes.questions?.total_questions || 0} câu) vào Clipboard! Hãy dán vào ChatGPT/Claude.`, 'success');
+            addLog(
+              UI.testLog,
+              `✓ Đã tự động copy Prompt (${extRes.questions?.total_questions || 0} câu) vào Clipboard! Hãy dán vào ChatGPT/Claude.`,
+              "success",
+            );
           }
         } catch (e) {}
         return;
@@ -1273,161 +1519,282 @@ document.addEventListener('DOMContentLoaded', async () => {
       // XÓA TRẮNG Ô ĐÁP ÁN KHI BẮT ĐẦU PHIÊN GIẢI MỚI & BẬT BƯỚC 1 (BẮT ĐỀ) VỚI SPINNER
       await resetSolveSession(true);
       setStepperState(1);
-      setHeroBtnLoading(true, 'ĐANG BẮT ĐỀ BÀI TẬP...', 'Đang mở bài tập và trích xuất câu hỏi...');
+      setHeroBtnLoading(
+        true,
+        "ĐANG BẮT ĐỀ BÀI TẬP...",
+        "Đang mở bài tập và trích xuất câu hỏi...",
+      );
 
       let extRes = null;
 
       try {
         // BƯỚC 1: Đảm bảo bài tập được mở trên trang trước khi giải
-        const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+        const checkRes = await sendTabMessage(tab.id, {
+          action: "CHECK_EXAM_OPEN",
+        });
 
         if (!checkRes || !checkRes.isOpen) {
-          addLog(UI.testLog, "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...", 'info');
-          const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+          addLog(
+            UI.testLog,
+            "Bài tập chưa mở. Đang bấm 'Làm bài tập' và bắt đề...",
+            "info",
+          );
+          const startRes = await sendTabMessage(tab.id, {
+            action: "START_EXERCISE",
+          });
           if (startRes && startRes.questions) {
             extRes = startRes;
             updateExamInfoUI(startRes.questions);
           } else if (!startRes || !startRes.opened) {
-            addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            addLog(
+              UI.testLog,
+              startRes?.message || "Không thể mở bài tập trên trang.",
+              "warn",
+            );
             setStepperState(0);
             setHeroBtnLoading(false);
-            switchTestMode('manual');
-            addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công để bạn tự thao tác.', 'info');
+            switchTestMode("manual");
+            addLog(
+              UI.testLog,
+              "💬 Đã tự động chuyển sang chế độ Chatbot để bạn tự thao tác.",
+              "info",
+            );
             return;
           }
         }
 
         // BƯỚC 2: Trích xuất đề bài tập (nếu chưa có từ startRes)
         if (!extRes || !extRes.promptText) {
-          addLog(UI.testLog, 'Đang trích xuất đề bài tập...', 'info');
-          extRes = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+          addLog(UI.testLog, "Đang trích xuất đề bài tập...", "info");
+          extRes = await sendTabMessage(tab.id, {
+            action: "EXTRACT_QUESTIONS",
+          });
         }
 
         if (!extRes || !extRes.promptText) {
-          addLog(UI.testLog, "Không tìm thấy đề bài tập. Hãy kiểm tra giao diện bài tập!", 'warn');
+          addLog(
+            UI.testLog,
+            "Không tìm thấy đề bài tập. Hãy kiểm tra giao diện bài tập!",
+            "warn",
+          );
           setStepperState(0);
           setHeroBtnLoading(false);
-          switchTestMode('manual');
-          addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công để bạn tự thao tác.', 'info');
+          switchTestMode("manual");
+          addLog(
+            UI.testLog,
+            "💬 Đã tự động chuyển sang chế độ Chatbot để bạn tự thao tác.",
+            "info",
+          );
           return;
         }
 
         const qCount = extRes.questions?.total_questions || 0;
         updateExamInfoUI(extRes.questions);
-        const displayModel = model || (apiProvider === 'gemini' ? 'Gemini' : apiProvider === 'deepseek' ? 'DeepSeek' : apiProvider === 'ollama' ? 'Ollama' : 'AI');
-        addLog(UI.testLog, `Đang gửi ${qCount} câu tới AI (${displayModel})...`, 'info');
-        setStatus('AI đang giải bài...', 'running');
+        const displayModel =
+          model ||
+          (apiProvider === "gemini"
+            ? "Gemini"
+            : apiProvider === "deepseek"
+              ? "DeepSeek"
+              : apiProvider === "ollama"
+                ? "Ollama"
+                : "AI");
+        addLog(
+          UI.testLog,
+          `Đang gửi ${qCount} câu tới AI (${displayModel})...`,
+          "info",
+        );
+        setStatus("AI đang giải bài...", "running");
 
         // BƯỚC 2: AI giải câu hỏi
         setStepperState(2);
-        setHeroBtnLoading(true, 'AI ĐANG GIẢI BÀI...', `Đang gửi ${qCount} câu tới AI (${displayModel})...`);
+        setHeroBtnLoading(
+          true,
+          "AI ĐANG GIẢI BÀI...",
+          `Đang gửi ${qCount} câu tới AI (${displayModel})...`,
+        );
 
-        const aiAnswers = await solveWithAI(extRes.promptText, apiKey, model, apiEndpoint, apiProvider);
+        const aiAnswers = await solveWithAI(
+          extRes.promptText,
+          apiKey,
+          model,
+          apiEndpoint,
+          apiProvider,
+        );
         UI.answerInput.value = aiAnswers;
         if (UI.autoAnswersBox) UI.autoAnswersBox.value = aiAnswers;
-        if (UI.btnToggleAutoAnswers) UI.btnToggleAutoAnswers.style.display = 'block';
+        if (UI.btnToggleAutoAnswers)
+          UI.btnToggleAutoAnswers.style.display = "block";
         await chrome.storage.local.set({ savedAnswers: aiAnswers });
 
-        addLog(UI.testLog, '✓ AI đã giải xong! Bắt đầu tự động điền đáp án...', 'success');
+        addLog(
+          UI.testLog,
+          "✓ AI đã giải xong! Bắt đầu tự động điền đáp án...",
+          "success",
+        );
 
         // BƯỚC 3: Điền & nộp
         setStepperState(3);
-        setHeroBtnLoading(true, 'ĐANG ĐIỀN ĐÁP ÁN...', 'Đang tự động chọn đáp án và nộp bài...');
+        setHeroBtnLoading(
+          true,
+          "ĐANG ĐIỀN ĐÁP ÁN...",
+          "Đang tự động chọn đáp án và nộp bài...",
+        );
 
         const fillRes = await sendTabMessage(tab.id, {
-          action: 'FILL_TEST_ANSWERS',
+          action: "FILL_TEST_ANSWERS",
           answersText: aiAnswers,
-          options: { autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true }
+          options: {
+            autoSubmit: UI.settingAutoSubmit
+              ? UI.settingAutoSubmit.checked
+              : true,
+          },
         });
 
-        setStatus('Sẵn sàng', 'idle');
+        setStatus("Sẵn sàng", "idle");
         setHeroBtnLoading(false);
 
         if (fillRes && fillRes.success) {
           setStepperState(4); // Hoàn tất cả 3 bước
-          addLog(UI.testLog, `🎉 Hoàn tất! Đã điền xong ${fillRes.filledCount} câu bài tập.`, 'success');
+          addLog(
+            UI.testLog,
+            `🎉 Hoàn tất! Đã điền xong ${fillRes.filledCount} câu bài tập.`,
+            "success",
+          );
           // Sau khi nộp thành công đề: ẩn tiêu đề, chỉ còn nút "Mở bài"
           updateExamInfoUI(null);
-          await chrome.storage.local.remove('lastExamData');
+          await chrome.storage.local.remove("lastExamData");
         } else {
           setStepperState(0);
-          addLog(UI.testLog, `Thông báo: ${fillRes?.message || 'Không thể điền bài.'}`, 'warn');
-          switchTestMode('manual');
-          addLog(UI.testLog, '📋 Đã chuyển sang chế độ Thủ công để bạn kiểm tra lại đáp án và điền lại.', 'info');
+          addLog(
+            UI.testLog,
+            `Thông báo: ${fillRes?.message || "Không thể điền bài."}`,
+            "warn",
+          );
+          switchTestMode("manual");
+          addLog(
+            UI.testLog,
+            "💬 Đã chuyển sang chế độ Chatbot để bạn kiểm tra lại đáp án và điền lại.",
+            "info",
+          );
         }
       } catch (err) {
-        setStatus('Lỗi giải bài', 'stopped');
+        setStatus("Lỗi giải bài", "stopped");
         setStepperState(0);
         setHeroBtnLoading(false);
-        addLog(UI.testLog, '❌ Lỗi giải tự động: ' + err.message, 'error');
+        addLog(UI.testLog, "❌ Lỗi giải tự động: " + err.message, "error");
 
-        // TỰ ĐỘNG CHUYỂN SANG CHẾ ĐỘ THỦ CÔNG KHI GẶP LỖI
-        switchTestMode('manual');
-        addLog(UI.testLog, '📋 Đã tự động chuyển sang chế độ Thủ công (Web AI). Bạn có thể tự dán đáp án vào ô bên dưới.', 'warn');
+        // TỰ ĐỘNG CHUYỂN SANG CHẾ ĐỘ CHATBOT KHI GẶP LỖI
+        switchTestMode("manual");
+        addLog(
+          UI.testLog,
+          "💬 Đã tự động chuyển sang chế độ Chatbot. Bạn có thể tự dán đáp án vào ô bên dưới.",
+          "warn",
+        );
 
-        // Nếu đã trích xuất được prompt trước khi lỗi, hiển thị ngay vào khung prompt thủ công
+        // Nếu đã trích xuất được prompt trước khi lỗi, hiển thị ngay vào khung prompt chatbot
         if (extRes && extRes.promptText) {
-          if (UI.promptPreviewBox) UI.promptPreviewBox.value = extRes.promptText;
-          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'flex';
+          if (UI.promptPreviewBox)
+            UI.promptPreviewBox.value = extRes.promptText;
+          if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = "flex";
           navigator.clipboard.writeText(extRes.promptText).catch(() => {});
-          addLog(UI.testLog, `✓ Đã sao chép sẵn đề (${extRes.questions?.total_questions || 0} câu) vào Clipboard và khung Prompt.`, 'info');
+          addLog(
+            UI.testLog,
+            `✓ Đã sao chép sẵn đề (${extRes.questions?.total_questions || 0} câu) vào Clipboard và khung Prompt.`,
+            "info",
+          );
         }
       }
     });
   }
 
-  // Nút Dán đáp án từ Clipboard (Chế độ thủ công)
+  // Nút Dán đáp án từ Clipboard (Chế độ chatbot)
+  // Gọi readText() trong user gesture để trình duyệt hiện hộp xin quyền clipboard
   if (UI.btnPasteClipboard) {
-    UI.btnPasteClipboard.addEventListener('click', async () => {
+    UI.btnPasteClipboard.addEventListener("click", async () => {
+      const origHtml = UI.btnPasteClipboard.innerHTML;
+      UI.btnPasteClipboard.innerHTML = "⏳ Đang xin quyền...";
       try {
+        // Kích hoạt hộp thoại xin quyền của trình duyệt (nếu chưa cấp)
+        try {
+          await navigator.permissions.query({
+            name: "clipboard-read",
+          });
+        } catch (_) {
+          // Bỏ qua: một số trình duyệt không hỗ trợ query, readText() vẫn sẽ hỏi quyền
+        }
+        // Lệnh này buộc trình duyệt hiện prompt "Cho phép đọc clipboard?" khi cần
         const text = await navigator.clipboard.readText();
         if (!text || !text.trim()) {
-          addLog(UI.testLog, 'Clipboard đang trống!', 'warn');
+          addLog(
+            UI.testLog,
+            "Clipboard đang trống! Hãy copy đáp án từ chatbot trước.",
+            "warn",
+          );
+          if (UI.answerInput) UI.answerInput.focus();
           return;
         }
         UI.answerInput.value = text.trim();
         await chrome.storage.local.set({ savedAnswers: text.trim() });
-        addLog(UI.testLog, '✓ Đã dán đáp án từ Clipboard.', 'success');
+        addLog(UI.testLog, "✓ Đã dán đáp án từ Clipboard.", "success");
       } catch (e) {
-        addLog(UI.testLog, 'Không thể đọc Clipboard: ' + e.message, 'error');
+        if (e && e.name === "NotAllowedError") {
+          addLog(
+            UI.testLog,
+            "⚠️ Trình duyệt chặn đọc Clipboard. Hãy bấm “Cho phép / Allow” khi được hỏi, rồi bấm lại nút này (hoặc dán bằng Ctrl+V).",
+            "warn",
+          );
+        } else {
+          addLog(UI.testLog, "Không thể đọc Clipboard: " + e.message, "error");
+        }
+        if (UI.answerInput) UI.answerInput.focus();
+      } finally {
+        UI.btnPasteClipboard.innerHTML = origHtml;
       }
     });
   }
 
-  // Nút Xem/ẩn Prompt xem trước (Chế độ thủ công)
+  // Nút Xem/ẩn Prompt xem trước — đã gộp vào nút "Copy đề & xem trước",
+  // giữ lại để tương thích nếu phần tử cũ còn tồn tại
   if (UI.btnTogglePrompt) {
-    UI.btnTogglePrompt.addEventListener('click', async () => {
+    UI.btnTogglePrompt.addEventListener("click", async () => {
       if (!UI.promptPreviewCard) return;
-      if (UI.promptPreviewCard.style.display === 'none') {
+      if (UI.promptPreviewCard.style.display === "none") {
         if (!UI.promptPreviewBox.value.trim()) {
           const tab = await getActiveTab();
           if (tab) {
-            const res = await sendTabMessage(tab.id, { action: 'EXTRACT_QUESTIONS' });
+            const res = await sendTabMessage(tab.id, {
+              action: "EXTRACT_QUESTIONS",
+            });
             if (res && res.promptText) {
               UI.promptPreviewBox.value = res.promptText;
               updateExamInfoUI(res.questions);
             }
           }
         }
-        UI.promptPreviewCard.style.display = 'flex';
+        UI.promptPreviewCard.style.display = "flex";
       } else {
-        UI.promptPreviewCard.style.display = 'none';
+        UI.promptPreviewCard.style.display = "none";
       }
     });
   }
 
   if (UI.btnHidePrompt) {
-    UI.btnHidePrompt.addEventListener('click', () => {
-      if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = 'none';
+    UI.btnHidePrompt.addEventListener("click", () => {
+      if (UI.promptPreviewCard) UI.promptPreviewCard.style.display = "none";
     });
   }
 
-  // Nút Bắt đầu điền bài tập (Chế độ thủ công)
+  // Nút Bắt đầu điền bài tập (Chế độ chatbot)
   if (UI.btnFillAnswers) {
-    UI.btnFillAnswers.addEventListener('click', async () => {
+    UI.btnFillAnswers.addEventListener("click", async () => {
       const rawAnswers = UI.answerInput.value.trim();
       if (!rawAnswers) {
-        addLog(UI.testLog, 'Vui lòng nhập hoặc dán danh sách đáp án trước!', 'warn');
+        addLog(
+          UI.testLog,
+          "Vui lòng nhập hoặc dán danh sách đáp án trước!",
+          "warn",
+        );
         return;
       }
 
@@ -1437,38 +1804,63 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!tab) return;
 
       const origHtml = UI.btnFillAnswers.innerHTML;
-      UI.btnFillAnswers.innerHTML = '<span class="spinner spinner-sm"></span> Đang điền bài...';
+      UI.btnFillAnswers.innerHTML =
+        '<span class="spinner spinner-sm"></span> Đang điền bài...';
       UI.btnFillAnswers.disabled = true;
 
       try {
         // Đảm bảo bài tập đang mở trước khi điền
-        const checkRes = await sendTabMessage(tab.id, { action: 'CHECK_EXAM_OPEN' });
+        const checkRes = await sendTabMessage(tab.id, {
+          action: "CHECK_EXAM_OPEN",
+        });
         if (!checkRes || !checkRes.isOpen) {
-          addLog(UI.testLog, "Đang mở bài tập trên trang để chuẩn bị điền...", 'info');
-          const startRes = await sendTabMessage(tab.id, { action: 'START_EXERCISE' });
+          addLog(
+            UI.testLog,
+            "Đang mở bài tập trên trang để chuẩn bị điền...",
+            "info",
+          );
+          const startRes = await sendTabMessage(tab.id, {
+            action: "START_EXERCISE",
+          });
           if (!startRes || !startRes.opened) {
-            addLog(UI.testLog, startRes?.message || "Không thể mở bài tập trên trang.", 'warn');
+            addLog(
+              UI.testLog,
+              startRes?.message || "Không thể mở bài tập trên trang.",
+              "warn",
+            );
             return;
           }
           await new Promise((r) => setTimeout(r, 400));
         }
 
-        addLog(UI.testLog, 'Đang gửi đáp án tới trang bài tập...', 'info');
+        addLog(UI.testLog, "Đang gửi đáp án tới trang bài tập...", "info");
         const res = await sendTabMessage(tab.id, {
-          action: 'FILL_TEST_ANSWERS',
+          action: "FILL_TEST_ANSWERS",
           answersText: rawAnswers,
-          options: { autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true }
+          options: {
+            autoSubmit: UI.settingAutoSubmit
+              ? UI.settingAutoSubmit.checked
+              : true,
+          },
         });
         if (res && res.success) {
-          addLog(UI.testLog, `Hoàn tất! Đã điền ${res.filledCount} câu bài tập.`, 'success');
+          addLog(
+            UI.testLog,
+            `Hoàn tất! Đã điền ${res.filledCount} câu bài tập.`,
+            "success",
+          );
           // Sau khi nộp thành công đề: ẩn tiêu đề, chỉ còn nút "Mở bài"
           updateExamInfoUI(null);
-          await chrome.storage.local.remove('lastExamData');
+          await chrome.storage.local.remove("lastExamData");
         } else {
-          addLog(UI.testLog, `Thông báo: ${res?.message || 'Không thể điền bài tập.'}`, 'warn');
+          addLog(
+            UI.testLog,
+            `Thông báo: ${res?.message || "Không thể điền bài tập."}`,
+            "warn",
+          );
         }
       } catch (err) {
-        addLog(UI.testLog, 'Lỗi: Không tìm thấy trang bài tập EDUX.', 'error');
+        addLog(UI.testLog, "Lỗi: Không tìm thấy trang bài tập EDUX.", "error");
       } finally {
         UI.btnFillAnswers.innerHTML = origHtml;
         UI.btnFillAnswers.disabled = false;
@@ -1479,11 +1871,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   // 9. Settings Actions
   // =========================================================================
-  UI.btnSaveSettings.addEventListener('click', async () => {
-    const providerVal = UI.settingApiProvider ? UI.settingApiProvider.value : 'gemini';
-    let endpointVal = UI.settingApiEndpoint ? UI.settingApiEndpoint.value.trim() : '';
-    if (providerVal === 'custom' && !endpointVal) {
-      endpointVal = 'http://localhost:20128/v1';
+  UI.btnSaveSettings.addEventListener("click", async () => {
+    const providerVal = UI.settingApiProvider
+      ? UI.settingApiProvider.value
+      : "gemini";
+    let endpointVal = UI.settingApiEndpoint
+      ? UI.settingApiEndpoint.value.trim()
+      : "";
+    if (providerVal === "custom" && !endpointVal) {
+      endpointVal = "http://localhost:20128/v1";
       if (UI.settingApiEndpoint) UI.settingApiEndpoint.value = endpointVal;
     }
 
@@ -1495,9 +1891,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       useAi: UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true,
       apiProvider: providerVal,
       apiEndpoint: endpointVal,
-      apiKey: UI.settingApiKey ? UI.settingApiKey.value.trim() : '',
-      apiModel: UI.settingModel ? UI.settingModel.value.trim() : 'gemini-2.0-flash',
-      cachedModelsByProvider
+      apiKey: UI.settingApiKey ? UI.settingApiKey.value.trim() : "",
+      apiModel: UI.settingModel
+        ? UI.settingModel.value.trim()
+        : "gemini-2.0-flash",
+      cachedModelsByProvider,
     };
 
     await chrome.storage.local.set(newSettings);
@@ -1506,13 +1904,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const tab = await getActiveTab();
     if (tab) {
       sendTabMessage(tab.id, {
-        action: 'UPDATE_SETTINGS',
-        settings: newSettings
+        action: "UPDATE_SETTINGS",
+        settings: newSettings,
       }).catch(() => {});
     }
 
-    addLog(UI.slideLog, 'Đã lưu cấu hình mới!', 'success');
-    addLog(UI.testLog, 'Đã cập nhật cấu hình bài tập & AI!', 'success');
+    addLog(UI.slideLog, "Đã lưu cấu hình mới!", "success");
+    addLog(UI.testLog, "Đã cập nhật cấu hình bài tập & AI!", "success");
   });
 
   // =========================================================================
@@ -1520,21 +1918,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   async function loadExerciseScores() {
     const tab = await getActiveTab();
-    if (!tab || !tab.url || !tab.url.includes('cmcu.edu.vn')) {
-      if (UI.scoresSubjectTitle) UI.scoresSubjectTitle.textContent = 'Vui lòng mở trang EDUX';
+    if (!tab || !tab.url || !tab.url.includes("cmcu.edu.vn")) {
+      if (UI.scoresSubjectTitle)
+        UI.scoresSubjectTitle.textContent = "Vui lòng mở trang EDUX";
       return;
     }
 
-    const isStudentDashboard = tab.url.includes('/student') && !tab.url.includes('id=');
+    const isStudentDashboard =
+      tab.url.includes("/student") && !tab.url.includes("id=");
 
     try {
-      if (UI.scoresSubjectTitle) UI.scoresSubjectTitle.textContent = 'Đang quét dữ liệu tiến độ...';
+      if (UI.scoresSubjectTitle)
+        UI.scoresSubjectTitle.textContent = "Đang quét dữ liệu tiến độ...";
 
       if (isStudentDashboard) {
         // Load all subjects progress
-        const res = await sendTabMessage(tab.id, { action: 'GET_ALL_SUBJECTS_PROGRESS' });
+        const res = await sendTabMessage(tab.id, {
+          action: "GET_ALL_SUBJECTS_PROGRESS",
+        });
         if (!res || !res.success || !Array.isArray(res.subjects)) {
-          if (UI.scoresSubjectTitle) UI.scoresSubjectTitle.textContent = 'Không thể lấy dữ liệu học phần.';
+          if (UI.scoresSubjectTitle)
+            UI.scoresSubjectTitle.textContent =
+              "Không thể lấy dữ liệu học phần.";
           return;
         }
 
@@ -1565,37 +1970,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (UI.scoresAlertBox) {
           if (totalPendingExams > 0) {
-            UI.scoresAlertBox.style.display = 'block';
-            UI.scoresAlertBox.className = 'log-entry warn';
+            UI.scoresAlertBox.style.display = "block";
+            UI.scoresAlertBox.className = "log-entry warn";
             UI.scoresAlertBox.innerHTML = `⚠️ Toàn bộ học phần: Còn <strong>${totalPendingExams}</strong> bài tập AI chưa làm!`;
           } else {
-            UI.scoresAlertBox.style.display = 'block';
-            UI.scoresAlertBox.className = 'log-entry success';
+            UI.scoresAlertBox.style.display = "block";
+            UI.scoresAlertBox.className = "log-entry success";
             UI.scoresAlertBox.innerHTML = `🎉 Tuyệt vời! Bạn đã hoàn thành 100% bài tập của tất cả môn học!`;
           }
         }
 
         if (UI.scoresList) {
-          UI.scoresList.innerHTML = '';
+          UI.scoresList.innerHTML = "";
           subjects.forEach((s) => {
-            const item = document.createElement('div');
+            const item = document.createElement("div");
             const isDone = s.isAllDone;
-            item.className = `log-entry ${isDone ? 'success' : s.pendingExams > 0 ? 'warn' : 'info'}`;
-            item.style.display = 'flex';
-            item.style.flexDirection = 'column';
-            item.style.gap = '4px';
-            item.style.padding = '8px 10px';
+            item.className = `log-entry ${isDone ? "success" : s.pendingExams > 0 ? "warn" : "info"}`;
+            item.style.display = "flex";
+            item.style.flexDirection = "column";
+            item.style.gap = "4px";
+            item.style.padding = "8px 10px";
 
             const badgeText = isDone
               ? '<span style="color: #059669; font-weight: bold;">✓ 100%</span>'
               : s.pendingExams > 0
-              ? `<span style="color: #e11d48; font-weight: bold;">⚠️ Còn ${s.pendingExams} bài</span>`
-              : `<span style="color: #d97706; font-weight: bold;">📖 Còn ${s.pendingSlides} slide</span>`;
+                ? `<span style="color: #e11d48; font-weight: bold;">⚠️ Còn ${s.pendingExams} bài</span>`
+                : `<span style="color: #d97706; font-weight: bold;">📖 Còn ${s.pendingSlides} slide</span>`;
 
             item.innerHTML = `
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <strong style="color: #0f172a; font-size: 12px;" title="${s.name}">
-                  ${s.code ? `[${s.code}] ` : ''}${s.name}
+                  ${s.code ? `[${s.code}] ` : ""}${s.name}
                 </strong>
                 ${badgeText}
               </div>
@@ -1611,59 +2016,77 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       // Single subject page logic
-      const res = await sendTabMessage(tab.id, { action: 'GET_EXERCISE_SCORES' });
+      const res = await sendTabMessage(tab.id, {
+        action: "GET_EXERCISE_SCORES",
+      });
       if (!res || !res.success || !Array.isArray(res.models)) {
-        if (UI.scoresSubjectTitle) UI.scoresSubjectTitle.textContent = res?.message || 'Không tìm thấy dữ liệu bài tập.';
+        if (UI.scoresSubjectTitle)
+          UI.scoresSubjectTitle.textContent =
+            res?.message || "Không tìm thấy dữ liệu bài tập.";
         return;
       }
 
       const models = res.models;
       const examModels = models.filter((m) => m.exist_exam);
       const totalExams = examModels.length;
-      const completedExams = examModels.filter((m) => m.highest_score !== null && m.highest_score !== undefined);
-      const pendingExams = examModels.filter((m) => m.highest_score === null || m.highest_score === undefined);
+      const completedExams = examModels.filter(
+        (m) => m.highest_score !== null && m.highest_score !== undefined,
+      );
+      const pendingExams = examModels.filter(
+        (m) => m.highest_score === null || m.highest_score === undefined,
+      );
 
       const scores = completedExams
         .map((m) => parseFloat(m.highest_score))
         .filter((s) => !isNaN(s));
-      const maxScore = scores.length ? Math.max(...scores).toFixed(2).replace(/\.00$/, '') : '--';
+      const maxScore = scores.length
+        ? Math.max(...scores)
+            .toFixed(2)
+            .replace(/\.00$/, "")
+        : "--";
 
       if (UI.scoresSubjectTitle) {
-        UI.scoresSubjectTitle.textContent = `Môn học: ${res.subjectId ? res.subjectId.slice(0, 8) + '...' : 'Hiện tại'}`;
+        UI.scoresSubjectTitle.textContent = `Môn học: ${res.subjectId ? res.subjectId.slice(0, 8) + "..." : "Hiện tại"}`;
       }
-      if (UI.scoresCompleted) UI.scoresCompleted.textContent = `${completedExams.length}/${totalExams}`;
-      if (UI.scoresHighest) UI.scoresHighest.textContent = maxScore !== '--' ? `${maxScore}/10` : '--';
+      if (UI.scoresCompleted)
+        UI.scoresCompleted.textContent = `${completedExams.length}/${totalExams}`;
+      if (UI.scoresHighest)
+        UI.scoresHighest.textContent =
+          maxScore !== "--" ? `${maxScore}/10` : "--";
 
       // Alert box
       if (UI.scoresAlertBox) {
         if (pendingExams.length > 0) {
-          UI.scoresAlertBox.style.display = 'block';
-          UI.scoresAlertBox.className = 'log-entry warn';
+          UI.scoresAlertBox.style.display = "block";
+          UI.scoresAlertBox.className = "log-entry warn";
           UI.scoresAlertBox.innerHTML = `⚠️ Cảnh báo: Bạn còn <strong>${pendingExams.length}</strong> bài tập chưa có điểm!`;
         } else if (totalExams > 0) {
-          UI.scoresAlertBox.style.display = 'block';
-          UI.scoresAlertBox.className = 'log-entry success';
+          UI.scoresAlertBox.style.display = "block";
+          UI.scoresAlertBox.className = "log-entry success";
           UI.scoresAlertBox.innerHTML = `🎉 Xuất sắc! Đã hoàn thành 100% bài tập môn này!`;
         } else {
-          UI.scoresAlertBox.style.display = 'none';
+          UI.scoresAlertBox.style.display = "none";
         }
       }
 
       // Render exercise list
       if (UI.scoresList) {
-        UI.scoresList.innerHTML = '';
+        UI.scoresList.innerHTML = "";
         examModels.forEach((m) => {
-          const item = document.createElement('div');
-          const hasScore = m.highest_score !== null && m.highest_score !== undefined;
-          item.className = `log-entry ${hasScore ? 'success' : 'warn'}`;
-          item.style.display = 'flex';
-          item.style.justifyContent = 'space-between';
-          item.style.alignItems = 'center';
-          item.style.gap = '8px';
+          const item = document.createElement("div");
+          const hasScore =
+            m.highest_score !== null && m.highest_score !== undefined;
+          item.className = `log-entry ${hasScore ? "success" : "warn"}`;
+          item.style.display = "flex";
+          item.style.justifyContent = "space-between";
+          item.style.alignItems = "center";
+          item.style.gap = "8px";
 
           const scoreVal = hasScore ? parseFloat(m.highest_score) : null;
           const scoreDisplay =
-            scoreVal !== null && !isNaN(scoreVal) ? scoreVal.toFixed(2).replace(/\.00$/, '') : m.highest_score;
+            scoreVal !== null && !isNaN(scoreVal)
+              ? scoreVal.toFixed(2).replace(/\.00$/, "")
+              : m.highest_score;
           const scoreText = hasScore
             ? `<strong style="color: #10b981;">🏆 ${scoreDisplay}/10</strong>`
             : `<span style="color: #f59e0b; font-weight: bold;">⚠️ Chưa làm</span>`;
@@ -1678,16 +2101,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         if (examModels.length === 0) {
-          UI.scoresList.innerHTML = '<div class="log-entry info">Môn học này không có bài tập AI.</div>';
+          UI.scoresList.innerHTML =
+            '<div class="log-entry info">Môn học này không có bài tập AI.</div>';
         }
       }
     } catch (err) {
-      if (UI.scoresSubjectTitle) UI.scoresSubjectTitle.textContent = 'Lỗi kết nối trang EDUX';
-      if (UI.scoresList) UI.scoresList.innerHTML = `<div class="log-entry error">Không thể lấy điểm số: ${err.message}</div>`;
+      if (UI.scoresSubjectTitle)
+        UI.scoresSubjectTitle.textContent = "Lỗi kết nối trang EDUX";
+      if (UI.scoresList)
+        UI.scoresList.innerHTML = `<div class="log-entry error">Không thể lấy điểm số: ${err.message}</div>`;
     }
   }
 
   if (UI.btnRefreshScores) {
-    UI.btnRefreshScores.addEventListener('click', loadExerciseScores);
+    UI.btnRefreshScores.addEventListener("click", loadExerciseScores);
   }
 });
