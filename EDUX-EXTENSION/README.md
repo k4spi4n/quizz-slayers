@@ -12,11 +12,12 @@ Bộ công cụ tự động hóa giải Slide bài giảng & Bài tập trên n
    - **Cơ chế Fallback thông minh**: Nếu AI trả lời chưa đúng hoặc gặp lỗi kết nối, hệ thống tự động chuyển sang cơ chế thử sai (brute-force) để không bao giờ bị dừng tiến trình.
    - Tự động nhận diện các nút: `Trả lời trên lớp`, `Kiểm tra`, `Thử lại`, `Câu tiếp theo`, `Trang sau`.
    - Tự động chuyển trang khi hoàn thành slide hoặc slide không có câu hỏi.
+   - **🎯 Laya (🧪 thử nghiệm)**: model [Laya](https://github.com/NandhaKishorM/laya) chạy local (`laya-serve`) chấm xác suất mọi đáp án trong 1 lượt rồi thử từ cao xuống thấp — nhanh hơn AI, ít click sai hơn Bruteforce, nhưng chưa kiểm chứng trên câu hỏi EDUX thật.
 
 2. **📝 Test Solver (Tự động giải Bài Tập - Mô phỏng EDUX-TEST-SOLVER)**:
    - **Tự động bắt đề bài tập**: Lắng nghe phản hồi từ máy chủ khi nhấn nút `Làm bài tập` trên EDUX.
    - **Chuẩn hóa Prompt câu hỏi**: Cấu trúc JSON gọn gàng kèm hướng dẫn chuẩn format của EDUX-TEST-SOLVER.
-   - **Giải bài bằng AI tích hợp linh hoạt**: Hỗ trợ gọi trực tiếp API Gemini (`gemini-2.0-flash`), OpenAI (`gpt-4o-mini`), DeepSeek (`deepseek-chat`), OpenRouter, Ollama local (`localhost:11434`), hoặc tùy chỉnh Endpoint/Base URL riêng chỉ với 1 click (`⚡ Giải AI`).
+   - **Giải bài bằng AI tích hợp linh hoạt**: Hỗ trợ gọi trực tiếp API Gemini (`gemini-2.0-flash`), OpenAI (`gpt-4o-mini`), DeepSeek (`deepseek-chat`), OpenRouter, Inception (`mercury-2.5`), Ollama local (`localhost:11434`), hoặc tùy chỉnh Endpoint/Base URL riêng chỉ với 1 click (`⚡ Giải AI`). Lưu được nhiều cấu hình AI, mỗi chức năng (Slide / Bài tập) chọn cấu hình riêng.
    - **Hỗ trợ giải thủ công linh hoạt**:
      - `📋 Copy Prompt`: Sao chép prompt vào Clipboard để dán vào bất kỳ Chatbot AI nào (ChatGPT, Claude, Gemini).
      - `📥 Dán Clipboard`: Tự động nạp kết quả trả về từ AI vào ô đáp án.

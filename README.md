@@ -2,7 +2,7 @@
 
 > Extension Chromium (Manifest V3) giải **Slide**, **Bài tập** và theo dõi **Điểm số** ngay trên EDUX — không cần Python, không cần lưu mật khẩu.
 
-![version](https://img.shields.io/badge/version-v2.3.1-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
+![version](https://img.shields.io/badge/version-v2.4.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
 
 > [!IMPORTANT]
 > **Extension (`EDUX-EXTENSION`) là trọng tâm phát triển duy nhất.** Các script Python/Playwright (`EDUX-SLIDE-BRUTEFORCE`, `EDUX-TEST-SOLVER`, `EDUX-SLIDE-AI`, `EDUX-LIVE-QUESTION`) đã **ngừng hỗ trợ** — xem phần cuối README.
@@ -13,7 +13,7 @@
 
 | Tab | Làm được gì |
 | --- | --- |
-| ⚡ Slide | Tự động đọc câu hỏi → AI phân tích → click đáp án → tự chuyển trang. 2 chế độ: 🧠 **AI Chuẩn xác** (cần API key) và ⚡ **Thử sai nhanh** (không cần key). |
+| ⚡ Slide | Tự động đọc câu hỏi → AI phân tích → click đáp án → tự chuyển trang. 3 chế độ: 🧠 **AI** (cần API key), 🎯 **Laya** 🧪 *thử nghiệm* (model local, cân bằng tốc độ/độ chính xác) và ⚡ **Bruteforce** (không cần key). |
 | 📝 Bài tập | 2 cách giải: ⚡ **Tự động (API)** — 1 chạm bắt đề → AI giải → điền → nộp; 💬 **Chatbot** — copy đề sang ChatGPT/Gemini/Claude web (miễn phí, không cần key) rồi dán đáp án về. |
 | 📊 Điểm số | Quét tiến độ Slide + Bài tập, điểm cao nhất từng bài, cảnh báo bài chưa làm — cả ở trang môn học lẫn trong popup. |
 | ⚙️ Cài đặt | Cấu hình 1 lần: provider, model, API key, delay, tự nộp bài, tự chuyển slide. |
@@ -38,9 +38,14 @@ Sau đó trên Chrome / Edge / Brave / Cốc Cốc / Opera:
 
 ## 📖 Sử dụng
 
-### 1. Cấu hình AI một lần (tab ⚙️ Cài đặt)
+### 1. Cấu hình AI (tab ⚙️ Cài đặt)
 
-Mở popup → tab **Cài đặt** → chọn provider → nhập key/model → **💾 Lưu cài đặt**.
+Mở popup → tab **Cài đặt** → **🤖 Cấu hình AI** → **+ Thêm** → chọn provider, model, nhập key → **💾 Lưu cấu hình**.
+
+- Thêm được **nhiều cấu hình** (nhiều provider / nhiều key), sửa ✏️ hoặc xóa 🗑 (bấm 2 lần).
+- Mỗi chức năng chọn cấu hình riêng: **Slide (AI) dùng** và **Bài tập (API) dùng** — VD Slide dùng Mercury 2.5 cho nhanh, Bài tập dùng Gemini. Tab Slide (chế độ AI) và tab Bài tập cũng có ô 🤖 chọn nhanh.
+- Inception (Mercury) có thêm **Mức suy luận**: `instant` / `low` / `medium` / `high` (mặc định `medium`). VD tạo 2 cấu hình: Mercury `instant` cho Slide, Mercury `high` cho Bài tập.
+- Cấu hình cũ (1 provider) được tự chuyển thành cấu hình đầu tiên khi mở popup.
 
 | Provider | Key / Endpoint |
 | --- | --- |
@@ -48,14 +53,36 @@ Mở popup → tab **Cài đặt** → chọn provider → nhập key/model → 
 | OpenAI | `sk-...` · `gpt-4o-mini` / `gpt-4o` |
 | DeepSeek | `sk-...` · `deepseek-chat` |
 | OpenRouter | `sk-or-v1-...` |
+| Inception | API key · `mercury-2.5` |
 | Ollama (local, offline) | `http://localhost:11434/v1` · không cần key |
 | Custom | Base URL chuẩn OpenAI (VD: `http://localhost:20128/v1`) · nút **🔄 Lấy DS** để load models |
 
 ### 2. Giải Slide (tab ⚡ Slide)
 
 1. Mở slide bài giảng EDUX.
-2. Mở popup → chọn **🧠 AI Chuẩn xác** hoặc **⚡ Thử sai nhanh**.
+2. Mở popup → chọn **🧠 AI**, **🎯 Laya** hoặc **⚡ Bruteforce**.
 3. Bấm **▶️ Bắt đầu giải Slide** — Extension tự trả lời, bấm `Kiểm tra` / `Câu tiếp theo` / `Trang sau`, hết bài thì **⏹️ Dừng lại**.
+
+| Chế độ | Cách chọn đáp án | Tốc độ | Cần |
+| --- | --- | --- | --- |
+| 🧠 AI | LLM chọn 1 đáp án, sai thì thử tuần tự | chậm nhất (1–5s/câu) | API key hoặc Ollama |
+| 🎯 Laya 🧪 | [Laya](https://github.com/NandhaKishorM/laya) chấm xác suất mọi đáp án trong 1 lượt → thử từ cao xuống thấp | nhanh (~vài chục–vài trăm ms/câu) | `laya-serve` chạy local |
+| ⚡ Bruteforce | Thử A → B → C… | nhanh nhất | không cần gì |
+
+> [!WARNING]
+> **🎯 Laya đang ở giai đoạn thử nghiệm.** Laya là model phân loại (không phải LLM), nên hiểu kiến thức kém hơn nhiều so với AI.
+> Trên 16 câu hỏi tiếng Việt tự soạn (CPU, `laya-multilingual`): đúng ngay lần đầu **8/16**, trung bình **1,75** lần thử/câu (đoán ngẫu nhiên: 2,5), ~60–90 ms/câu.
+> Nghĩa là ít click sai hơn Bruteforce, nhưng chưa được kiểm chứng trên câu hỏi EDUX thật — kết quả có thể khác. Hãy báo lại nếu bạn dùng thử!
+
+**Cài Laya (một lần, cần Python ≥ 3.10):**
+
+```powershell
+py -m venv laya-env
+.\laya-env\Scripts\python.exe -m pip install "laya[serve]"
+$env:LAYA_MODELS = "multilingual"; .\laya-env\Scripts\laya-serve.exe   # http://localhost:8000, lần đầu tải model (~1GB)
+```
+
+Rồi vào tab **⚙️ Cài đặt** → **Laya server** → **🔌 Kiểm tra**. Đổi địa chỉ nếu đặt `LAYA_PORT` khác; nếu đặt `LAYA_API_KEY` thì nhập key vào ô bên dưới.
 
 ### 3. Giải Bài tập (tab 📝 Bài tập)
 
@@ -80,7 +107,7 @@ Mở bài tập EDUX (hoặc bấm **🚀 Mở bài** trong popup) → tab **Bà
 
 ```text
 EDUX-EXTENSION/          # Extension chính (duy nhất còn phát triển)
-├── manifest.json        # Manifest V3, v2.3.1
+├── manifest.json        # Manifest V3, v2.4.0
 ├── popup/               # Giao diện popup (Slide / Bài tập / Điểm số / Cài đặt)
 ├── scripts/             # slide-solver, test-solver, score-tracker, dom-utils
 ├── content.js / injected.js / background.js

@@ -16,6 +16,7 @@
   let wrongAnswersMap = {};
   let knownCorrectAnswers = {};
   let aiAttemptedMap = {};
+  let layaRankMap = {};
   let lastProgress = Date.now();
   let stallReported = false;
   const STALL_MS = 8000;
@@ -23,13 +24,20 @@
   let config = {
     delayMs: 100,
     autoNext: true,
-    useAi: true
+    useAi: true,
+    slideMethod: null // 'ai' | 'laya' | 'bruteforce'; null = suy ra từ useAi (cấu hình cũ)
   };
 
+  function getSlideMethod() {
+    if (config.slideMethod) return config.slideMethod;
+    return config.useAi !== false ? 'ai' : 'bruteforce';
+  }
+
   /**
-   * Gửi yêu cầu giải câu hỏi slide tới Background AI Service Worker và CHỜ phản hồi
+   * Gửi yêu cầu giải câu hỏi slide tới Background Service Worker và CHỜ phản hồi.
+   * action: 'AI_SOLVE_SLIDE' (LLM) hoặc 'LAYA_SOLVE_SLIDE' (Laya local)
    */
-  async function queryAiForSlideAnswer(questionText, choices) {
+  async function queryAiForSlideAnswer(questionText, choices, action = 'AI_SOLVE_SLIDE') {
     return new Promise((resolve) => {
       let timeoutId = setTimeout(() => {
         resolve({ success: false, message: 'AI phản hồi quá lâu (hết thời gian chờ 15s)' });
@@ -38,7 +46,7 @@
       try {
         chrome.runtime.sendMessage(
           {
-            action: 'AI_SOLVE_SLIDE',
+            action,
             question: questionText,
             choices: choices
           },
@@ -682,9 +690,39 @@
           wrongAnswersMap[questionText] = new Set();
         }
         const triedIndices = wrongAnswersMap[questionText];
+        const method = getSlideMethod();
+
+        // Laya: hỏi 1 lần/câu, nhận xác suất từng đáp án -> thử theo thứ tự xác suất giảm dần
+        if (method === 'laya') {
+          if (!(questionText in layaRankMap)) {
+            const choiceTexts = answerList.map((el) => (el.textContent || '').trim().replace(/\s+/g, ' '));
+            const layaRes = await queryAiForSlideAnswer(questionText, choiceTexts, 'LAYA_SOLVE_SLIDE');
+            if (!isSlideRunning) return;
+
+            if (layaRes && layaRes.success && Array.isArray(layaRes.ranking) && layaRes.ranking.length === answerCount) {
+              layaRankMap[questionText] = layaRes.ranking;
+              const pct = Math.round((layaRes.probabilities?.[0] || 0) * 100);
+              logMessage(`[Laya] 🎯 Xếp hạng xong (${Math.round(layaRes.elapsedMs || 0)}ms) — tốt nhất #${layaRes.ranking[0] + 1} (${pct}%)`, 'info');
+            } else {
+              layaRankMap[questionText] = null;
+              logMessage(`[Laya Note] ${layaRes?.message || 'Không có phản hồi'}, chuyển sang thử sai tuần tự...`, 'warn');
+            }
+          }
+
+          const ranking = layaRankMap[questionText];
+          if (ranking) {
+            if (triedIndices.size >= answerCount) triedIndices.clear();
+            const rankIdx = ranking.findIndex((i) => !triedIndices.has(i));
+            if (rankIdx >= 0) {
+              nextIndex = ranking[rankIdx];
+              pickedByAi = true;
+              logMessage(`[Laya Pick] Hạng ${rankIdx + 1}/${answerCount} -> đáp án #${nextIndex + 1}`, rankIdx === 0 ? 'success' : 'info');
+            }
+          }
+        }
 
         // Ưu tiên 1: Dùng AI giải câu hỏi nếu được bật và chưa từng hỏi AI cho câu hỏi này
-        const shouldQueryAi = (config.useAi !== false) && !aiAttemptedMap[questionText];
+        const shouldQueryAi = method === 'ai' && !aiAttemptedMap[questionText];
         if (shouldQueryAi) {
           aiAttemptedMap[questionText] = true;
           logMessage(`[AI] 🧠 Đang gửi câu hỏi tới AI và CHỜ phản hồi để chọn đáp án chính xác nhất...`, 'info');
@@ -882,10 +920,15 @@
     wrongAnswersMap = {};
     knownCorrectAnswers = {};
     aiAttemptedMap = {};
+    layaRankMap = {};
     solvedCount = 0;
     retryCount = 0;
 
-    const modeText = config.useAi !== false ? '🧠 Chế độ: AI Siêu Chuẩn Xác (Chờ AI -> Click)' : '⚡ Chế độ: Thử sai nhanh';
+    const modeText = {
+      ai: '🧠 AI',
+      laya: '🎯 Laya',
+      bruteforce: '⚡ Bruteforce'
+    }[getSlideMethod()];
     logMessage(`▶️ Bắt đầu tự động giải Slide! [${modeText}]`, 'success');
     notifyPopup('SLIDE_STATUS_CHANGE', { isRunning: true });
     runSlideBruteforceStep();

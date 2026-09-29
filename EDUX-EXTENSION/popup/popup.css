@@ -356,6 +356,71 @@ textarea:focus, input:focus, select:focus {
   display: block;
 }
 
+/* AI Profiles (nhiều cấu hình API) */
+.ai-profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--bg-card-border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.ai-profile-row.editing {
+  border-color: rgba(168, 85, 247, 0.5);
+}
+
+.ai-profile-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-profile-row button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+}
+
+.ai-profile-row button:hover {
+  color: var(--text-main);
+}
+
+.ai-profile-empty {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.ai-profile-editor {
+  border: 1px dashed rgba(168, 85, 247, 0.4);
+  border-radius: 8px;
+  padding: 0 8px 8px;
+  margin-top: 6px;
+}
+
+.ai-assign-select {
+  max-width: 62%;
+  padding: 4px 6px;
+  font-size: 11px;
+}
+
+.model-badge .ai-assign-select {
+  max-width: 220px;
+}
+
 /* Exercise Info Box & Link Button */
 .exercise-info-box {
   display: flex;

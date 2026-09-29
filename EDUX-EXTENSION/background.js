@@ -36,18 +36,39 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // =========================================================================
 // AI Service Worker for All Extension Features (High Accuracy)
 // =========================================================================
-async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
-  const settings = await chrome.storage.local.get([
+// Mức suy luận (reasoning_effort) hợp lệ theo provider. Giữ đồng bộ với popup.js
+const REASONING_EFFORTS = {
+  inception: ['instant', 'low', 'medium', 'high']
+};
+
+// Cấu hình AI được gán cho chức năng (purpose: 'slide' | 'exam'). Popup chuyển cấu hình
+// đơn cũ (apiKey/apiModel/...) sang aiProfiles khi mở lần đầu; trước đó vẫn đọc key cũ.
+async function getAiProfile(purpose) {
+  const s = await chrome.storage.local.get([
+    'aiProfiles',
+    'aiAssign',
     'apiKey',
     'apiModel',
     'apiEndpoint',
     'apiProvider'
   ]);
+  if (!Array.isArray(s.aiProfiles)) {
+    return { provider: s.apiProvider, endpoint: s.apiEndpoint, apiKey: s.apiKey, model: s.apiModel };
+  }
+  const id = s.aiAssign?.[purpose];
+  return s.aiProfiles.find((p) => p.id === id) || s.aiProfiles[0] || null;
+}
 
-  const key = (settings.apiKey || '').trim();
-  const rawModel = (settings.apiModel || '').trim();
-  let customEndpoint = (settings.apiEndpoint || '').trim();
-  const provider = (settings.apiProvider || 'gemini').toLowerCase().trim();
+async function callAiService({ prompt, systemPrompt, temperature = 0, purpose = 'slide' }) {
+  const profile = await getAiProfile(purpose);
+  if (!profile) {
+    throw new Error('Chưa có cấu hình AI. Vào tab Cài đặt → Cấu hình AI để thêm.');
+  }
+
+  const key = (profile.apiKey || '').trim();
+  const rawModel = (profile.model || '').trim();
+  let customEndpoint = (profile.endpoint || '').trim();
+  const provider = (profile.provider || 'gemini').toLowerCase().trim();
 
   if (provider === 'custom' && !customEndpoint) {
     customEndpoint = 'http://localhost:20128/v1';
@@ -62,7 +83,7 @@ async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
   let isGemini = false;
   if (provider === 'gemini') {
     isGemini = true;
-  } else if (provider === 'openai' || provider === 'deepseek' || provider === 'openrouter' || provider === 'ollama') {
+  } else if (provider === 'openai' || provider === 'deepseek' || provider === 'openrouter' || provider === 'ollama' || provider === 'inception') {
     isGemini = false;
   } else {
     if (customEndpoint) {
@@ -127,6 +148,7 @@ async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
     if (!openAiModel) {
       if (provider === 'deepseek') openAiModel = 'deepseek-chat';
       else if (provider === 'ollama') openAiModel = 'llama3.2';
+      else if (provider === 'inception') openAiModel = 'mercury-2.5';
       else openAiModel = 'gpt-4o-mini';
     }
 
@@ -144,6 +166,7 @@ async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
       if (provider === 'deepseek') endpoint = 'https://api.deepseek.com/v1/chat/completions';
       else if (provider === 'openrouter') endpoint = 'https://openrouter.ai/api/v1/chat/completions';
       else if (provider === 'ollama') endpoint = 'http://localhost:11434/v1/chat/completions';
+      else if (provider === 'inception') endpoint = 'https://api.inceptionlabs.ai/v1/chat/completions';
       else endpoint = 'https://api.openai.com/v1/chat/completions';
     }
 
@@ -162,18 +185,26 @@ async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
     }
     messages.push({ role: 'user', content: prompt });
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        model: openAiModel,
-        messages,
-        temperature,
-        stream: false
-      })
-    });
+    const body = {
+      model: openAiModel,
+      messages,
+      // Inception (Mercury) chỉ nhận 0.5–1.0; ngoài khoảng sẽ bị đặt về mặc định 1.0
+      temperature: endpoint.includes('inceptionlabs.ai') ? Math.max(temperature, 0.5) : temperature,
+      stream: false
+    };
+    if ((REASONING_EFFORTS[provider] || []).includes(profile.reasoningEffort)) {
+      body.reasoning_effort = profile.reasoningEffort;
+    }
 
-    const rawText = await res.text();
+    let res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+    let rawText = await res.text();
+
+    // Server từ chối reasoning_effort -> thử lại 1 lần không kèm tham số này
+    if (!res.ok && body.reasoning_effort && (res.status === 400 || res.status === 422) && /reasoning/i.test(rawText)) {
+      delete body.reasoning_effort;
+      res = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+      rawText = await res.text();
+    }
     if (!res.ok) {
       let errMessage = res.statusText;
       try {
@@ -219,8 +250,121 @@ async function callAiService({ prompt, systemPrompt, temperature = 0 }) {
   return cleaned;
 }
 
+// =========================================================================
+// Laya (https://github.com/NandhaKishorM/laya) — encoder chấm điểm đáp án 1 lượt,
+// chạy local qua `laya-serve` (POST /v1/systemone). Không sinh văn bản nên nhanh
+// hơn LLM, và trả về xác suất cho TỪNG đáp án để thử sai theo thứ tự tốt nhất.
+// =========================================================================
+const LAYA_DEFAULT_ENDPOINT = 'http://localhost:8000';
+
+async function getLayaSettings() {
+  const s = await chrome.storage.local.get(['layaEndpoint', 'layaApiKey']);
+  const base = ((s.layaEndpoint || '').trim() || LAYA_DEFAULT_ENDPOINT).replace(/\/+$/, '');
+  const headers = { 'Content-Type': 'application/json' };
+  const key = (s.layaApiKey || '').trim();
+  if (key) headers['Authorization'] = `Bearer ${key}`;
+  return { base, headers };
+}
+
+async function layaFetch(path, init) {
+  const { base, headers } = await getLayaSettings();
+  let res;
+  try {
+    res = await fetch(`${base}${path}`, { ...init, headers });
+  } catch (e) {
+    throw new Error(`Không kết nối được Laya tại ${base}. Hãy chạy "laya-serve" trước.`);
+  }
+  const rawText = await res.text();
+  let json = null;
+  try {
+    json = JSON.parse(rawText);
+  } catch (e) {}
+  if (!res.ok) {
+    throw new Error(`Laya (${res.status}): ${json?.detail || res.statusText}`);
+  }
+  return { json, res };
+}
+
+// Dùng chính nội dung đáp án làm nhãn (đo trên bộ câu hỏi tiếng Việt: top-1 50%
+// so với 38% khi dùng nhãn "A: ..."). Laya từ chối nhãn trùng -> thêm hậu tố.
+function layaLabels(choices) {
+  const seen = new Set();
+  return choices.map((c, i) => {
+    let label = (c || '').trim() || `Lựa chọn ${i + 1}`;
+    if (seen.has(label)) label = `${label} (${i + 1})`;
+    seen.add(label);
+    return label;
+  });
+}
+
 // Lắng nghe các yêu cầu giải AI từ Slide Solver & Test Solver
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
+  if (req.action === 'LAYA_HEALTH') {
+    (async () => {
+      try {
+        const { json } = await layaFetch('/health', { method: 'GET' });
+        sendResponse({ success: true, loaded: json?.loaded || [], device: json?.device || '' });
+      } catch (err) {
+        sendResponse({ success: false, message: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (req.action === 'LAYA_SOLVE_SLIDE') {
+    (async () => {
+      try {
+        const { question, choices } = req;
+        if (!question || !Array.isArray(choices) || choices.length === 0) {
+          sendResponse({ success: false, message: 'Dữ liệu câu hỏi hoặc lựa chọn không hợp lệ' });
+          return;
+        }
+
+        const labels = layaLabels(choices);
+
+        const started = Date.now();
+        const { json, res } = await layaFetch('/v1/systemone', {
+          method: 'POST',
+          body: JSON.stringify({
+            state: question,
+            // EDUX toàn tiếng Việt -> chỉ định checkpoint đa ngôn ngữ, tránh router
+            // gửi câu hỏi có nhiều thuật ngữ tiếng Anh sang checkpoint English-only.
+            model: 'multilingual',
+            questions: {
+              answer: {
+                type: 'choice',
+                instructions: 'Which option correctly answers the question?',
+                criteria: labels
+              }
+            }
+          })
+        });
+
+        const probs = json?.answers?.answer?.probabilities || {};
+        const ranking = labels
+          .map((label, i) => ({ index: i, p: Number(probs[label]) || 0 }))
+          .sort((a, b) => b.p - a.p);
+
+        if (ranking.length === 0 || !(labels[ranking[0].index] in probs)) {
+          sendResponse({ success: false, message: 'Laya không trả về xác suất cho các đáp án' });
+          return;
+        }
+
+        sendResponse({
+          success: true,
+          index: ranking[0].index,
+          ranking: ranking.map((r) => r.index),
+          probabilities: ranking.map((r) => r.p),
+          elapsedMs: Number(res.headers.get('X-Inference-Time-Ms')) || Date.now() - started,
+          model: json?.routing?.model || ''
+        });
+      } catch (err) {
+        sendResponse({ success: false, message: err.message });
+      }
+    })();
+    return true;
+  }
+
   if (req.action === 'AI_SOLVE_SLIDE') {
     (async () => {
       try {
@@ -244,7 +388,7 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
           choices.map((c, i) => `${i}. ${c}`).join('\n') +
           `\n\nHãy chọn đáp án đúng nhất (trả về JSON dạng {"index": X}):`;
 
-        const rawResult = await callAiService({ prompt, systemPrompt, temperature: 0 });
+        const rawResult = await callAiService({ prompt, systemPrompt, temperature: 0, purpose: 'slide' });
 
         let parsedIndex = -1;
         try {
@@ -315,7 +459,8 @@ chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
         const answersText = await callAiService({
           prompt: promptText,
           systemPrompt,
-          temperature: 0
+          temperature: 0,
+          purpose: 'exam'
         });
 
         sendResponse({ success: true, answersText });

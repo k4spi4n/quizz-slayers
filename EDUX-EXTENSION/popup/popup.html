@@ -24,7 +24,7 @@
           </div>
           <div>
             <h1>EDUX Slayers</h1>
-            <span class="version">v2.3.1 • Manifest V3</span>
+            <span class="version">v2.4.0 • Manifest V3</span>
           </div>
         </div>
         <div class="status-indicator" id="globalStatus">
@@ -90,7 +90,15 @@
                 id="btnSlideMethodAi"
                 data-method="ai"
               >
-                <span>🧠 AI Chuẩn xác</span>
+                <span>🧠 AI</span>
+              </button>
+              <button
+                type="button"
+                class="segmented-btn"
+                id="btnSlideMethodLaya"
+                data-method="laya"
+              >
+                <span>🎯 Laya</span>
               </button>
               <button
                 type="button"
@@ -98,7 +106,7 @@
                 id="btnSlideMethodBrute"
                 data-method="bruteforce"
               >
-                <span>⚡ Thử sai nhanh</span>
+                <span>⚡ Bruteforce</span>
               </button>
             </div>
           </div>
@@ -122,15 +130,41 @@
                 id="slideMethodTitle"
                 style="font-size: 11px; font-weight: 700; color: #c7d2fe"
               >
-                AI Siêu Chuẩn Xác (Độ chính xác 100%)
+                AI
               </div>
               <div
                 id="slideMethodDetail"
                 style="font-size: 10px; color: #94a3b8; margin-top: 2px"
               >
-                Chờ AI phân tích câu hỏi và click đáp án đúng, ít lần thử sai.
+                Chính xác nhất, chậm nhất. Cần API key.
               </div>
             </div>
+          </div>
+
+          <!-- Chọn nhanh cấu hình AI cho Slide (chỉ hiện ở chế độ AI) -->
+          <div class="model-info-strip" id="slideProfileStrip">
+            <div class="model-badge">
+              <span class="model-badge-icon">🤖</span>
+              <select
+                id="slideProfileSelect"
+                class="ai-assign-select"
+                title="Cấu hình AI dùng cho Slide"
+              ></select>
+            </div>
+            <button
+              class="btn-link"
+              id="btnSlideGoToSettings"
+              style="
+                font-size: 11px;
+                color: #a5b4fc;
+                background: none;
+                border: none;
+                cursor: pointer;
+                text-decoration: underline;
+              "
+            >
+              ⚙️ Quản lý
+            </button>
           </div>
 
           <div class="action-buttons">
@@ -276,7 +310,11 @@
             <div class="model-info-strip">
               <div class="model-badge">
                 <span class="model-badge-icon">🤖</span>
-                <span id="activeModelLabel">Model: gemini-2.0-flash</span>
+                <select
+                  id="examProfileSelect"
+                  class="ai-assign-select"
+                  title="Cấu hình AI dùng cho Bài tập"
+                ></select>
               </div>
               <button
                 class="btn-link"
@@ -290,7 +328,7 @@
                   text-decoration: underline;
                 "
               >
-                ⚙️ Đổi Model
+                ⚙️ Quản lý
               </button>
             </div>
 
@@ -641,62 +679,177 @@
 
           <div class="setting-item">
             <div>
-              <label class="setting-label">Dùng AI giải Slide bài giảng</label>
-              <span class="setting-desc"
-                >Chờ AI phân tích câu hỏi & chọn đáp án chính xác nhất</span
-              >
+              <label class="setting-label">Phương pháp giải Slide</label>
+              <span class="setting-desc">Mặc định khi mở popup</span>
             </div>
-            <input type="checkbox" id="settingUseAiSlide" checked />
-          </div>
-
-          <div
-            class="setting-item"
-            style="flex-direction: column; align-items: flex-start; gap: 6px"
-          >
-            <div>
-              <label class="setting-label"
-                >Nhà cung cấp / Cấu hình mẫu (Preset)</label
-              >
-              <span class="setting-desc"
-                >Chọn nhanh nền tảng AI hoặc tùy chỉnh</span
-              >
-            </div>
-            <select id="settingApiProvider" style="width: 100%">
-              <option value="gemini">Google Gemini (Mặc định)</option>
-              <option value="openai">OpenAI (Official)</option>
-              <option value="deepseek">DeepSeek API</option>
-              <option value="openrouter">OpenRouter</option>
-              <option value="ollama">Ollama Local (Offline)</option>
-              <option value="custom">
-                Tùy chỉnh (Custom Base URL / Proxy)
-              </option>
+            <select id="settingSlideMethod">
+              <option value="ai">🧠 AI</option>
+              <option value="laya">🎯 Laya</option>
+              <option value="bruteforce">⚡ Bruteforce</option>
             </select>
           </div>
 
           <div
             class="setting-item"
-            id="settingApiEndpointGroup"
-            style="
-              flex-direction: column;
-              align-items: flex-start;
-              gap: 6px;
-              display: none;
-            "
+            style="flex-direction: column; align-items: stretch; gap: 6px"
           >
-            <div>
-              <label class="setting-label"
-                >Nguồn API (Base URL / Endpoint)</label
+            <div style="display: flex; justify-content: space-between; align-items: center">
+              <label class="setting-label">🤖 Cấu hình AI (API)</label>
+              <button
+                type="button"
+                class="btn btn-secondary btn-xs"
+                id="btnAddAiProfile"
+                style="width: auto"
               >
-              <span class="setting-desc"
-                >Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span
-              >
+                + Thêm
+              </button>
             </div>
-            <input
-              type="text"
-              id="settingApiEndpoint"
-              placeholder="http://localhost:20128/v1"
-              style="width: 100%"
-            />
+            <div id="aiProfileList" class="ai-profile-list"></div>
+          </div>
+
+          <div id="aiProfileEditor" class="ai-profile-editor" style="display: none">
+            <div
+              class="setting-item"
+              style="flex-direction: column; align-items: flex-start; gap: 6px"
+            >
+              <div>
+                <label class="setting-label"
+                  >Nhà cung cấp / Cấu hình mẫu (Preset)</label
+                >
+                <span class="setting-desc"
+                  >Chọn nhanh nền tảng AI hoặc tùy chỉnh</span
+                >
+              </div>
+              <select id="settingApiProvider" style="width: 100%">
+                <option value="gemini">Google Gemini (Mặc định)</option>
+                <option value="openai">OpenAI (Official)</option>
+                <option value="deepseek">DeepSeek API</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="ollama">Ollama Local (Offline)</option>
+                <option value="inception">Inception (Mercury 2.5)</option>
+                <option value="custom">
+                  Tùy chỉnh (Custom Base URL / Proxy)
+                </option>
+              </select>
+            </div>
+
+            <div
+              class="setting-item"
+              id="settingApiEndpointGroup"
+              style="
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+                display: none;
+              "
+            >
+              <div>
+                <label class="setting-label"
+                  >Nguồn API (Base URL / Endpoint)</label
+                >
+                <span class="setting-desc"
+                  >Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span
+                >
+              </div>
+              <input
+                type="text"
+                id="settingApiEndpoint"
+                placeholder="http://localhost:20128/v1"
+                style="width: 100%"
+              />
+            </div>
+
+            <div
+              class="setting-item"
+              style="flex-direction: column; align-items: flex-start; gap: 6px"
+            >
+              <div>
+                <label class="setting-label">Mô hình AI (Model)</label>
+                <span class="setting-desc"
+                  >Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span
+                >
+              </div>
+              <div style="display: flex; gap: 6px; width: 100%">
+                <select id="settingModelSelect" style="flex: 1; min-width: 0">
+                  <!-- Danh sách model được nạp tự động -->
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  id="btnFetchModels"
+                  style="
+                    width: auto;
+                    white-space: nowrap;
+                    padding: 0 10px;
+                    font-size: 11px;
+                  "
+                  title="Lấy danh sách model từ API server (OpenAI-compatible /models)"
+                >
+                  <span>🔄</span> Lấy DS
+                </button>
+              </div>
+              <div
+                id="customModelGroup"
+                style="width: 100%; display: none; margin-top: 4px"
+              >
+                <input
+                  type="text"
+                  id="settingModelCustom"
+                  placeholder="Nhập mã model tùy chỉnh (VD: ag/gemini-3.8-flash-high)..."
+                  style="width: 100%"
+                />
+              </div>
+              <span
+                id="fetchModelsStatus"
+                style="font-size: 10px; display: none"
+              ></span>
+            </div>
+
+            <div class="setting-item" id="settingReasoningGroup" style="display: none">
+              <div>
+                <label class="setting-label">Mức suy luận</label>
+                <span class="setting-desc">Thấp = nhanh hơn</span>
+              </div>
+              <select id="settingReasoning"></select>
+            </div>
+
+            <div
+              class="setting-item"
+              style="flex-direction: column; align-items: flex-start; gap: 6px"
+            >
+              <div>
+                <label class="setting-label">Khóa API (API Key)</label>
+                <span class="setting-desc"
+                  >Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu
+                  dùng local</span
+                >
+              </div>
+              <input
+                type="password"
+                id="settingApiKey"
+                placeholder="Nhập API Key để giải tự động..."
+                style="width: 100%"
+              />
+            </div>
+
+            <div style="display: flex; gap: 6px; padding-top: 8px">
+              <button type="button" class="btn btn-primary btn-sm" id="btnSaveAiProfile">
+                <span>💾</span> Lưu cấu hình
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnCancelAiProfile">
+                Hủy
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label">Slide (AI) dùng</label>
+            <select id="assignSlide" class="ai-assign-select"></select>
+          </div>
+
+          <div class="setting-item">
+            <label class="setting-label">Bài tập (API) dùng</label>
+            <select id="assignExam" class="ai-assign-select"></select>
           </div>
 
           <div
@@ -704,64 +857,44 @@
             style="flex-direction: column; align-items: flex-start; gap: 6px"
           >
             <div>
-              <label class="setting-label">Mô hình AI (Model)</label>
+              <label class="setting-label">Laya server (local)</label>
               <span class="setting-desc"
-                >Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span
+                >Chạy <code>pip install "laya[serve]"</code> rồi
+                <code>laya-serve</code>. Key chỉ cần nếu đặt LAYA_API_KEY.</span
               >
             </div>
             <div style="display: flex; gap: 6px; width: 100%">
-              <select id="settingModelSelect" style="flex: 1; min-width: 0">
-                <!-- Danh sách model được nạp tự động -->
-              </select>
+              <input
+                type="text"
+                id="settingLayaEndpoint"
+                placeholder="http://localhost:8000"
+                style="flex: 1; min-width: 0"
+              />
               <button
                 type="button"
                 class="btn btn-secondary"
-                id="btnFetchModels"
+                id="btnTestLaya"
                 style="
                   width: auto;
                   white-space: nowrap;
                   padding: 0 10px;
                   font-size: 11px;
                 "
-                title="Lấy danh sách model từ API server (OpenAI-compatible /models)"
+                title="Kiểm tra kết nối tới laya-serve (/health)"
               >
-                <span>🔄</span> Lấy DS
+                <span>🔌</span> Kiểm tra
               </button>
-            </div>
-            <div
-              id="customModelGroup"
-              style="width: 100%; display: none; margin-top: 4px"
-            >
-              <input
-                type="text"
-                id="settingModelCustom"
-                placeholder="Nhập mã model tùy chỉnh (VD: ag/gemini-3.8-flash-high)..."
-                style="width: 100%"
-              />
-            </div>
-            <span
-              id="fetchModelsStatus"
-              style="font-size: 10px; display: none"
-            ></span>
-          </div>
-
-          <div
-            class="setting-item"
-            style="flex-direction: column; align-items: flex-start; gap: 6px"
-          >
-            <div>
-              <label class="setting-label">Khóa API (API Key)</label>
-              <span class="setting-desc"
-                >Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu
-                dùng local</span
-              >
             </div>
             <input
               type="password"
-              id="settingApiKey"
-              placeholder="Nhập API Key để giải tự động..."
+              id="settingLayaApiKey"
+              placeholder="LAYA_API_KEY (để trống nếu không đặt)"
               style="width: 100%"
             />
+            <span
+              id="layaStatus"
+              style="font-size: 10px; display: none"
+            ></span>
           </div>
 
           <button class="btn btn-primary" id="btnSaveSettings">

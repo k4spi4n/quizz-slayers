@@ -1,5 +1,5 @@
 /**
- * EDUX Slayers - Popup Controller v2.3.0
+ * EDUX Slayers - Popup Controller v2.4.0
  * Điều khiển giao diện Extension, giải Slide, giải Bài tập (mô phỏng EDUX-TEST-SOLVER)
  * và theo dõi điểm số môn học.
  */
@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     retryCount: document.getElementById("retryCount"),
     slideLog: document.getElementById("slideLog"),
     btnSlideMethodAi: document.getElementById("btnSlideMethodAi"),
+    btnSlideMethodLaya: document.getElementById("btnSlideMethodLaya"),
     btnSlideMethodBrute: document.getElementById("btnSlideMethodBrute"),
     slideMethodDesc: document.getElementById("slideMethodDesc"),
     slideMethodIcon: document.getElementById("slideMethodIcon"),
@@ -53,7 +54,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     stepLine2: document.getElementById("stepLine2"),
     btnExtractQuestions: document.getElementById("btnExtractQuestions"),
     btnSolveAI: document.getElementById("btnSolveAI"),
-    activeModelLabel: document.getElementById("activeModelLabel"),
     btnGoToSettings: document.getElementById("btnGoToSettings"),
     autoAnswersContainer: document.getElementById("autoAnswersContainer"),
     autoAnswersBox: document.getElementById("autoAnswersBox"),
@@ -81,7 +81,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     settingDelay: document.getElementById("settingDelay"),
     settingAutoNext: document.getElementById("settingAutoNext"),
     settingAutoSubmit: document.getElementById("settingAutoSubmit"),
-    settingUseAiSlide: document.getElementById("settingUseAiSlide"),
+    settingSlideMethod: document.getElementById("settingSlideMethod"),
+    settingLayaEndpoint: document.getElementById("settingLayaEndpoint"),
+    settingLayaApiKey: document.getElementById("settingLayaApiKey"),
+    btnTestLaya: document.getElementById("btnTestLaya"),
+    layaStatus: document.getElementById("layaStatus"),
+    aiProfileList: document.getElementById("aiProfileList"),
+    aiProfileEditor: document.getElementById("aiProfileEditor"),
+    btnAddAiProfile: document.getElementById("btnAddAiProfile"),
+    btnSaveAiProfile: document.getElementById("btnSaveAiProfile"),
+    btnCancelAiProfile: document.getElementById("btnCancelAiProfile"),
+    assignSlide: document.getElementById("assignSlide"),
+    assignExam: document.getElementById("assignExam"),
+    examProfileSelect: document.getElementById("examProfileSelect"),
+    settingReasoningGroup: document.getElementById("settingReasoningGroup"),
+    settingReasoning: document.getElementById("settingReasoning"),
+    slideProfileStrip: document.getElementById("slideProfileStrip"),
+    slideProfileSelect: document.getElementById("slideProfileSelect"),
+    btnSlideGoToSettings: document.getElementById("btnSlideGoToSettings"),
     settingApiProvider: document.getElementById("settingApiProvider"),
     settingApiEndpointGroup: document.getElementById("settingApiEndpointGroup"),
     settingApiEndpoint: document.getElementById("settingApiEndpoint"),
@@ -184,18 +201,68 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function updateActiveModelBadge(model, provider) {
-    if (!UI.activeModelLabel) return;
-    const prov = provider || UI.settingApiProvider?.value || "gemini";
-    const rawModel = model || UI.settingModel?.value || "";
-    let display = rawModel;
-    if (!display) {
-      if (prov === "gemini") display = "gemini-2.0-flash";
-      else if (prov === "deepseek") display = "deepseek-chat";
-      else if (prov === "ollama") display = "llama3.2";
-      else display = "gpt-4o-mini";
-    }
-    UI.activeModelLabel.textContent = `Model: ${display}`;
+  function getDisplayModel(model, provider) {
+    if (model) return model;
+    if (provider === "deepseek") return "deepseek-chat";
+    if (provider === "ollama") return "llama3.2";
+    if (provider === "inception") return "mercury-2.5";
+    if (provider === "openai" || provider === "openrouter" || provider === "custom")
+      return "gpt-4o-mini";
+    return "gemini-2.0-flash";
+  }
+
+  // =========================================================================
+  // Nhiều cấu hình AI (API profiles), mỗi chức năng chọn 1 cấu hình riêng
+  // Storage: aiProfiles = [{ id, provider, endpoint, apiKey, model }], aiAssign = { slide, exam }
+  // =========================================================================
+  const PROVIDER_NAMES = {
+    gemini: "Gemini",
+    openai: "OpenAI",
+    deepseek: "DeepSeek",
+    openrouter: "OpenRouter",
+    ollama: "Ollama",
+    inception: "Inception",
+    custom: "Custom",
+  };
+  const AI_FUNCTIONS = ["slide", "exam"];
+  // Mức suy luận (tham số reasoning_effort) theo provider — chỉ provider có trong bảng mới hiện lựa chọn.
+  // Giữ đồng bộ với REASONING_EFFORTS trong background.js
+  const REASONING_EFFORTS = {
+    inception: ["instant", "low", "medium", "high"],
+  };
+  const REASONING_LABELS = { instant: "instant (nhanh nhất)", high: "high (kỹ nhất)" };
+
+  function validReasoningEffort(provider, value) {
+    return (REASONING_EFFORTS[provider] || []).includes(value) ? value : "";
+  }
+  let aiProfiles = [];
+  let aiAssign = {};
+
+  function profileLabel(p) {
+    const keyTail = p.apiKey ? ` …${p.apiKey.slice(-4)}` : "";
+    const effort = validReasoningEffort(p.provider, p.reasoningEffort);
+    const tier = effort ? ` (${effort})` : "";
+    return `${PROVIDER_NAMES[p.provider] || p.provider} · ${getDisplayModel(p.model, p.provider)}${tier}${keyTail}`;
+  }
+
+  function getAssignedProfile(fn) {
+    return aiProfiles.find((p) => p.id === aiAssign[fn]) || aiProfiles[0] || null;
+  }
+
+  function isProfileReady(p) {
+    return (
+      !!p &&
+      (!!p.apiKey ||
+        p.provider === "ollama" ||
+        /localhost|127\.0\.0\.1/.test(p.endpoint || ""))
+    );
+  }
+
+  function slideAiDetail() {
+    const p = getAssignedProfile("slide");
+    return p
+      ? "Chính xác nhất, chậm nhất."
+      : "Chính xác nhất, chậm nhất. Cần thêm cấu hình AI.";
   }
 
   function switchTestMode(mode) {
@@ -253,22 +320,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  let currentSlideMethod = "ai";
+
   function setSlideMethod(method, saveToStorage = true) {
+    if (!["ai", "laya", "bruteforce"].includes(method)) method = "ai";
+    currentSlideMethod = method;
     const isAi = method === "ai";
     if (UI.btnSlideMethodAi)
       UI.btnSlideMethodAi.classList.toggle("active", isAi);
+    if (UI.btnSlideMethodLaya)
+      UI.btnSlideMethodLaya.classList.toggle("active", method === "laya");
     if (UI.btnSlideMethodBrute)
-      UI.btnSlideMethodBrute.classList.toggle("active", !isAi);
+      UI.btnSlideMethodBrute.classList.toggle("active", method === "bruteforce");
 
-    if (UI.settingUseAiSlide) UI.settingUseAiSlide.checked = isAi;
+    if (UI.settingSlideMethod) UI.settingSlideMethod.value = method;
+    if (UI.slideProfileStrip) UI.slideProfileStrip.style.display = isAi ? "" : "none";
 
-    const model = UI.settingModel?.value || "gemini-2.0-flash";
-
-    if (isAi) {
+    if (method === "laya") {
+      if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = "🎯";
+      if (UI.slideMethodTitle) {
+        UI.slideMethodTitle.textContent = "Laya";
+        UI.slideMethodTitle.style.color = "#5eead4";
+      }
+      if (UI.slideMethodDesc) {
+        UI.slideMethodDesc.style.borderColor = "rgba(45, 212, 191, 0.3)";
+        UI.slideMethodDesc.style.background = "rgba(45, 212, 191, 0.08)";
+      }
+      if (UI.slideMethodDetail) {
+        UI.slideMethodDetail.textContent =
+          "🧪 Thử nghiệm. Cân bằng tốc độ & độ chính xác, cần laya-serve.";
+      }
+    } else if (isAi) {
       if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = "🧠";
       if (UI.slideMethodTitle) {
-        UI.slideMethodTitle.textContent =
-          "AI Siêu Chuẩn Xác (Độ chính xác 100%)";
+        UI.slideMethodTitle.textContent = "AI";
         UI.slideMethodTitle.style.color = "#c7d2fe";
       }
       if (UI.slideMethodDesc) {
@@ -276,12 +361,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         UI.slideMethodDesc.style.background = "rgba(99, 102, 241, 0.12)";
       }
       if (UI.slideMethodDetail) {
-        UI.slideMethodDetail.textContent = `Chờ AI (${model}) phân tích câu hỏi và click đáp án đúng, ít thử sai.`;
+        UI.slideMethodDetail.textContent = slideAiDetail();
       }
     } else {
       if (UI.slideMethodIcon) UI.slideMethodIcon.textContent = "⚡";
       if (UI.slideMethodTitle) {
-        UI.slideMethodTitle.textContent = "Thử sai siêu tốc (Brute-force)";
+        UI.slideMethodTitle.textContent = "Bruteforce";
         UI.slideMethodTitle.style.color = "#fbbf24";
       }
       if (UI.slideMethodDesc) {
@@ -290,12 +375,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       if (UI.slideMethodDetail) {
         UI.slideMethodDetail.textContent =
-          "Thử lần lượt các đáp án với tốc độ cao, không cần API Key AI.";
+          "Nhanh nhất, thử lần lượt. Không cần gì.";
       }
     }
 
     if (saveToStorage) {
-      chrome.storage.local.set({ useAiSlide: isAi });
+      chrome.storage.local.set({ slideMethod: method, useAiSlide: isAi });
     }
   }
 
@@ -399,6 +484,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       placeholderEndpoint: "https://openrouter.ai/api/v1",
       keyPlaceholder: "Nhập OpenRouter API Key (sk-or-v1-...)",
     },
+    inception: {
+      endpoint: "https://api.inceptionlabs.ai/v1",
+      model: "mercury-2.5",
+      placeholderEndpoint: "https://api.inceptionlabs.ai/v1",
+      keyPlaceholder: "Nhập Inception API Key",
+    },
     ollama: {
       endpoint: "http://localhost:11434/v1",
       model: "llama3.2",
@@ -453,6 +544,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         id: "anthropic/claude-3.5-sonnet",
         label: "anthropic/claude-3.5-sonnet",
       },
+    ],
+    inception: [
+      { id: "mercury-2.5", label: "mercury-2.5 (Khuyên dùng)" },
+      { id: "mercury-2", label: "mercury-2" },
     ],
     ollama: [
       { id: "llama3.2", label: "llama3.2" },
@@ -645,6 +740,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           rawEndpoint = "https://openrouter.ai/api/v1";
         else if (provider === "ollama")
           rawEndpoint = "http://localhost:11434/v1";
+        else if (provider === "inception")
+          rawEndpoint = "https://api.inceptionlabs.ai/v1";
       }
 
       const showStatus = (text, isError = false) => {
@@ -786,6 +883,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     "autoNext",
     "autoSubmit",
     "useAiSlide",
+    "slideMethod",
+    "layaEndpoint",
+    "layaApiKey",
     "savedAnswers",
     "slideStats",
     "lastExamData",
@@ -793,6 +893,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     "apiEndpoint",
     "apiKey",
     "apiModel",
+    "aiProfiles",
+    "aiAssign",
     "cachedModelsByProvider",
     "testWorkflowMode",
   ]);
@@ -811,60 +913,269 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (UI.settingAutoSubmit)
     UI.settingAutoSubmit.checked =
       settings.autoSubmit !== undefined ? settings.autoSubmit : true;
-  if (UI.settingUseAiSlide)
-    UI.settingUseAiSlide.checked =
-      settings.useAiSlide !== undefined ? settings.useAiSlide : true;
+  if (UI.settingLayaEndpoint)
+    UI.settingLayaEndpoint.value = settings.layaEndpoint || "";
+  if (UI.settingLayaApiKey) UI.settingLayaApiKey.value = settings.layaApiKey || "";
   setSlideMethod(
-    settings.useAiSlide !== undefined
-      ? settings.useAiSlide
-        ? "ai"
-        : "bruteforce"
-      : "ai",
+    settings.slideMethod ||
+      (settings.useAiSlide === false ? "bruteforce" : "ai"),
     false,
   );
 
   if (UI.btnSlideMethodAi) {
     UI.btnSlideMethodAi.addEventListener("click", () => setSlideMethod("ai"));
   }
+  if (UI.btnSlideMethodLaya) {
+    UI.btnSlideMethodLaya.addEventListener("click", () =>
+      setSlideMethod("laya"),
+    );
+  }
   if (UI.btnSlideMethodBrute) {
     UI.btnSlideMethodBrute.addEventListener("click", () =>
       setSlideMethod("bruteforce"),
     );
   }
-  if (UI.settingUseAiSlide) {
-    UI.settingUseAiSlide.addEventListener("change", () => {
-      setSlideMethod(UI.settingUseAiSlide.checked ? "ai" : "bruteforce");
+  if (UI.settingSlideMethod) {
+    UI.settingSlideMethod.addEventListener("change", () => {
+      setSlideMethod(UI.settingSlideMethod.value);
     });
   }
-  if (UI.settingApiProvider && settings.apiProvider) {
-    UI.settingApiProvider.value = settings.apiProvider;
-    const preset = API_PRESETS[settings.apiProvider];
-    if (preset) {
-      if (UI.settingApiEndpoint)
-        UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
-      if (UI.settingApiKey)
-        UI.settingApiKey.placeholder = preset.keyPlaceholder;
-    }
-  }
-  if (UI.settingApiEndpoint) {
-    if (settings.apiEndpoint !== undefined && settings.apiEndpoint !== "") {
-      UI.settingApiEndpoint.value = settings.apiEndpoint;
-    } else if (
-      UI.settingApiProvider &&
-      UI.settingApiProvider.value === "custom"
-    ) {
-      UI.settingApiEndpoint.value = "http://localhost:20128/v1";
-    }
-  }
-  updateEndpointVisibility();
 
-  if (UI.settingApiKey && settings.apiKey)
-    UI.settingApiKey.value = settings.apiKey;
-  if (UI.settingModel && settings.apiModel)
-    UI.settingModel.value = settings.apiModel;
-  const activeProvider = settings.apiProvider || "gemini";
-  renderModelDropdown(activeProvider, settings.apiModel || "");
-  updateActiveModelBadge(settings.apiModel, activeProvider);
+  // Laya đọc endpoint/key từ storage trong background -> lưu trước rồi mới ping /health
+  async function checkLayaHealth() {
+    await chrome.storage.local.set({
+      layaEndpoint: (UI.settingLayaEndpoint?.value || "").trim(),
+      layaApiKey: (UI.settingLayaApiKey?.value || "").trim(),
+    });
+    try {
+      const res = await chrome.runtime.sendMessage({ action: "LAYA_HEALTH" });
+      return res || { success: false, message: "Không nhận được phản hồi" };
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+  }
+
+  if (UI.btnTestLaya) {
+    UI.btnTestLaya.addEventListener("click", async () => {
+      UI.btnTestLaya.disabled = true;
+      const res = await checkLayaHealth();
+      UI.btnTestLaya.disabled = false;
+      if (!UI.layaStatus) return;
+      UI.layaStatus.style.display = "block";
+      UI.layaStatus.style.color = res.success ? "#34d399" : "#f87171";
+      UI.layaStatus.textContent = res.success
+        ? `✅ Đã kết nối Laya${res.loaded.length ? ` — đã nạp: ${res.loaded.join(", ")}` : ""}`
+        : `❌ ${res.message}`;
+    });
+  }
+  // --- AI profiles: nạp, chuyển đổi từ cấu hình đơn cũ, danh sách, form sửa, gán chức năng ---
+  let editingProfileId = null;
+
+  async function persistAiProfiles() {
+    await chrome.storage.local.set({ aiProfiles, aiAssign });
+    renderAiProfiles();
+  }
+
+  function fillProfileSelect(sel, fn) {
+    if (!sel) return;
+    sel.innerHTML = "";
+    if (aiProfiles.length === 0) {
+      const opt = document.createElement("option");
+      opt.textContent = "— Chưa có cấu hình —";
+      sel.appendChild(opt);
+      sel.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    aiProfiles.forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = profileLabel(p);
+      sel.appendChild(opt);
+    });
+    sel.value = getAssignedProfile(fn).id;
+  }
+
+  function renderAiProfiles() {
+    if (UI.aiProfileList) {
+      UI.aiProfileList.innerHTML = "";
+      if (aiProfiles.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "ai-profile-empty";
+        empty.textContent = "Chưa có cấu hình. Bấm + Thêm để nhập API key.";
+        UI.aiProfileList.appendChild(empty);
+      }
+      aiProfiles.forEach((p) => {
+        const row = document.createElement("div");
+        row.className = "ai-profile-row";
+        row.classList.toggle("editing", p.id === editingProfileId);
+
+        const name = document.createElement("span");
+        name.className = "ai-profile-name";
+        name.textContent = profileLabel(p);
+        name.title = p.endpoint || "";
+
+        const btnEdit = document.createElement("button");
+        btnEdit.type = "button";
+        btnEdit.textContent = "✏️";
+        btnEdit.title = "Sửa";
+        btnEdit.addEventListener("click", () => openProfileEditor(p));
+
+        // Bấm 2 lần để xóa (tránh xóa nhầm key)
+        const btnDel = document.createElement("button");
+        btnDel.type = "button";
+        btnDel.textContent = "🗑";
+        btnDel.title = "Xóa";
+        btnDel.addEventListener("click", async () => {
+          if (!btnDel.dataset.armed) {
+            btnDel.dataset.armed = "1";
+            btnDel.textContent = "Xóa?";
+            btnDel.style.color = "#f87171";
+            setTimeout(() => {
+              delete btnDel.dataset.armed;
+              btnDel.textContent = "🗑";
+              btnDel.style.color = "";
+            }, 2500);
+            return;
+          }
+          aiProfiles = aiProfiles.filter((x) => x.id !== p.id);
+          AI_FUNCTIONS.forEach((fn) => {
+            if (aiAssign[fn] === p.id) aiAssign[fn] = aiProfiles[0]?.id;
+          });
+          if (editingProfileId === p.id) closeProfileEditor();
+          await persistAiProfiles();
+        });
+
+        row.append(name, btnEdit, btnDel);
+        UI.aiProfileList.appendChild(row);
+      });
+    }
+
+    fillProfileSelect(UI.assignSlide, "slide");
+    fillProfileSelect(UI.assignExam, "exam");
+    fillProfileSelect(UI.examProfileSelect, "exam");
+    fillProfileSelect(UI.slideProfileSelect, "slide");
+    if (currentSlideMethod === "ai" && UI.slideMethodDetail)
+      UI.slideMethodDetail.textContent = slideAiDetail();
+  }
+
+  function renderReasoningSelect(provider, value) {
+    const efforts = REASONING_EFFORTS[provider];
+    if (UI.settingReasoningGroup)
+      UI.settingReasoningGroup.style.display = efforts ? "flex" : "none";
+    if (!UI.settingReasoning || !efforts) return;
+    UI.settingReasoning.innerHTML = "";
+    ["", ...efforts].forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v;
+      opt.textContent = v ? REASONING_LABELS[v] || v : "Mặc định";
+      UI.settingReasoning.appendChild(opt);
+    });
+    UI.settingReasoning.value = validReasoningEffort(provider, value);
+  }
+
+  if (UI.settingApiProvider) {
+    UI.settingApiProvider.addEventListener("change", () =>
+      renderReasoningSelect(UI.settingApiProvider.value, ""),
+    );
+  }
+
+  function openProfileEditor(p) {
+    editingProfileId = p ? p.id : null;
+    const provider = p ? p.provider : "gemini";
+    const preset = API_PRESETS[provider] || API_PRESETS.custom;
+    if (UI.settingApiProvider) UI.settingApiProvider.value = provider;
+    if (UI.settingApiEndpoint) {
+      UI.settingApiEndpoint.value = p ? p.endpoint || "" : preset.endpoint;
+      UI.settingApiEndpoint.placeholder = preset.placeholderEndpoint;
+    }
+    if (UI.settingApiKey) {
+      UI.settingApiKey.value = p ? p.apiKey || "" : "";
+      UI.settingApiKey.placeholder = preset.keyPlaceholder;
+    }
+    renderModelDropdown(provider, p ? p.model : preset.model);
+    renderReasoningSelect(provider, p ? p.reasoningEffort : "");
+    updateEndpointVisibility();
+    if (UI.fetchModelsStatus) UI.fetchModelsStatus.style.display = "none";
+    if (UI.aiProfileEditor) UI.aiProfileEditor.style.display = "block";
+    if (UI.btnAddAiProfile) UI.btnAddAiProfile.style.display = "none";
+    renderAiProfiles();
+  }
+
+  function closeProfileEditor() {
+    editingProfileId = null;
+    if (UI.aiProfileEditor) UI.aiProfileEditor.style.display = "none";
+    if (UI.btnAddAiProfile) UI.btnAddAiProfile.style.display = "";
+    renderAiProfiles();
+  }
+
+  if (UI.btnAddAiProfile)
+    UI.btnAddAiProfile.addEventListener("click", () => openProfileEditor(null));
+  if (UI.btnCancelAiProfile)
+    UI.btnCancelAiProfile.addEventListener("click", closeProfileEditor);
+
+  if (UI.btnSaveAiProfile) {
+    UI.btnSaveAiProfile.addEventListener("click", async () => {
+      const provider = UI.settingApiProvider?.value || "gemini";
+      let endpoint = (UI.settingApiEndpoint?.value || "").trim();
+      if (provider === "custom" && !endpoint) endpoint = "http://localhost:20128/v1";
+      const profile = {
+        id: editingProfileId || `p${Date.now().toString(36)}`,
+        provider,
+        endpoint,
+        apiKey: (UI.settingApiKey?.value || "").trim(),
+        model: getActiveModel(),
+        reasoningEffort: validReasoningEffort(provider, UI.settingReasoning?.value),
+      };
+      const idx = aiProfiles.findIndex((x) => x.id === profile.id);
+      if (idx >= 0) aiProfiles[idx] = profile;
+      else aiProfiles.push(profile);
+      // Chức năng chưa gán (hoặc gán cấu hình đã xóa) -> dùng cấu hình vừa lưu
+      AI_FUNCTIONS.forEach((fn) => {
+        if (!aiProfiles.some((x) => x.id === aiAssign[fn])) aiAssign[fn] = profile.id;
+      });
+      editingProfileId = null;
+      await persistAiProfiles();
+      closeProfileEditor();
+      addLog(UI.testLog, `Đã lưu cấu hình AI: ${profileLabel(profile)}`, "success");
+    });
+  }
+
+  [
+    [UI.assignSlide, "slide"],
+    [UI.assignExam, "exam"],
+    [UI.examProfileSelect, "exam"],
+    [UI.slideProfileSelect, "slide"],
+  ].forEach(([sel, fn]) => {
+    if (!sel) return;
+    sel.addEventListener("change", () => {
+      aiAssign[fn] = sel.value;
+      persistAiProfiles();
+    });
+  });
+
+  if (Array.isArray(settings.aiProfiles)) {
+    aiProfiles = settings.aiProfiles;
+    aiAssign = settings.aiAssign || {};
+  } else {
+    // Chuyển cấu hình đơn cũ (apiProvider/apiKey/...) thành cấu hình đầu tiên cho mọi chức năng
+    const legacyProvider = settings.apiProvider || "gemini";
+    if (settings.apiKey || legacyProvider !== "gemini") {
+      aiProfiles = [
+        {
+          id: "p1",
+          provider: legacyProvider,
+          endpoint: settings.apiEndpoint || "",
+          apiKey: settings.apiKey || "",
+          model: settings.apiModel || "",
+        },
+      ];
+      aiAssign = { slide: "p1", exam: "p1" };
+    }
+    await chrome.storage.local.set({ aiProfiles, aiAssign });
+    await chrome.storage.local.remove(["apiProvider", "apiEndpoint", "apiKey", "apiModel"]);
+  }
+  renderAiProfiles();
 
   if (settings.testWorkflowMode) {
     switchTestMode(settings.testWorkflowMode);
@@ -962,27 +1273,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     const tab = await getActiveTab();
     if (!tab) return;
 
-    let useAi = UI.btnSlideMethodAi
-      ? UI.btnSlideMethodAi.classList.contains("active")
-      : UI.settingUseAiSlide
-        ? UI.settingUseAiSlide.checked
-        : true;
+    let slideMethod = currentSlideMethod;
 
-    const apiKey = (UI.settingApiKey?.value || "").trim();
-    const apiProvider = (UI.settingApiProvider?.value || "gemini").trim();
-    const isLocal =
-      apiProvider === "ollama" ||
-      (UI.settingApiEndpoint?.value || "").includes("localhost");
-
-    if (useAi && !apiKey && !isLocal) {
+    if (slideMethod === "ai" && !isProfileReady(getAssignedProfile("slide"))) {
       addLog(
         UI.slideLog,
-        "⚠️ Chưa có API Key để giải Slide bằng AI. Đang tự động chuyển sang phương pháp Thử sai nhanh...",
+        "⚠️ Chưa có cấu hình AI cho Slide, chuyển sang Bruteforce.",
         "warn",
       );
       setSlideMethod("bruteforce");
-      useAi = false;
+      slideMethod = "bruteforce";
     }
+
+    if (slideMethod === "laya") {
+      const health = await checkLayaHealth();
+      if (!health.success) {
+        addLog(
+          UI.slideLog,
+          `⚠️ ${health.message} Vẫn chạy nhưng sẽ thử sai tuần tự cho tới khi Laya sẵn sàng.`,
+          "warn",
+        );
+      }
+    }
+    const useAi = slideMethod === "ai";
 
     const origHtml = UI.btnStartSlide.innerHTML;
     UI.btnStartSlide.innerHTML =
@@ -996,6 +1309,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           delayMs: parseInt(UI.settingDelay.value, 10) || 100,
           autoNext: UI.settingAutoNext.checked,
           useAi,
+          slideMethod,
         },
       });
       UI.btnStartSlide.classList.add("hidden");
@@ -1003,9 +1317,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       setStatus("Đang giải Slide...", "running");
       addLog(
         UI.slideLog,
-        useAi
-          ? "🧠 Đã bật giải Slide bằng AI (Chờ AI phân tích câu hỏi -> Click)"
-          : "⚡ Đã bật giải Slide chế độ thử sai nhanh.",
+        {
+          ai: "🧠 Bắt đầu: AI",
+          laya: "🎯 Bắt đầu: Laya",
+          bruteforce: "⚡ Bắt đầu: Bruteforce",
+        }[slideMethod],
         "success",
       );
     } catch (err) {
@@ -1043,6 +1359,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     model,
     apiEndpoint,
     apiProvider,
+    reasoningEffort = "",
   ) {
     const key = (apiKey || "").trim();
     const rawModel = (model || "").trim();
@@ -1072,7 +1389,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       provider === "openai" ||
       provider === "deepseek" ||
       provider === "openrouter" ||
-      provider === "ollama"
+      provider === "ollama" ||
+      provider === "inception"
     ) {
       isGemini = false;
     } else {
@@ -1158,6 +1476,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!openAiModel) {
         if (provider === "deepseek") openAiModel = "deepseek-chat";
         else if (provider === "ollama") openAiModel = "llama3.2";
+        else if (provider === "inception") openAiModel = "mercury-2.5";
         else openAiModel = "gpt-4o-mini";
       }
 
@@ -1178,6 +1497,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           endpoint = "https://openrouter.ai/api/v1/chat/completions";
         } else if (provider === "ollama") {
           endpoint = "http://localhost:11434/v1/chat/completions";
+        } else if (provider === "inception") {
+          endpoint = "https://api.inceptionlabs.ai/v1/chat/completions";
         } else {
           endpoint = "https://api.openai.com/v1/chat/completions";
         }
@@ -1192,21 +1513,41 @@ document.addEventListener("DOMContentLoaded", async () => {
         headers["X-Title"] = "EDUX Slayers";
       }
 
-      const res = await fetch(endpoint, {
+      const body = {
+        model: openAiModel,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: promptContent },
+        ],
+        // Inception (Mercury) chỉ nhận 0.5–1.0; ngoài khoảng sẽ bị đặt về mặc định 1.0
+        temperature: endpoint.includes("inceptionlabs.ai") ? 0.5 : 0,
+        stream: false,
+      };
+      const effort = validReasoningEffort(provider, reasoningEffort);
+      if (effort) body.reasoning_effort = effort;
+
+      let res = await fetch(endpoint, {
         method: "POST",
         headers,
-        body: JSON.stringify({
-          model: openAiModel,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: promptContent },
-          ],
-          temperature: 0,
-          stream: false,
-        }),
+        body: JSON.stringify(body),
       });
+      let rawText = await res.text();
 
-      const rawText = await res.text();
+      // Server từ chối reasoning_effort -> thử lại 1 lần không kèm tham số này
+      if (
+        !res.ok &&
+        body.reasoning_effort &&
+        (res.status === 400 || res.status === 422) &&
+        /reasoning/i.test(rawText)
+      ) {
+        delete body.reasoning_effort;
+        res = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        });
+        rawText = await res.text();
+      }
       if (!res.ok) {
         let errMessage = res.statusText;
         try {
@@ -1284,14 +1625,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // Nút liên kết chuyển sang tab Cài đặt đổi Model
-  if (UI.btnGoToSettings) {
-    UI.btnGoToSettings.addEventListener("click", () => {
+  [UI.btnGoToSettings, UI.btnSlideGoToSettings].forEach((btn) => {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
       const settingsTabBtn = document.querySelector(
         '.tab-btn[data-tab="tab-settings"]',
       );
       if (settingsTabBtn) settingsTabBtn.click();
     });
-  }
+  });
 
   // Nút Phiên mới: Xóa trắng ô đáp án, prompt xem trước và reset tiến trình
   if (UI.btnNewSession) {
@@ -1463,18 +1805,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tab = await getActiveTab();
       if (!tab) return;
 
-      const apiKey = (UI.settingApiKey?.value || "").trim();
-      const model = (UI.settingModel?.value || "").trim();
-      const apiEndpoint = (UI.settingApiEndpoint?.value || "").trim();
-      const apiProvider = (UI.settingApiProvider?.value || "gemini").trim();
+      const examProfile = getAssignedProfile("exam");
 
-      const isLocal =
-        apiProvider === "ollama" ||
-        apiEndpoint.includes("localhost") ||
-        apiEndpoint.includes("127.0.0.1");
-
-      if (!apiKey && !isLocal) {
-        addLog(UI.testLog, "⚠️ Chưa cấu hình API Key để giải tự động.", "warn");
+      if (!isProfileReady(examProfile)) {
+        addLog(UI.testLog, "⚠️ Chưa có cấu hình AI cho Bài tập.", "warn");
         addLog(
           UI.testLog,
           "💬 Đang tự động chuyển sang chế độ Chatbot để bạn tự giải...",
@@ -1590,15 +1924,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const qCount = extRes.questions?.total_questions || 0;
         updateExamInfoUI(extRes.questions);
-        const displayModel =
-          model ||
-          (apiProvider === "gemini"
-            ? "Gemini"
-            : apiProvider === "deepseek"
-              ? "DeepSeek"
-              : apiProvider === "ollama"
-                ? "Ollama"
-                : "AI");
+        const displayModel = getDisplayModel(
+          examProfile.model,
+          examProfile.provider,
+        );
         addLog(
           UI.testLog,
           `Đang gửi ${qCount} câu tới AI (${displayModel})...`,
@@ -1616,10 +1945,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const aiAnswers = await solveWithAI(
           extRes.promptText,
-          apiKey,
-          model,
-          apiEndpoint,
-          apiProvider,
+          examProfile.apiKey,
+          examProfile.model,
+          examProfile.endpoint,
+          examProfile.provider,
+          examProfile.reasoningEffort,
         );
         UI.answerInput.value = aiAnswers;
         if (UI.autoAnswersBox) UI.autoAnswersBox.value = aiAnswers;
@@ -1872,34 +2202,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 9. Settings Actions
   // =========================================================================
   UI.btnSaveSettings.addEventListener("click", async () => {
-    const providerVal = UI.settingApiProvider
-      ? UI.settingApiProvider.value
-      : "gemini";
-    let endpointVal = UI.settingApiEndpoint
-      ? UI.settingApiEndpoint.value.trim()
-      : "";
-    if (providerVal === "custom" && !endpointVal) {
-      endpointVal = "http://localhost:20128/v1";
-      if (UI.settingApiEndpoint) UI.settingApiEndpoint.value = endpointVal;
-    }
+    // Đang mở form cấu hình AI -> lưu luôn để không mất thay đổi
+    if (UI.aiProfileEditor && UI.aiProfileEditor.style.display !== "none")
+      UI.btnSaveAiProfile.click();
 
     const newSettings = {
       delayMs: parseInt(UI.settingDelay.value, 10) || 100,
       autoNext: UI.settingAutoNext.checked,
       autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true,
-      useAiSlide: UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true,
-      useAi: UI.settingUseAiSlide ? UI.settingUseAiSlide.checked : true,
-      apiProvider: providerVal,
-      apiEndpoint: endpointVal,
-      apiKey: UI.settingApiKey ? UI.settingApiKey.value.trim() : "",
-      apiModel: UI.settingModel
-        ? UI.settingModel.value.trim()
-        : "gemini-2.0-flash",
+      slideMethod: currentSlideMethod,
+      useAiSlide: currentSlideMethod === "ai",
+      useAi: currentSlideMethod === "ai",
+      layaEndpoint: (UI.settingLayaEndpoint?.value || "").trim(),
+      layaApiKey: (UI.settingLayaApiKey?.value || "").trim(),
       cachedModelsByProvider,
     };
 
     await chrome.storage.local.set(newSettings);
-    updateActiveModelBadge(newSettings.apiModel, newSettings.apiProvider);
 
     const tab = await getActiveTab();
     if (tab) {
