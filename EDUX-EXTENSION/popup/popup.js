@@ -7,11 +7,14 @@
 document.addEventListener("DOMContentLoaded", async () => {
   // Ordered content scripts for tab re-injection
   const CONTENT_SCRIPTS = [
-    "scripts/dom-utils.js",
-    "scripts/slide-solver.js",
-    "scripts/test-solver.js",
-    "scripts/score-tracker.js",
-    "content.js",
+    "content/dom-utils.js",
+    "content/answer-parser.js",
+    "content/exam-dom.js",
+    "content/exam-prompt.js",
+    "content/exam-solver.js",
+    "content/slide-solver.js",
+    "content/score-tracker.js",
+    "content/content.js",
   ];
 
   // =========================================================================
@@ -432,7 +435,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await chrome.scripting
           .executeScript({
             target: { tabId },
-            files: ["injected.js"],
+            files: ["content/injected.js"],
             world: "MAIN",
           })
           .catch(() => {});
@@ -443,7 +446,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
         await chrome.scripting.insertCSS({
           target: { tabId },
-          files: ["content.css"],
+          files: ["content/content.css"],
         });
         await new Promise((r) => setTimeout(r, 200));
         return await chrome.tabs.sendMessage(tabId, message);
@@ -1225,7 +1228,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     chrome.scripting
       .executeScript({
         target: { tabId: activeTab.id },
-        files: ["injected.js"],
+        files: ["content/injected.js"],
         world: "MAIN",
       })
       .catch(() => {});

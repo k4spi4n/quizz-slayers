@@ -34,7 +34,7 @@ export default [
   {
     // page.evaluate() callbacks run inside the extension; Playwright fixtures require `({}, use)`
     files: ['tests/smoke/**/*.js'],
-    languageOptions: { globals: { ...globals.webextensions } },
+    languageOptions: { globals: { ...globals.browser, ...globals.webextensions } },
     rules: { 'no-empty-pattern': 'off' }
   }
 ];

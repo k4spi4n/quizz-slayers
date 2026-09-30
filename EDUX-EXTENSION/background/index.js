@@ -5,6 +5,7 @@ import { callAiService } from './ai-client.js';
 import { slideSystemPrompt, slideUserPrompt, EXAM_SYSTEM_PROMPT, parseSlideIndex } from './prompts.js';
 import { layaHealth, layaSolveSlide } from './laya.js';
 import { checkForUpdate } from './updater.js';
+import { INJECTED_SCRIPT } from '../shared/content-scripts.js';
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('⚔️ EDUX Slayers Extension installed successfully.');
@@ -37,7 +38,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     chrome.scripting
       .executeScript({
         target: { tabId },
-        files: ['injected.js'],
+        files: [INJECTED_SCRIPT],
         world: 'MAIN'
       })
       .catch(() => {});

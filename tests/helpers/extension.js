@@ -134,22 +134,21 @@ export function loadExamApi({ title = 'Bài tập EDUX' } = {}) {
   ctx.window = ctx;
   vm.createContext(ctx);
 
-  vm.runInContext(read('scripts/dom-utils.js'), ctx, { filename: 'dom-utils.js' });
-  // parseTrueFalseAnswers / normalizeAnswersPayload are internal to test-solver.js today; expose them for tests
-  const solver = read('scripts/test-solver.js').replace(
-    'window.EduxTestSolver = {',
-    'window.EduxTestSolver = { parseTrueFalseAnswers, normalizeAnswersPayload,'
-  );
-  vm.runInContext(solver, ctx, { filename: 'test-solver.js' });
+  for (const file of ['dom-utils.js', 'answer-parser.js', 'exam-dom.js', 'exam-prompt.js', 'exam-solver.js']) {
+    vm.runInContext(read(`content/${file}`), ctx, { filename: file });
+  }
 
-  const api = ctx.window.EduxTestSolver;
+  const parser = ctx.window.EduxAnswerParser;
+  const prompt = ctx.window.EduxExamPrompt;
   return {
-    loadAnswersFromInput: api.loadAnswersFromInput,
-    sanitizeAiResponse: api.sanitizeAiResponse,
-    parseTrueFalseAnswers: api.parseTrueFalseAnswers,
-    normalizeAnswersPayload: api.normalizeAnswersPayload,
-    buildCompactPromptPayload: api.buildCompactPromptPayload,
-    generateStandardPromptText: api.generateStandardPromptText
+    loadAnswersFromInput: parser.loadAnswersFromInput,
+    sanitizeAiResponse: parser.sanitizeAiResponse,
+    parseTrueFalseAnswers: parser.parseTrueFalseAnswers,
+    normalizeAnswersPayload: parser.normalizeAnswersPayload,
+    // The exam solver passes document.title as the fallback title
+    buildCompactPromptPayload: (payload) => prompt.buildCompactPromptPayload(payload, ctx.document.title),
+    generateStandardPromptText: prompt.generateStandardPromptText,
+    solver: ctx.window.EduxTestSolver
   };
 }
 

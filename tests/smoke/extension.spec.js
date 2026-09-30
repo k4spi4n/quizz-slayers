@@ -128,3 +128,46 @@ test('exercise AI requests are answered by the service worker', async ({ openPop
   const res = await page.evaluate(() => chrome.runtime.sendMessage({ action: 'AI_SOLVE_EXAM', promptText: 'x' }));
   expect(res).toEqual({ success: false, message: 'Chưa có cấu hình AI. Vào tab Cài đặt → Cấu hình AI để thêm.' });
 });
+
+// A minimal exam page served at an EDUX URL, so the manifest's content scripts are injected into it
+const EXAM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Bài tập smoke</title></head><body>
+  <div class="bg-white">
+    <span>Câu 1</span>
+    <div class="prose"><p>Thủ đô Việt Nam là?</p></div>
+    <div class="border rounded-lg cursor-pointer"><span class="flex-shrink-0">A</span><p>Hà Nội</p></div>
+    <div class="border rounded-lg cursor-pointer"><span class="flex-shrink-0">B</span><p>Huế</p></div>
+  </div>
+  <div class="bg-white">
+    <span>Câu 2</span>
+    <div class="prose"><p>Nước sôi ở bao nhiêu độ C?</p></div>
+    <input type="text">
+  </div>
+</body></html>`;
+
+test('content scripts load on EDUX pages and extract questions', async ({ context, openPopup }) => {
+  await context.route('https://edux.cmcu.edu.vn/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: EXAM_PAGE })
+  );
+  const edux = await context.newPage();
+  const pageErrors = [];
+  edux.on('pageerror', (e) => pageErrors.push(e.message));
+  await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
+
+  // MAIN-world network interceptor (content/injected.js)
+  await expect.poll(() => edux.evaluate(() => window.__EDUX_SLAYERS_INTERCEPTOR_ACTIVE__)).toBe(true);
+
+  // Isolated-world scripts: content.js answers only if every script before it loaded
+  const popup = await openPopup();
+  const extractFromEduxTab = () =>
+    popup.evaluate(async () => {
+      const [tab] = await chrome.tabs.query({ url: 'https://edux.cmcu.edu.vn/*' });
+      return chrome.tabs.sendMessage(tab.id, { action: 'EXTRACT_QUESTIONS' }).catch((e) => ({ error: e.message }));
+    });
+  await expect.poll(async () => typeof (await extractFromEduxTab()).promptText).toBe('string');
+
+  const extracted = await extractFromEduxTab();
+  expect(extracted.promptText).toContain('Thủ đô Việt Nam là?');
+  expect(extracted.promptText).toContain('Hà Nội');
+  expect(extracted.promptText).toContain('Nước sôi ở bao nhiêu độ C?');
+  expect(pageErrors).toEqual([]);
+});

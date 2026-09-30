@@ -72,15 +72,10 @@
     } catch (e) {}
   }
 
-  function logMessage(msg, logType = 'info') {
-    console.log('[EDUX Slayers Slide] ' + msg);
-    notifyPopup('SLIDE_LOG', {
-      message: msg,
-      logType,
-      solvedCount,
-      retryCount
-    });
-  }
+  const logMessage = window.EduxDOM.createLogger('[EDUX Slayers Slide]', 'SLIDE_LOG', () => ({
+    solvedCount,
+    retryCount
+  }));
 
   function getDialogNextPageButton() {
     const dialog = getActiveDialog();

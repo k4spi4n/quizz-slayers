@@ -27,7 +27,7 @@
   function injectNetworkInterceptor() {
     try {
       const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('injected.js');
+      script.src = chrome.runtime.getURL('content/injected.js');
       script.onload = () => script.remove();
       (document.head || document.documentElement).appendChild(script);
     } catch (e) {

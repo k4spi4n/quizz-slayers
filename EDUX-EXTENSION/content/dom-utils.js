@@ -164,7 +164,21 @@
     }
   }
 
+  /**
+   * Logger gửi về popup: in ra console kèm tiền tố và gửi { type, message, logType, ...extra() }.
+   * Popup đóng thì không có ai nhận -> bỏ qua lỗi.
+   */
+  function createLogger(prefix, type, extra = () => ({})) {
+    return function logMessage(msg, logType = 'info') {
+      console.log(`${prefix} ${msg}`);
+      try {
+        chrome.runtime.sendMessage({ type, message: msg, logType, ...extra() });
+      } catch (e) {}
+    };
+  }
+
   window.EduxDOM = {
+    createLogger,
     sleep,
     safeIsVisible,
     safeIsEnabled,

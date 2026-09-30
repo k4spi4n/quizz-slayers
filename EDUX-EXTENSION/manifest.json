@@ -34,7 +34,7 @@
         "*://edux.cmcu.edu.vn/*",
         "*://*.cmcu.edu.vn/*"
       ],
-      "js": ["injected.js"],
+      "js": ["content/injected.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
@@ -45,19 +45,22 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/dom-utils.js",
-        "scripts/slide-solver.js",
-        "scripts/test-solver.js",
-        "scripts/score-tracker.js",
-        "content.js"
+        "content/dom-utils.js",
+        "content/answer-parser.js",
+        "content/exam-dom.js",
+        "content/exam-prompt.js",
+        "content/exam-solver.js",
+        "content/slide-solver.js",
+        "content/score-tracker.js",
+        "content/content.js"
       ],
-      "css": ["content.css"],
+      "css": ["content/content.css"],
       "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["injected.js"],
+      "resources": ["content/injected.js"],
       "matches": ["*://edux.cmcu.edu.vn/*", "*://*.cmcu.edu.vn/*"]
     }
   ]
