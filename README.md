@@ -5,7 +5,7 @@
 ![version](https://img.shields.io/badge/version-v2.5.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
 
 > [!IMPORTANT]
-> **Extension (`EDUX-EXTENSION`) là trọng tâm phát triển duy nhất.** Các script Python/Playwright (`EDUX-SLIDE-BRUTEFORCE`, `EDUX-TEST-SOLVER`, `EDUX-SLIDE-AI`, `EDUX-LIVE-QUESTION`) đã **ngừng hỗ trợ** — xem phần cuối README.
+> **Extension (`EDUX-EXTENSION`) là trọng tâm phát triển duy nhất.** Các script Python/Playwright (`EDUX-SLIDE-BRUTEFORCE`, `EDUX-TEST-SOLVER`, `EDUX-SLIDE-AI`, `EDUX-LIVE-QUESTION`) đã **ngừng hỗ trợ** và được chuyển vào [`legacy/`](legacy/).
 
 ---
 
@@ -130,30 +130,13 @@ EDUX-EXTENSION/          # Extension chính (duy nhất còn phát triển)
 ├── scripts/             # slide-solver, test-solver, score-tracker, dom-utils
 ├── content.js / injected.js / background.js
 ├── update.bat / update.ps1  # Cập nhật tại chỗ, giữ nguyên cấu hình
-EDUX-SLIDE-BRUTEFORCE/   # [deprecated] script Playwright cũ
-EDUX-TEST-SOLVER/        # [deprecated] script Playwright cũ
-EDUX-SLIDE-AI/           # [deprecated] script OCR + Ollama cũ
-EDUX-LIVE-QUESTION/      # [deprecated] script cũ
+legacy/                  # [ngừng hỗ trợ] script Python/Playwright cũ — xem legacy/README.md
 edux-extension.zip       # Bản đóng gói sẵn
 ```
 
 ---
 
-<details>
-<summary><b>📦 Script Python/Playwright cũ (ngừng hỗ trợ — bấm để xem)</b></summary>
-
-Không còn bảo trì. Hãy dùng Extension ở trên.
-
-```bash
-run_slide_bruteforce.bat   # EDUX-SLIDE-BRUTEFORCE
-run_test_solver.bat        # EDUX-TEST-SOLVER (điền từ answers.txt)
-run_live_solver.bat        # EDUX-LIVE-QUESTION
-# EDUX-SLIDE-AI: cd EDUX-SLIDE-AI && pip install -r requirements.txt
-```
-
-Yêu cầu cũ (nếu vẫn cố dùng): Python 3.10+, `install_deps.bat`, file `.env` với `EDUX_EMAIL` / `EDUX_PASSWORD`.
-
-</details>
+> Tìm script Python/Playwright cũ? Chúng đã ngừng hỗ trợ và nằm trong [`legacy/`](legacy/).
 
 ---
 
