@@ -5,7 +5,10 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const EXT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../EDUX-EXTENSION');
+// EDUX_EXT_DIR lets the smoke test run against another checkout (e.g. to compare with an older commit)
+export const EXT_DIR = process.env.EDUX_EXT_DIR
+  ? path.resolve(process.env.EDUX_EXT_DIR)
+  : path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../EDUX-EXTENSION');
 
 const read = (rel) => fs.readFileSync(path.join(EXT_DIR, rel), 'utf8');
 

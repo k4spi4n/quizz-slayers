@@ -171,3 +171,63 @@ test('content scripts load on EDUX pages and extract questions', async ({ contex
   expect(extracted.promptText).toContain('Nước sôi ở bao nhiêu độ C?');
   expect(pageErrors).toEqual([]);
 });
+
+// Local OpenAI-compatible server standing in for the AI provider (a "custom" profile on localhost needs no key)
+async function startFakeAi(answer) {
+  const { createServer } = await import('node:http');
+  const requests = [];
+  const server = createServer((req, res) => {
+    let body = '';
+    req.on('data', (c) => (body += c));
+    req.on('end', () => {
+      requests.push({ url: req.url, body: JSON.parse(body || '{}') });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ choices: [{ message: { content: answer } }] }));
+    });
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  return { requests, endpoint: `http://127.0.0.1:${server.address().port}/v1`, close: () => server.close() };
+}
+
+test('exercise API mode: extract → AI (via service worker) → answers shown and filled', async ({ context, openPopup }) => {
+  const answer = '[{"so_cau": 1, "dap_an": "A"}, {"so_cau": 2, "dap_an": "100"}]';
+  const ai = await startFakeAi(answer);
+  try {
+    await context.route('https://edux.cmcu.edu.vn/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html; charset=utf-8',
+        body: EXAM_PAGE.replace('<body>', '<body><div role="dialog" data-state="open">').replace('</body>', '</div></body>')
+      })
+    );
+    const edux = await context.newPage();
+    await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
+
+    const popup = await openPopup();
+    await storage.set(popup, {
+      aiProfiles: [{ id: 'local', provider: 'custom', endpoint: ai.endpoint, apiKey: '', model: 'fake-model' }],
+      aiAssign: { slide: 'local', exam: 'local' },
+      autoSubmit: false
+    });
+    await popup.reload();
+    await popup.click('.tab-btn[data-tab="tab-test"]');
+    await popup.click('#btnSolveAI');
+
+    await expect(popup.locator('#testLog')).toContainText('AI đã giải xong', { timeout: 20_000 });
+    await expect(popup.locator('#autoAnswersBox')).toHaveValue(answer);
+    expect((await storage.get(popup, 'savedAnswers')).savedAnswers).toBe(answer);
+
+    expect(ai.requests).toHaveLength(1);
+    const { url, body } = ai.requests[0];
+    expect(url).toBe('/v1/chat/completions');
+    expect(body.model).toBe('fake-model');
+    expect(body.messages[0].content).toContain('"so_cau" và "dap_an"');
+    expect(body.messages[1].content).toContain('Thủ đô Việt Nam là?');
+
+    // Fill step reached the page and wrote an answer. (Which answer lands where depends on EDUX's
+    // one-question-per-view dialog, which this static page doesn't reproduce; v2.5.0 behaves the same.)
+    await expect(edux.locator('input[type="text"]')).not.toHaveValue('', { timeout: 15_000 });
+  } finally {
+    ai.close();
+  }
+});

@@ -23,8 +23,8 @@ export default [
     }
   },
   {
-    // Service worker and code shared with the popup are ES modules
-    files: ['EDUX-EXTENSION/background/**/*.js', 'EDUX-EXTENSION/shared/**/*.js'],
+    // Service worker, popup and the code they share are ES modules
+    files: ['EDUX-EXTENSION/background/**/*.js', 'EDUX-EXTENSION/popup/**/*.js', 'EDUX-EXTENSION/shared/**/*.js'],
     languageOptions: { sourceType: 'module' }
   },
   {
