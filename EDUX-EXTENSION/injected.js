@@ -14,7 +14,6 @@
   // =========================================================================
   const OriginalDate = window.Date;
   const originalDateNow = OriginalDate.now.bind(OriginalDate);
-  let serverDriftMs = 0;
 
   function syncServerTime(dateHeader) {
     if (!dateHeader) return;
@@ -24,7 +23,6 @@
         const clientTime = originalDateNow();
         const drift = serverTime - clientTime;
         if (Math.abs(drift) > 3000) {
-          serverDriftMs = drift;
           window.__EDUX_SERVER_DRIFT__ = drift;
           if (!Date.__edux_clock_patched__) {
             Date.__edux_clock_patched__ = true;

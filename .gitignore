@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 thorium/
 *.zip
+node_modules/
+test-results/
+playwright-report/

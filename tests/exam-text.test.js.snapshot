@@ -1,0 +1,410 @@
+exports[`buildCompactPromptPayload: bare_array 1`] = `
+{
+  "title": "Bài tập EDUX",
+  "total_questions": 2,
+  "multiple_choice": [
+    {
+      "id": 1,
+      "question": "Q1",
+      "options": {
+        "A": "a"
+      }
+    },
+    {
+      "id": 2,
+      "question": "Q2",
+      "options": {
+        "A": "b"
+      }
+    }
+  ],
+  "fill_in_blank": [],
+  "essay": [],
+  "true_false": []
+}
+`;
+
+exports[`buildCompactPromptPayload: colliding_ids 1`] = `
+{
+  "title": "Trùng ID",
+  "total_questions": 4,
+  "multiple_choice": [
+    {
+      "id": 1,
+      "question": "MC 1",
+      "options": {
+        "A": "x",
+        "B": "y"
+      }
+    },
+    {
+      "id": 2,
+      "question": "MC 2",
+      "options": {
+        "A": "x",
+        "B": "y"
+      }
+    }
+  ],
+  "fill_in_blank": [],
+  "essay": [],
+  "true_false": [
+    {
+      "id": 3,
+      "question": "TF restarts at 1",
+      "statements": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "id": 4,
+      "question": "TF 2",
+      "statements": [
+        "c"
+      ]
+    }
+  ]
+}
+`;
+
+exports[`buildCompactPromptPayload: empty 1`] = `
+{
+  "title": "Bài tập EDUX",
+  "total_questions": 0,
+  "multiple_choice": [],
+  "fill_in_blank": [],
+  "essay": [],
+  "true_false": []
+}
+`;
+
+exports[`buildCompactPromptPayload: full_sections 1`] = `
+{
+  "title": "Kiểm tra chương 1",
+  "total_questions": 5,
+  "multiple_choice": [
+    {
+      "id": 1,
+      "question": "Thủ đô Việt Nam?",
+      "options": {
+        "A": "Hà Nội",
+        "B": "Huế",
+        "C": "Đà Nẵng",
+        "D": "TP.HCM"
+      }
+    },
+    {
+      "id": 2,
+      "question": "2 + 2 = ?",
+      "options": {
+        "A": "3",
+        "B": "4"
+      }
+    }
+  ],
+  "fill_in_blank": [
+    {
+      "id": 3,
+      "question": "Nước sôi ở ___ độ C."
+    }
+  ],
+  "essay": [
+    {
+      "id": 4,
+      "question": "Trình bày vai trò của AI."
+    }
+  ],
+  "true_false": [
+    {
+      "id": 5,
+      "question": "Xét các mệnh đề sau:",
+      "statements": [
+        "Trái đất tròn",
+        "Mặt trời quay quanh Trái đất",
+        "Nước là H2O"
+      ]
+    }
+  ]
+}
+`;
+
+exports[`buildCompactPromptPayload: generic_questions_array 1`] = `
+{
+  "title": "Bài tập EDUX",
+  "total_questions": 4,
+  "multiple_choice": [
+    {
+      "id": 1,
+      "question": "Chọn một",
+      "options": {
+        "A": "1",
+        "B": "2"
+      }
+    }
+  ],
+  "fill_in_blank": [
+    {
+      "id": 4,
+      "question": "Điền từ"
+    }
+  ],
+  "essay": [
+    {
+      "id": 3,
+      "question": "Viết đoạn văn"
+    }
+  ],
+  "true_false": [
+    {
+      "id": 2,
+      "question": "Đúng hay sai",
+      "statements": [
+        "p",
+        "q"
+      ]
+    }
+  ]
+}
+`;
+
+exports[`buildCompactPromptPayload: missing_title_uses_document_title 1`] = `
+{
+  "title": "Bài tập EDUX",
+  "total_questions": 1,
+  "multiple_choice": [],
+  "fill_in_blank": [],
+  "essay": [
+    {
+      "id": 1,
+      "question": "E1"
+    }
+  ],
+  "true_false": []
+}
+`;
+
+exports[`generateStandardPromptText 1`] = `
+"{\\n  \\"title\\": \\"Kiểm tra chương 1\\",\\n  \\"total_questions\\": 5,\\n  \\"multiple_choice\\": [\\n    {\\n      \\"id\\": 1,\\n      \\"question\\": \\"Thủ đô Việt Nam?\\",\\n      \\"options\\": {\\n        \\"A\\": \\"Hà Nội\\",\\n        \\"B\\": \\"Huế\\",\\n        \\"C\\": \\"Đà Nẵng\\",\\n        \\"D\\": \\"TP.HCM\\"\\n      }\\n    },\\n    {\\n      \\"id\\": 2,\\n      \\"question\\": \\"2 + 2 = ?\\",\\n      \\"options\\": {\\n        \\"A\\": \\"3\\",\\n        \\"B\\": \\"4\\"\\n      }\\n    }\\n  ],\\n  \\"fill_in_blank\\": [\\n    {\\n      \\"id\\": 3,\\n      \\"question\\": \\"Nước sôi ở ___ độ C.\\"\\n    }\\n  ],\\n  \\"essay\\": [\\n    {\\n      \\"id\\": 4,\\n      \\"question\\": \\"Trình bày vai trò của AI.\\"\\n    }\\n  ],\\n  \\"true_false\\": [\\n    {\\n      \\"id\\": 5,\\n      \\"question\\": \\"Xét các mệnh đề sau:\\",\\n      \\"statements\\": [\\n        \\"Trái đất tròn\\",\\n        \\"Mặt trời quay quanh Trái đất\\",\\n        \\"Nước là H2O\\"\\n      ]\\n    }\\n  ]\\n}\\n\\nYÊU CẦU ĐỘ CHÍNH XÁC CAO NHẤT (100% ACADEMIC ACCURACY):\\n1. Bạn là chuyên gia khảo thí và học thuật cao cấp. Hãy phân tích kỹ từng câu hỏi, đọc các lựa chọn loại trừ và xác định câu trả lời đúng tuyệt đối.\\n2. Định dạng đầu ra: BẮT BUỘC trả về JSONL một dòng duy nhất (hoặc JSON Array các object) để hệ thống tự động parse;\\n3. Mỗi phần tử có 2 trường: \\"so_cau\\" và \\"dap_an\\";\\n4. Đối với câu trắc nghiệm: \\"dap_an\\" là chữ cái A, B, C, hoặc D (hoặc nội dung chính xác của đáp án);\\n5. Đối với câu đúng/sai: \\"dap_an\\" là mảng giá trị Đúng/Sai theo thứ tự từng mệnh đề trong câu (ví dụ: [true, false, true, true]);\\n6. Đối với câu điền khuyết / tự luận: \\"dap_an\\" là từ/cụm từ chuẩn xác cần điền;\\n7. Tuyệt đối không giải thích, không viết thêm bất kỳ lời dẫn nào ngoài JSON.\\n"
+`;
+
+exports[`loadAnswersFromInput: bom_prefixed 1`] = `
+{
+  "7": "B"
+}
+`;
+
+exports[`loadAnswersFromInput: concatenated_objects 1`] = `
+{
+  "1": "A",
+  "2": "B"
+}
+`;
+
+exports[`loadAnswersFromInput: double_encoded 1`] = `
+{
+  "1": "A"
+}
+`;
+
+exports[`loadAnswersFromInput: empty 1`] = `
+{}
+`;
+
+exports[`loadAnswersFromInput: fenced_json 1`] = `
+{
+  "1": "B",
+  "2": "D"
+}
+`;
+
+exports[`loadAnswersFromInput: field_aliases 1`] = `
+{
+  "1": "A",
+  "2": "B",
+  "3": "C",
+  "4": "D"
+}
+`;
+
+exports[`loadAnswersFromInput: invalid_items 1`] = `
+{
+  "3": "C"
+}
+`;
+
+exports[`loadAnswersFromInput: jsonl_array 1`] = `
+{
+  "1": "A",
+  "2": "C",
+  "3": "true, false, true, true"
+}
+`;
+
+exports[`loadAnswersFromInput: jsonl_lines 1`] = `
+{
+  "1": "A",
+  "2": "B",
+  "3": "C"
+}
+`;
+
+exports[`loadAnswersFromInput: object_map 1`] = `
+{
+  "1": "A",
+  "2": "B",
+  "3": "true, false"
+}
+`;
+
+exports[`loadAnswersFromInput: plain_lines 1`] = `
+{
+  "1": "A",
+  "2": "B",
+  "3": "Đúng, Sai, Đúng",
+  "4": "C",
+  "5": "D"
+}
+`;
+
+exports[`loadAnswersFromInput: prose_only 1`] = `
+{}
+`;
+
+exports[`loadAnswersFromInput: quote_wrapped 1`] = `
+{
+  "1": "A"
+}
+`;
+
+exports[`loadAnswersFromInput: trailing_comma 1`] = `
+{
+  "1": "A",
+  "2": "B"
+}
+`;
+
+exports[`loadAnswersFromInput: truncated 1`] = `
+{
+  "1": "A",
+  "2": "B",
+  "3": "C"
+}
+`;
+
+exports[`loadAnswersFromInput: unescaped_quotes 1`] = `
+{
+  "1": "câu \\"đúng\\" nhất",
+  "2": "B"
+}
+`;
+
+exports[`loadAnswersFromInput: wrapped_answers_key 1`] = `
+{
+  "4": "C",
+  "5": "hai mươi"
+}
+`;
+
+exports[`parseTrueFalseAnswers: booleans 1`] = `
+[
+  true,
+  false,
+  true,
+  true
+]
+`;
+
+exports[`parseTrueFalseAnswers: empty 1`] = `
+[]
+`;
+
+exports[`parseTrueFalseAnswers: english 1`] = `
+[
+  true,
+  false,
+  true
+]
+`;
+
+exports[`parseTrueFalseAnswers: free_tokens 1`] = `
+[
+  true,
+  false,
+  true,
+  true
+]
+`;
+
+exports[`parseTrueFalseAnswers: json_string 1`] = `
+[
+  true,
+  false,
+  false,
+  true
+]
+`;
+
+exports[`parseTrueFalseAnswers: letters 1`] = `
+[
+  true,
+  false,
+  true,
+  false
+]
+`;
+
+exports[`parseTrueFalseAnswers: numbered_tokens 1`] = `
+[
+  true,
+  false,
+  true,
+  false
+]
+`;
+
+exports[`parseTrueFalseAnswers: numbers 1`] = `
+[
+  true,
+  false,
+  true,
+  false
+]
+`;
+
+exports[`parseTrueFalseAnswers: object_keyed 1`] = `
+[
+  true,
+  false,
+  false,
+  true
+]
+`;
+
+exports[`parseTrueFalseAnswers: strings_vi 1`] = `
+[
+  true,
+  false,
+  true,
+  false
+]
+`;
+
+exports[`parseTrueFalseAnswers: truncates_to_expected 1`] = `
+[
+  true,
+  true
+]
+`;
+
+exports[`sanitizeAiResponse strips fences, BOM and wrapping quotes 1`] = `
+[
+  "[1,2]",
+  "{\\"a\\":1}",
+  "[1]",
+  "[{\\"so_cau\\":1}]",
+  "[1]",
+  "[{\\"so_cau\\": 1}]",
+  "no fences here"
+]
+`;
