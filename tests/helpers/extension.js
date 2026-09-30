@@ -39,8 +39,8 @@ function createStorage(initial = {}) {
       remove: (keys, cb) => {
         for (const k of [].concat(keys)) delete data[k];
         return withCallback(undefined, cb);
-      }
-    }
+      },
+    },
   };
 }
 
@@ -56,13 +56,13 @@ function createChrome(storage) {
         onMessage: event('onMessage'),
         getManifest: () => JSON.parse(read('manifest.json')),
         getURL: (p) => `chrome-extension://test/${p}`,
-        sendMessage: () => Promise.resolve()
+        sendMessage: () => Promise.resolve(),
       },
       tabs: { onUpdated: event('onUpdated') },
       scripting: { executeScript: () => Promise.resolve() },
       action: { setBadgeText: () => {}, setBadgeBackgroundColor: () => {} },
-      storage: { local: storage.api }
-    }
+      storage: { local: storage.api },
+    },
   };
 }
 
@@ -75,7 +75,7 @@ function createFetch() {
       url: String(url),
       method: init.method || 'GET',
       headers: { ...(init.headers || {}) },
-      body: init.body ? JSON.parse(init.body) : undefined
+      body: init.body ? JSON.parse(init.body) : undefined,
     };
     calls.push(call);
     const next = responders.shift();
@@ -91,13 +91,21 @@ function createFetch() {
     },
     respond(...fns) {
       responders.push(...fns);
-    }
+    },
   };
 }
 
-export const json = (obj, status = 200, headers = {}) => () =>
-  new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...headers } });
-export const text = (body, status = 200) => () => new Response(body, { status });
+export const json =
+  (obj, status = 200, headers = {}) =>
+  () =>
+    new Response(JSON.stringify(obj), {
+      status,
+      headers: { 'Content-Type': 'application/json', ...headers },
+    });
+export const text =
+  (body, status = 200) =>
+  () =>
+    new Response(body, { status });
 
 /**
  * Background service worker harness.
@@ -112,7 +120,9 @@ export async function loadBackground() {
   globalThis.chrome = chrome;
   globalThis.fetch = net.fetch;
   await import(pathToFileURL(path.join(EXT_DIR, 'background/index.js')).href);
-  const { compareVersions } = await import(pathToFileURL(path.join(EXT_DIR, 'shared/version.js')).href);
+  const { compareVersions } = await import(
+    pathToFileURL(path.join(EXT_DIR, 'shared/version.js')).href
+  );
 
   return {
     storage,
@@ -123,7 +133,7 @@ export async function loadBackground() {
         const keepOpen = listeners.onMessage(message, {}, resolve);
         if (keepOpen !== true) resolve(undefined);
       });
-    }
+    },
   };
 }
 
@@ -137,7 +147,13 @@ export function loadExamApi({ title = 'Bài tập EDUX' } = {}) {
   ctx.window = ctx;
   vm.createContext(ctx);
 
-  for (const file of ['dom-utils.js', 'answer-parser.js', 'exam-dom.js', 'exam-prompt.js', 'exam-solver.js']) {
+  for (const file of [
+    'dom-utils.js',
+    'answer-parser.js',
+    'exam-dom.js',
+    'exam-prompt.js',
+    'exam-solver.js',
+  ]) {
     vm.runInContext(read(`content/${file}`), ctx, { filename: file });
   }
 
@@ -149,9 +165,10 @@ export function loadExamApi({ title = 'Bài tập EDUX' } = {}) {
     parseTrueFalseAnswers: parser.parseTrueFalseAnswers,
     normalizeAnswersPayload: parser.normalizeAnswersPayload,
     // The exam solver passes document.title as the fallback title
-    buildCompactPromptPayload: (payload) => prompt.buildCompactPromptPayload(payload, ctx.document.title),
+    buildCompactPromptPayload: (payload) =>
+      prompt.buildCompactPromptPayload(payload, ctx.document.title),
     generateStandardPromptText: prompt.generateStandardPromptText,
-    solver: ctx.window.EduxTestSolver
+    solver: ctx.window.EduxTestSolver,
   };
 }
 

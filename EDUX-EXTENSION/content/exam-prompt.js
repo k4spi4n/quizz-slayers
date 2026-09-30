@@ -12,8 +12,9 @@
    * Chuẩn hóa gán ID tuần tự liên tục (1..N), tránh va chạm ID giữa các phần trắc nghiệm và đúng/sai
    */
   function buildCompactPromptPayload(payloadJson, fallbackTitle) {
-    const data = (payloadJson && payloadJson.data) || (payloadJson || {});
-    const examData = data.exam_data || (typeof data === 'object' && !data.multiple_choice ? {} : data);
+    const data = (payloadJson && payloadJson.data) || payloadJson || {};
+    const examData =
+      data.exam_data || (typeof data === 'object' && !data.multiple_choice ? {} : data);
 
     const compact = {
       title: data.title || fallbackTitle || 'Bài tập EDUX',
@@ -21,7 +22,7 @@
       multiple_choice: [],
       fill_in_blank: [],
       essay: [],
-      true_false: []
+      true_false: [],
     };
 
     let nextFallbackIndex = 1;
@@ -52,7 +53,7 @@
         compact.multiple_choice.push({
           id: resolveQuestionId(item),
           question: item.question || item.title || item.content || '',
-          options: item.options || item.choices || {}
+          options: item.options || item.choices || {},
         });
       }
     }
@@ -62,7 +63,7 @@
       if (item && (item.question || item.title || item.content)) {
         compact.fill_in_blank.push({
           id: resolveQuestionId(item),
-          question: item.question || item.title || item.content || ''
+          question: item.question || item.title || item.content || '',
         });
       }
     }
@@ -72,7 +73,7 @@
       if (item && (item.question || item.title || item.content)) {
         compact.essay.push({
           id: resolveQuestionId(item),
-          question: item.question || item.title || item.content || ''
+          question: item.question || item.title || item.content || '',
         });
       }
     }
@@ -88,38 +89,49 @@
         compact.true_false.push({
           id: resolveQuestionId(item),
           question: item.question || item.title || item.content || '',
-          statements
+          statements,
         });
       }
     }
 
     // 5. Mảng câu hỏi tổng hợp (examData.questions) nếu có
-    if (Array.isArray(examData.questions) && compact.multiple_choice.length === 0 && compact.true_false.length === 0) {
+    if (
+      Array.isArray(examData.questions) &&
+      compact.multiple_choice.length === 0 &&
+      compact.true_false.length === 0
+    ) {
       for (const item of examData.questions) {
         const qType = (item.question_type || item.type || '').toLowerCase();
         if (qType.includes('choice') || item.options || item.choices) {
           compact.multiple_choice.push({
             id: resolveQuestionId(item),
             question: item.question || item.question_text || item.title || '',
-            options: item.options || item.choices || {}
+            options: item.options || item.choices || {},
           });
-        } else if (qType.includes('true') || qType.includes('false') || item.statements || item.items) {
+        } else if (
+          qType.includes('true') ||
+          qType.includes('false') ||
+          item.statements ||
+          item.items
+        ) {
           const rawStatements = item.statements || item.items || item.sub_questions || [];
-          const statements = rawStatements.map((s) => (typeof s === 'string' ? s : s?.text || s?.statement || ''));
+          const statements = rawStatements.map((s) =>
+            typeof s === 'string' ? s : s?.text || s?.statement || '',
+          );
           compact.true_false.push({
             id: resolveQuestionId(item),
             question: item.question || item.question_text || item.title || '',
-            statements
+            statements,
           });
         } else if (qType.includes('essay')) {
           compact.essay.push({
             id: resolveQuestionId(item),
-            question: item.question || item.question_text || item.title || ''
+            question: item.question || item.question_text || item.title || '',
           });
         } else {
           compact.fill_in_blank.push({
             id: resolveQuestionId(item),
-            question: item.question || item.question_text || item.title || ''
+            question: item.question || item.question_text || item.title || '',
           });
         }
       }
@@ -154,6 +166,6 @@
 
   window.EduxExamPrompt = {
     buildCompactPromptPayload,
-    generateStandardPromptText
+    generateStandardPromptText,
   };
 })();

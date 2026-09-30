@@ -52,7 +52,7 @@
 
     try {
       const res = await fetch(`/api/subjects/${subjectId}/models`, {
-        credentials: 'include'
+        credentials: 'include',
       });
       if (!res.ok) return null;
       const json = await res.json();
@@ -81,16 +81,25 @@
 
     const examModels = models.filter((m) => m.exist_exam);
     const totalExams = examModels.length;
-    const completedExams = examModels.filter((m) => m.highest_score !== null && m.highest_score !== undefined);
-    const pendingExams = examModels.filter((m) => m.highest_score === null || m.highest_score === undefined);
+    const completedExams = examModels.filter(
+      (m) => m.highest_score !== null && m.highest_score !== undefined,
+    );
+    const pendingExams = examModels.filter(
+      (m) => m.highest_score === null || m.highest_score === undefined,
+    );
 
-    const scores = completedExams
-      .map((m) => parseFloat(m.highest_score))
-      .filter((s) => !isNaN(s));
+    const scores = completedExams.map((m) => parseFloat(m.highest_score)).filter((s) => !isNaN(s));
 
-    const maxScore = scores.length ? Math.max(...scores).toFixed(2).replace(/\.00$/, '') : '0';
-    const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2).replace(/\.00$/, '') : '0';
-    const completionPercent = totalExams > 0 ? Math.round((completedExams.length / totalExams) * 100) : 0;
+    const maxScore = scores.length
+      ? Math.max(...scores)
+          .toFixed(2)
+          .replace(/\.00$/, '')
+      : '0';
+    const avgScore = scores.length
+      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2).replace(/\.00$/, '')
+      : '0';
+    const completionPercent =
+      totalExams > 0 ? Math.round((completedExams.length / totalExams) * 100) : 0;
 
     let alertHtml = '';
     if (pendingExams.length > 0) {
@@ -151,9 +160,12 @@
     if (!models || !models.length) return;
 
     // 1. Locate curriculum container for overview banner
-    const firstAccordion = document.querySelector('button.w-full.flex.items-center.justify-between');
+    const firstAccordion = document.querySelector(
+      'button.w-full.flex.items-center.justify-between',
+    );
     const curriculumContainer = firstAccordion
-      ? firstAccordion.closest('div.space-y-4, div.flex-1, main, section') || firstAccordion.parentElement
+      ? firstAccordion.closest('div.space-y-4, div.flex-1, main, section') ||
+        firstAccordion.parentElement
       : null;
     if (curriculumContainer) {
       renderSubjectOverviewBanner(models, curriculumContainer);
@@ -189,13 +201,23 @@
       // Extract card title (EDUX puts lesson titles in h3 / h4 tags)
       let titleEl = card.querySelector('h3, h4, h2');
       if (!titleEl) {
-        const candidates = Array.from(card.querySelectorAll('p, div, span, button[title]')).filter((el) => {
-          const t = (el.getAttribute('title') || el.textContent || '').trim();
-          return t && !/^\d+(\.\d+)?%$/.test(t) && t.length > 3 && !t.includes('Bài giảng') && !t.includes('Bài tập');
-        });
+        const candidates = Array.from(card.querySelectorAll('p, div, span, button[title]')).filter(
+          (el) => {
+            const t = (el.getAttribute('title') || el.textContent || '').trim();
+            return (
+              t &&
+              !/^\d+(\.\d+)?%$/.test(t) &&
+              t.length > 3 &&
+              !t.includes('Bài giảng') &&
+              !t.includes('Bài tập')
+            );
+          },
+        );
         titleEl = candidates[0] || null;
       }
-      const cardTitle = titleEl ? (titleEl.getAttribute('title') || titleEl.textContent || '').trim() : (card.textContent || '').trim();
+      const cardTitle = titleEl
+        ? (titleEl.getAttribute('title') || titleEl.textContent || '').trim()
+        : (card.textContent || '').trim();
       const normCardTitle = normalizeTitleKey(cardTitle);
 
       // Match model
@@ -211,7 +233,9 @@
 
       if (!matchedModel) return;
 
-      const btBtn = Array.from(btnRow.querySelectorAll('button, a')).find((b) => (b.textContent || '').includes('Bài tập AI'));
+      const btBtn = Array.from(btnRow.querySelectorAll('button, a')).find((b) =>
+        (b.textContent || '').includes('Bài tập AI'),
+      );
       if (!matchedModel.exist_exam && !btBtn) return;
 
       // Check / create badge element
@@ -228,11 +252,14 @@
         }
       }
 
-      const hasScore = matchedModel.highest_score !== null && matchedModel.highest_score !== undefined;
+      const hasScore =
+        matchedModel.highest_score !== null && matchedModel.highest_score !== undefined;
 
       if (hasScore) {
         const scoreVal = parseFloat(matchedModel.highest_score);
-        const displayScore = isNaN(scoreVal) ? matchedModel.highest_score : scoreVal.toFixed(2).replace(/\.00$/, '');
+        const displayScore = isNaN(scoreVal)
+          ? matchedModel.highest_score
+          : scoreVal.toFixed(2).replace(/\.00$/, '');
         badge.className = 'edux-exercise-badge edux-exercise-badge-success';
         badge.innerHTML = `<span>🏆</span><span>Điểm: ${displayScore}/10</span>`;
         badge.title = `Điểm số cao nhất: ${displayScore} / 10`;
@@ -286,17 +313,26 @@
       }
     });
 
-    const slidePercent = totalSlides > 0
-      ? Math.round((doneSlides / totalSlides) * 100)
-      : (totalPresentations > 0 && donePresentations === totalPresentations ? 100 : 0);
+    const slidePercent =
+      totalSlides > 0
+        ? Math.round((doneSlides / totalSlides) * 100)
+        : totalPresentations > 0 && donePresentations === totalPresentations
+          ? 100
+          : 0;
 
     const examPercent = totalExams > 0 ? Math.round((doneExams / totalExams) * 100) : 100;
     const pendingExams = totalExams - doneExams;
     const pendingSlides = totalSlides - doneSlides;
-    const isAllDone = (pendingExams <= 0) && (pendingSlides <= 0);
+    const isAllDone = pendingExams <= 0 && pendingSlides <= 0;
 
-    const avgScore = scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2).replace(/\.00$/, '') : null;
-    const maxScore = scores.length ? Math.max(...scores).toFixed(2).replace(/\.00$/, '') : null;
+    const avgScore = scores.length
+      ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2).replace(/\.00$/, '')
+      : null;
+    const maxScore = scores.length
+      ? Math.max(...scores)
+          .toFixed(2)
+          .replace(/\.00$/, '')
+      : null;
 
     return {
       id: subject.id,
@@ -316,7 +352,7 @@
       examPercent,
       isAllDone,
       avgScore,
-      maxScore
+      maxScore,
     };
   }
 
@@ -326,14 +362,25 @@
 
     try {
       // 1. Check local storage cache for instant rendering
-      if (!force && !cachedSubjectsSummary && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      if (
+        !force &&
+        !cachedSubjectsSummary &&
+        typeof chrome !== 'undefined' &&
+        chrome.storage &&
+        chrome.storage.local
+      ) {
         const stored = await new Promise((resolve) => {
           chrome.storage.local.get(['edux_subjects_progress_cache'], (res) => {
             resolve(res ? res.edux_subjects_progress_cache : null);
           });
         });
 
-        if (stored && stored.timestamp && Date.now() - stored.timestamp < 10 * 60 * 1000 && Array.isArray(stored.data)) {
+        if (
+          stored &&
+          stored.timestamp &&
+          Date.now() - stored.timestamp < 10 * 60 * 1000 &&
+          Array.isArray(stored.data)
+        ) {
           cachedSubjectsSummary = stored.data;
           renderStudentDashboardProgress(cachedSubjectsSummary);
         }
@@ -372,7 +419,7 @@
             }
           } catch (e) {}
           return calculateSubjectStats(subj, []);
-        })
+        }),
       );
 
       cachedSubjectsSummary = summaryList;
@@ -383,8 +430,8 @@
         chrome.storage.local.set({
           edux_subjects_progress_cache: {
             timestamp: Date.now(),
-            data: cachedSubjectsSummary
-          }
+            data: cachedSubjectsSummary,
+          },
         });
       }
 
@@ -414,7 +461,11 @@
     // Find course cards on /student
     const cards = Array.from(document.querySelectorAll('div')).filter((d) => {
       const cls = d.className || '';
-      return typeof cls === 'string' && cls.includes('cursor-pointer') && (d.textContent || '').includes('Học kỳ');
+      return (
+        typeof cls === 'string' &&
+        cls.includes('cursor-pointer') &&
+        (d.textContent || '').includes('Học kỳ')
+      );
     });
 
     cards.forEach((card) => {
@@ -448,7 +499,10 @@
       if (!matched) return;
 
       // Find the row container inside the card
-      const rowFlex = card.querySelector('.flex.flex-row.w-full.justify-between') || card.querySelector('.flex.flex-row') || card;
+      const rowFlex =
+        card.querySelector('.flex.flex-row.w-full.justify-between') ||
+        card.querySelector('.flex.flex-row') ||
+        card;
       if (!rowFlex) return;
 
       // Ensure rowFlex has flex layout to place progress on the right
@@ -479,7 +533,9 @@
         badgeHtml = '<span class="edux-badge-complete">✓ Đã xong</span>';
       }
 
-      const scoreTooltip = matched.avgScore ? `\n- ⭐ Điểm trung bình: ${matched.avgScore}/10 (Cao nhất: ${matched.maxScore}/10)` : '';
+      const scoreTooltip = matched.avgScore
+        ? `\n- ⭐ Điểm trung bình: ${matched.avgScore}/10 (Cao nhất: ${matched.maxScore}/10)`
+        : '';
       progEl.title = `Chi tiết môn học:\n- 🖥️ Slide: ${matched.doneSlides}/${matched.totalSlides} trang (${matched.donePresentations}/${matched.totalPresentations} bài giảng)\n- 📝 Bài tập AI: ${matched.doneExams}/${matched.totalExams} bài đã nộp điểm${scoreTooltip}`;
 
       progEl.innerHTML = `
@@ -548,7 +604,7 @@
 
       scoreObserver.observe(document.body, {
         childList: true,
-        subtree: true
+        subtree: true,
       });
     }
   }
@@ -584,7 +640,11 @@
       renderExerciseScoreBadges(cachedSubjectModels);
     },
     setJoinedSubjects: (payload) => {
-      const list = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.data) ? payload.data : null);
+      const list = Array.isArray(payload)
+        ? payload
+        : payload && Array.isArray(payload.data)
+          ? payload.data
+          : null;
       if (list) {
         cachedJoinedSubjects = list;
         fetchJoinedSubjectsProgress(true);
@@ -607,6 +667,6 @@
       }
       const data = await fetchJoinedSubjectsProgress();
       return { success: true, isDashboard: true, subjects: data || [] };
-    }
+    },
   };
 })();

@@ -4,9 +4,21 @@ import { resolveRequest, validReasoningEffort } from '../shared/providers.js';
 // Cấu hình AI được gán cho chức năng (purpose: 'slide' | 'exam'). Popup chuyển cấu hình
 // đơn cũ (apiKey/apiModel/...) sang aiProfiles khi mở lần đầu; trước đó vẫn đọc key cũ.
 async function getAiProfile(purpose) {
-  const s = await chrome.storage.local.get(['aiProfiles', 'aiAssign', 'apiKey', 'apiModel', 'apiEndpoint', 'apiProvider']);
+  const s = await chrome.storage.local.get([
+    'aiProfiles',
+    'aiAssign',
+    'apiKey',
+    'apiModel',
+    'apiEndpoint',
+    'apiProvider',
+  ]);
   if (!Array.isArray(s.aiProfiles)) {
-    return { provider: s.apiProvider, endpoint: s.apiEndpoint, apiKey: s.apiKey, model: s.apiModel };
+    return {
+      provider: s.apiProvider,
+      endpoint: s.apiEndpoint,
+      apiKey: s.apiKey,
+      model: s.apiModel,
+    };
   }
   const id = s.aiAssign?.[purpose];
   return s.aiProfiles.find((p) => p.id === id) || s.aiProfiles[0] || null;
@@ -15,7 +27,7 @@ async function getAiProfile(purpose) {
 async function callGemini(req, { prompt, systemPrompt, temperature }) {
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature }
+    generationConfig: { temperature },
   };
   if (systemPrompt) {
     payload.systemInstruction = { parts: [{ text: systemPrompt }] };
@@ -24,7 +36,7 @@ async function callGemini(req, { prompt, systemPrompt, temperature }) {
   const res = await fetch(req.url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -46,7 +58,8 @@ function joinSseChunks(rawText) {
     if (dataStr === '[DONE]') break;
     try {
       const chunk = JSON.parse(dataStr);
-      accumulated += chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
+      accumulated +=
+        chunk.choices?.[0]?.delta?.content || chunk.choices?.[0]?.message?.content || '';
     } catch (e) {}
   }
   return accumulated;
@@ -73,7 +86,7 @@ async function callOpenAiCompatible(req, { prompt, systemPrompt, temperature, re
     messages,
     // Inception (Mercury) chỉ nhận 0.5–1.0; ngoài khoảng sẽ bị đặt về mặc định 1.0
     temperature: req.url.includes('inceptionlabs.ai') ? Math.max(temperature, 0.5) : temperature,
-    stream: false
+    stream: false,
   };
   const effort = validReasoningEffort(req.provider, reasoningEffort);
   if (effort) body.reasoning_effort = effort;
@@ -83,7 +96,12 @@ async function callOpenAiCompatible(req, { prompt, systemPrompt, temperature, re
   let rawText = await res.text();
 
   // Server từ chối reasoning_effort -> thử lại 1 lần không kèm tham số này
-  if (!res.ok && body.reasoning_effort && (res.status === 400 || res.status === 422) && /reasoning/i.test(rawText)) {
+  if (
+    !res.ok &&
+    body.reasoning_effort &&
+    (res.status === 400 || res.status === 422) &&
+    /reasoning/i.test(rawText)
+  ) {
     delete body.reasoning_effort;
     res = await post();
     rawText = await res.text();
@@ -127,7 +145,9 @@ export async function callAiService({ prompt, systemPrompt, temperature = 0, pur
   const req = resolveRequest(profile);
   const options = { prompt, systemPrompt, temperature, reasoningEffort: profile.reasoningEffort };
   const responseText =
-    req.protocol === 'gemini' ? await callGemini(req, options) : await callOpenAiCompatible(req, options);
+    req.protocol === 'gemini'
+      ? await callGemini(req, options)
+      : await callOpenAiCompatible(req, options);
 
   return stripCodeFence(responseText);
 }

@@ -44,10 +44,12 @@
       try {
         sessionStorage.setItem('__EDUX_LAST_EXAM_DATA__', JSON.stringify(lastCapturedExamData));
         chrome.storage.local.set({ lastExamData: lastCapturedExamData });
-        chrome.runtime.sendMessage({
-          type: 'EXAM_DATA_READY',
-          payload: lastCapturedExamData
-        }).catch(() => {});
+        chrome.runtime
+          .sendMessage({
+            type: 'EXAM_DATA_READY',
+            payload: lastCapturedExamData,
+          })
+          .catch(() => {});
       } catch (e) {}
       console.log('[EDUX Slayers] 📡 Đã tự động bắt được dữ liệu bài tập từ máy chủ EDUX!');
     } else if (event.data.type === 'EDUX_MODELS_DATA_CAPTURED') {
@@ -70,7 +72,7 @@
       window.EduxSlideSolver.setConfig({
         delayMs: res.delayMs !== undefined ? res.delayMs : 100,
         autoNext: res.autoNext !== undefined ? res.autoNext : true,
-        useAi: res.useAiSlide !== undefined ? res.useAiSlide : true
+        useAi: res.useAiSlide !== undefined ? res.useAiSlide : true,
       });
     }
   });
@@ -129,7 +131,11 @@
       const dialog = window.EduxTestSolver?.getActiveExamDialog();
       sendResponse({ isOpen: !!dialog });
     } else if (req.action === 'GET_STATUS') {
-      const status = window.EduxSlideSolver?.getStatus() || { isSlideRunning: false, solvedCount: 0, retryCount: 0 };
+      const status = window.EduxSlideSolver?.getStatus() || {
+        isSlideRunning: false,
+        solvedCount: 0,
+        retryCount: 0,
+      };
       const isExamOpen = !!window.EduxTestSolver?.getActiveExamDialog();
 
       let examData = null;
@@ -150,7 +156,7 @@
       sendResponse({
         ...status,
         isExamOpen,
-        examData
+        examData,
       });
     } else if (req.action === 'UPDATE_SETTINGS') {
       window.EduxSlideSolver?.setConfig(req.settings);

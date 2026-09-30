@@ -25,22 +25,34 @@ test('every file the manifest references exists', () => {
     manifest.action.default_popup,
     ...Object.values(manifest.icons),
     ...manifest.content_scripts.flatMap((cs) => [...(cs.js || []), ...(cs.css || [])]),
-    ...manifest.web_accessible_resources.flatMap((r) => r.resources)
+    ...manifest.web_accessible_resources.flatMap((r) => r.resources),
   ];
   for (const f of files) assert.ok(fs.existsSync(path.join(EXT_DIR, f)), `missing ${f}`);
 });
 
 test('EduxTestSolver keeps the API content.js calls', () => {
   const { solver } = loadExamApi();
-  for (const fn of ['startExercise', 'fillTestAnswers', 'extractQuestions', 'setCapturedExamData', 'getCapturedExamData']) {
+  for (const fn of [
+    'startExercise',
+    'fillTestAnswers',
+    'extractQuestions',
+    'setCapturedExamData',
+    'getCapturedExamData',
+  ]) {
     assert.equal(typeof solver[fn], 'function', fn);
   }
 });
 
 test('prompt payload falls back to the page title', () => {
   const exam = loadExamApi({ title: 'Bài kiểm tra số 3 - EDUX' });
-  assert.equal(exam.buildCompactPromptPayload({ data: { exam_data: {} } }).title, 'Bài kiểm tra số 3 - EDUX');
-  assert.equal(exam.buildCompactPromptPayload({ data: { title: 'Từ API', exam_data: {} } }).title, 'Từ API');
+  assert.equal(
+    exam.buildCompactPromptPayload({ data: { exam_data: {} } }).title,
+    'Bài kiểm tra số 3 - EDUX',
+  );
+  assert.equal(
+    exam.buildCompactPromptPayload({ data: { title: 'Từ API', exam_data: {} } }).title,
+    'Từ API',
+  );
 });
 
 test('provider dropdown in popup.html matches shared/providers.js', async () => {

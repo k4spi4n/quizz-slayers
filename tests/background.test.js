@@ -6,12 +6,20 @@ import { loadBackground, json, text, plain } from './helpers/extension.js';
 
 const bg = await loadBackground();
 
-const SLIDE = { action: 'AI_SOLVE_SLIDE', question: 'Thủ đô Việt Nam?', choices: ['Huế', 'Hà Nội', 'Đà Nẵng'] };
+const SLIDE = {
+  action: 'AI_SOLVE_SLIDE',
+  question: 'Thủ đô Việt Nam?',
+  choices: ['Huế', 'Hà Nội', 'Đà Nẵng'],
+};
 const openAiReply = (content) => json({ choices: [{ message: { content } }] });
 const geminiReply = (t) => json({ candidates: [{ content: { parts: [{ text: t }] } }] });
 
 function useProfile(profile, extra = {}) {
-  bg.storage.reset({ aiProfiles: [{ id: 'p1', ...profile }], aiAssign: { slide: 'p1', exam: 'p1' }, ...extra });
+  bg.storage.reset({
+    aiProfiles: [{ id: 'p1', ...profile }],
+    aiAssign: { slide: 'p1', exam: 'p1' },
+    ...extra,
+  });
 }
 
 beforeEach(() => {
@@ -20,36 +28,72 @@ beforeEach(() => {
 });
 
 const PROVIDER_CASES = {
-  gemini_default: [{ provider: 'gemini', apiKey: 'AIzaKEY', model: '' }, geminiReply('{"index": 1}')],
-  gemini_prefixed_model: [{ provider: 'gemini', apiKey: 'AIzaKEY', model: 'gemini/gemini-2.5-pro' }, geminiReply('{"index": 1}')],
+  gemini_default: [
+    { provider: 'gemini', apiKey: 'AIzaKEY', model: '' },
+    geminiReply('{"index": 1}'),
+  ],
+  gemini_prefixed_model: [
+    { provider: 'gemini', apiKey: 'AIzaKEY', model: 'gemini/gemini-2.5-pro' },
+    geminiReply('{"index": 1}'),
+  ],
   gemini_custom_base: [
-    { provider: 'gemini', apiKey: 'AIzaKEY', model: 'gemini-2.0-flash', endpoint: 'https://proxy.example.com/v1beta/' },
-    geminiReply('{"index": 1}')
+    {
+      provider: 'gemini',
+      apiKey: 'AIzaKEY',
+      model: 'gemini-2.0-flash',
+      endpoint: 'https://proxy.example.com/v1beta/',
+    },
+    geminiReply('{"index": 1}'),
   ],
   openai: [{ provider: 'openai', apiKey: 'sk-test', model: 'gpt-4o' }, openAiReply('{"index": 1}')],
-  openai_default_model: [{ provider: 'openai', apiKey: 'sk-test', model: '' }, openAiReply('{"index": 1}')],
+  openai_default_model: [
+    { provider: 'openai', apiKey: 'sk-test', model: '' },
+    openAiReply('{"index": 1}'),
+  ],
   deepseek: [{ provider: 'deepseek', apiKey: 'sk-ds', model: '' }, openAiReply('{"index": 1}')],
-  openrouter_headers: [{ provider: 'openrouter', apiKey: 'sk-or-v1-x', model: 'google/gemini-2.0-flash-001' }, openAiReply('{"index": 1}')],
+  openrouter_headers: [
+    { provider: 'openrouter', apiKey: 'sk-or-v1-x', model: 'google/gemini-2.0-flash-001' },
+    openAiReply('{"index": 1}'),
+  ],
   ollama_no_key: [{ provider: 'ollama', apiKey: '', model: '' }, openAiReply('{"index": 1}')],
   inception_reasoning: [
     { provider: 'inception', apiKey: 'ik', model: 'mercury-2.5', reasoningEffort: 'instant' },
-    openAiReply('{"index": 1}')
+    openAiReply('{"index": 1}'),
   ],
   inception_invalid_reasoning_ignored: [
     { provider: 'inception', apiKey: 'ik', model: '', reasoningEffort: 'ultra' },
-    openAiReply('{"index": 1}')
+    openAiReply('{"index": 1}'),
   ],
-  reasoning_ignored_for_openai: [{ provider: 'openai', apiKey: 'sk', model: 'o3', reasoningEffort: 'high' }, openAiReply('{"index": 1}')],
-  custom_default_endpoint: [{ provider: 'custom', apiKey: '', model: 'local-model', endpoint: '' }, openAiReply('{"index": 1}')],
+  reasoning_ignored_for_openai: [
+    { provider: 'openai', apiKey: 'sk', model: 'o3', reasoningEffort: 'high' },
+    openAiReply('{"index": 1}'),
+  ],
+  custom_default_endpoint: [
+    { provider: 'custom', apiKey: '', model: 'local-model', endpoint: '' },
+    openAiReply('{"index": 1}'),
+  ],
   custom_full_path: [
-    { provider: 'custom', apiKey: 'k', model: 'm', endpoint: 'https://api.example.com/v1/chat/completions' },
-    openAiReply('{"index": 1}')
+    {
+      provider: 'custom',
+      apiKey: 'k',
+      model: 'm',
+      endpoint: 'https://api.example.com/v1/chat/completions',
+    },
+    openAiReply('{"index": 1}'),
   ],
-  custom_bare_host: [{ provider: 'custom', apiKey: 'k', model: 'm', endpoint: 'https://api.example.com' }, openAiReply('{"index": 1}')],
+  custom_bare_host: [
+    { provider: 'custom', apiKey: 'k', model: 'm', endpoint: 'https://api.example.com' },
+    openAiReply('{"index": 1}'),
+  ],
   custom_gemini_endpoint: [
-    { provider: 'custom', apiKey: 'AIzaK', model: 'gemini-x', endpoint: 'https://generativelanguage.googleapis.com/v1beta' },
-    geminiReply('{"index": 1}')
-  ]
+    {
+      provider: 'custom',
+      apiKey: 'AIzaK',
+      model: 'gemini-x',
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta',
+    },
+    geminiReply('{"index": 1}'),
+  ],
 };
 
 for (const [name, [profile, reply]] of Object.entries(PROVIDER_CASES)) {
@@ -62,7 +106,12 @@ for (const [name, [profile, reply]] of Object.entries(PROVIDER_CASES)) {
 }
 
 test('AI request: legacy single-provider settings (before aiProfiles migration)', async (t) => {
-  bg.storage.reset({ apiProvider: 'deepseek', apiKey: 'sk-legacy', apiModel: 'deepseek-reasoner', apiEndpoint: '' });
+  bg.storage.reset({
+    apiProvider: 'deepseek',
+    apiKey: 'sk-legacy',
+    apiModel: 'deepseek-reasoner',
+    apiEndpoint: '',
+  });
   bg.net.respond(openAiReply('{"index": 2}'));
   const res = await bg.dispatch(SLIDE);
   t.assert.snapshot({ request: bg.net.calls, response: plain(res) });
@@ -72,16 +121,16 @@ test('AI request: slide and exam use their assigned profiles', async () => {
   bg.storage.reset({
     aiProfiles: [
       { id: 'fast', provider: 'openai', apiKey: 'sk-a', model: 'fast-model' },
-      { id: 'smart', provider: 'openai', apiKey: 'sk-b', model: 'smart-model' }
+      { id: 'smart', provider: 'openai', apiKey: 'sk-b', model: 'smart-model' },
     ],
-    aiAssign: { slide: 'fast', exam: 'smart' }
+    aiAssign: { slide: 'fast', exam: 'smart' },
   });
   bg.net.respond(openAiReply('{"index": 0}'), openAiReply('[{"so_cau":1,"dap_an":"A"}]'));
   await bg.dispatch(SLIDE);
   await bg.dispatch({ action: 'AI_SOLVE_EXAM', promptText: 'PROMPT' });
   assert.deepEqual(
     bg.net.calls.map((c) => c.body.model),
-    ['fast-model', 'smart-model']
+    ['fast-model', 'smart-model'],
   );
 });
 
@@ -106,7 +155,10 @@ test('AI errors: missing key, no profiles, HTTP error message', async (t) => {
 
 test('AI request: retries once without reasoning_effort when the server rejects it', async (t) => {
   useProfile({ provider: 'inception', apiKey: 'ik', model: 'mercury-2', reasoningEffort: 'high' });
-  bg.net.respond(json({ error: { message: 'Unknown parameter: reasoning_effort' } }, 400), openAiReply('{"index": 2}'));
+  bg.net.respond(
+    json({ error: { message: 'Unknown parameter: reasoning_effort' } }, 400),
+    openAiReply('{"index": 2}'),
+  );
   const res = await bg.dispatch(SLIDE);
   t.assert.snapshot({ bodies: bg.net.calls.map((c) => c.body), response: plain(res) });
 });
@@ -116,12 +168,14 @@ const SLIDE_REPLIES = {
   string_index: openAiReply('{"index": "0"}'),
   digit_fallback: openAiReply('Đáp án đúng là 1 vì ...'),
   text_match: openAiReply('Hà Nội'),
-  reasoning_content_only: json({ choices: [{ message: { content: '', reasoning_content: '{"index": 2}' } }] }),
+  reasoning_content_only: json({
+    choices: [{ message: { content: '', reasoning_content: '{"index": 2}' } }],
+  }),
   sse_stream: text(
-    'data: {"choices":[{"delta":{"content":"{\\"ind"}}]}\n\ndata: {"choices":[{"delta":{"content":"ex\\": 1}"}}]}\n\ndata: [DONE]\n'
+    'data: {"choices":[{"delta":{"content":"{\\"ind"}}]}\n\ndata: {"choices":[{"delta":{"content":"ex\\": 1}"}}]}\n\ndata: [DONE]\n',
   ),
   out_of_range: openAiReply('{"index": 7}'),
-  unparseable: openAiReply('Tôi không biết')
+  unparseable: openAiReply('Tôi không biết'),
 };
 
 for (const [name, reply] of Object.entries(SLIDE_REPLIES)) {
@@ -153,14 +207,18 @@ test('laya: health and ranked solve', async (t) => {
     json(
       {
         answers: { answer: { probabilities: { Huế: 0.1, 'Hà Nội': 0.7, 'Hà Nội (3)': 0.2 } } },
-        routing: { model: 'multilingual' }
+        routing: { model: 'multilingual' },
       },
       200,
-      { 'X-Inference-Time-Ms': '42' }
-    )
+      { 'X-Inference-Time-Ms': '42' },
+    ),
   );
   const health = await bg.dispatch({ action: 'LAYA_HEALTH' });
-  const solve = await bg.dispatch({ action: 'LAYA_SOLVE_SLIDE', question: 'Q?', choices: ['Huế', 'Hà Nội', 'Hà Nội'] });
+  const solve = await bg.dispatch({
+    action: 'LAYA_SOLVE_SLIDE',
+    question: 'Q?',
+    choices: ['Huế', 'Hà Nội', 'Hà Nội'],
+  });
   t.assert.snapshot({ request: bg.net.calls, health: plain(health), solve: plain(solve) });
 });
 

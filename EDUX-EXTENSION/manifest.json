@@ -8,18 +8,8 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": [
-    "storage",
-    "activeTab",
-    "scripting",
-    "clipboardRead",
-    "clipboardWrite"
-  ],
-  "host_permissions": [
-    "*://edux.cmcu.edu.vn/*",
-    "*://*.cmcu.edu.vn/*",
-    "<all_urls>"
-  ],
+  "permissions": ["storage", "activeTab", "scripting", "clipboardRead", "clipboardWrite"],
+  "host_permissions": ["*://edux.cmcu.edu.vn/*", "*://*.cmcu.edu.vn/*", "<all_urls>"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "EDUX Slayers Control"
@@ -30,20 +20,13 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "*://edux.cmcu.edu.vn/*",
-        "*://*.cmcu.edu.vn/*"
-      ],
+      "matches": ["*://edux.cmcu.edu.vn/*", "*://*.cmcu.edu.vn/*"],
       "js": ["content/injected.js"],
       "world": "MAIN",
       "run_at": "document_start"
     },
     {
-      "matches": [
-        "*://edux.cmcu.edu.vn/*",
-        "*://*.cmcu.edu.vn/*",
-        "<all_urls>"
-      ],
+      "matches": ["*://edux.cmcu.edu.vn/*", "*://*.cmcu.edu.vn/*", "<all_urls>"],
       "js": [
         "content/dom-utils.js",
         "content/answer-parser.js",

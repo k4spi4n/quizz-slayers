@@ -6,7 +6,7 @@ import {
   displayModel,
   isProfileReady,
   validReasoningEffort,
-  reasoningEffortsFor
+  reasoningEffortsFor,
 } from '../EDUX-EXTENSION/shared/providers.js';
 
 test('every provider has the fields the settings form needs', () => {
@@ -36,7 +36,10 @@ test('isProfileReady: key, Ollama, or a local endpoint', () => {
   assert.equal(isProfileReady({ provider: 'openai', apiKey: '' }), false);
   assert.equal(isProfileReady({ provider: 'openai', apiKey: 'sk' }), true);
   assert.equal(isProfileReady({ provider: 'ollama', apiKey: '' }), true);
-  assert.equal(isProfileReady({ provider: 'custom', apiKey: '', endpoint: 'http://127.0.0.1:1234/v1' }), true);
+  assert.equal(
+    isProfileReady({ provider: 'custom', apiKey: '', endpoint: 'http://127.0.0.1:1234/v1' }),
+    true,
+  );
 });
 
 test('reasoning effort only for providers that support it', () => {

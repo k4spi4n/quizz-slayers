@@ -4,7 +4,7 @@
 export const DEFAULT_SETTINGS = {
   delayMs: 100,
   autoNext: true,
-  slideStats: { solved: 0, retries: 0 }
+  slideStats: { solved: 0, retries: 0 },
 };
 
 // Chỉ sao lưu cấu hình người dùng — bỏ qua dữ liệu tạm (đề, đáp án, cache điểm, thống kê)
@@ -20,5 +20,5 @@ export const BACKUP_KEYS = [
   'layaEndpoint',
   'layaApiKey',
   'testWorkflowMode',
-  'cachedModelsByProvider'
+  'cachedModelsByProvider',
 ];

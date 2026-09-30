@@ -24,7 +24,10 @@
       return;
     }
 
-    const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const proto =
+      el.tagName === 'TEXTAREA'
+        ? window.HTMLTextAreaElement.prototype
+        : window.HTMLInputElement.prototype;
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
 
     if (el._valueTracker) {
@@ -51,8 +54,9 @@
   function extractOptionsFromEls(optionEls) {
     return optionEls.map((node, index) => {
       let letter = (
-        node.querySelector('span.flex-shrink-0, span[class*="rounded-full"], div[class*="rounded-full"]')?.textContent ||
-        ''
+        node.querySelector(
+          'span.flex-shrink-0, span[class*="rounded-full"], div[class*="rounded-full"]',
+        )?.textContent || ''
       ).trim();
       let text = (
         node.querySelector('div.prose p, p, span.text-gray-900, div.text-gray-900')?.textContent ||
@@ -93,10 +97,10 @@
     for (const btn of allButtons) {
       const row = btn.closest(
         'div.border.border-gray-200.rounded-lg.p-3.bg-gray-50, ' +
-        'div.border.border-gray-200, ' +
-        'div.border.rounded-lg, ' +
-        'div.border, ' +
-        'div[class*="bg-gray"]'
+          'div.border.border-gray-200, ' +
+          'div.border.rounded-lg, ' +
+          'div.border, ' +
+          'div[class*="bg-gray"]',
       );
       if (row && safeIsVisible(row)) {
         candidateRows.add(row);
@@ -105,7 +109,9 @@
 
     // 3. Lọc chỉ lấy các phần tử chứa đúng 1 nút 'Đúng' và 1 nút 'Sai'
     let blocks = Array.from(candidateRows).filter((row) => {
-      const btns = Array.from(row.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+      const btns = Array.from(row.querySelectorAll('button')).map((b) =>
+        (b.textContent || '').trim(),
+      );
       const dungCount = btns.filter((t) => t === 'Đúng').length;
       const saiCount = btns.filter((t) => t === 'Sai').length;
       return dungCount === 1 && saiCount === 1;
@@ -115,7 +121,9 @@
     if (blocks.length === 0) {
       const parentDivs = Array.from(root.querySelectorAll('div')).filter((d) => {
         if (!safeIsVisible(d)) return false;
-        const btns = Array.from(d.querySelectorAll('button')).map((b) => (b.textContent || '').trim());
+        const btns = Array.from(d.querySelectorAll('button')).map((b) =>
+          (b.textContent || '').trim(),
+        );
         const dungCount = btns.filter((t) => t === 'Đúng').length;
         const saiCount = btns.filter((t) => t === 'Sai').length;
         return dungCount === 1 && saiCount === 1;
@@ -145,7 +153,11 @@
   function isExamDialog(el) {
     if (!el || !safeIsVisible(el)) return false;
     // Bỏ qua navigation bar, sidebar, header, footer
-    if (el.closest('nav, aside, header, footer') || el.tagName === 'NAV' || el.tagName === 'ASIDE') {
+    if (
+      el.closest('nav, aside, header, footer') ||
+      el.tagName === 'NAV' ||
+      el.tagName === 'ASIDE'
+    ) {
       return false;
     }
     // Bỏ qua nếu đang ở trạng thái closed hoặc aria-hidden
@@ -188,7 +200,7 @@
       "div[data-slot='dialog-content'][data-state='open']",
       "div[data-slot='dialog-content']",
       "div[role='dialog']",
-      "[aria-modal='true']"
+      "[aria-modal='true']",
     ];
 
     for (const sel of candidateSelectors) {
@@ -203,7 +215,9 @@
     }
 
     // Kiểm tra các div fixed / overlay có z-index cao
-    const dialogs = Array.from(document.querySelectorAll('div.fixed, div.absolute')).filter(safeIsVisible);
+    const dialogs = Array.from(document.querySelectorAll('div.fixed, div.absolute')).filter(
+      safeIsVisible,
+    );
     for (const d of dialogs) {
       const style = window.getComputedStyle(d);
       if (parseInt(style.zIndex, 10) >= 20 && isExamDialog(d)) {
@@ -235,7 +249,9 @@
     }
 
     // 2. Tìm qua các thẻ văn bản con (span, p, div) có chứa chữ 'làm bài tập'
-    const textEls = Array.from(document.querySelectorAll('span, p, div, h1, h2, h3, h4, b, strong'));
+    const textEls = Array.from(
+      document.querySelectorAll('span, p, div, h1, h2, h3, h4, b, strong'),
+    );
     for (const el of textEls) {
       if (!safeIsVisible(el)) continue;
       if (el.closest('nav, aside, header')) continue;
@@ -246,8 +262,9 @@
         ((text.includes('làm bài tập') || text.includes('làm lại bài tập')) && text.length < 30)
       ) {
         const clickable =
-          el.closest('button, [role="button"], a, div[class*="cursor-pointer"], div[class*="btn"], div[class*="bg-"]') ||
-          el;
+          el.closest(
+            'button, [role="button"], a, div[class*="cursor-pointer"], div[class*="btn"], div[class*="bg-"]',
+          ) || el;
         return { element: clickable, type: 'start_quiz' };
       }
     }
@@ -269,7 +286,9 @@
       const text = normalizeText(el.textContent);
       if (text.includes('bài tập ai') && text.length < 30) {
         const clickable =
-          el.closest('button, [role="button"], a, div[class*="cursor-pointer"], div[class*="btn"]') || el;
+          el.closest(
+            'button, [role="button"], a, div[class*="cursor-pointer"], div[class*="btn"]',
+          ) || el;
         return { element: clickable, type: 'open_lesson_exercise' };
       }
     }
@@ -361,6 +380,6 @@
     findStartButton,
     findQuestionLabel,
     findButtonByText,
-    findPaginationButton
+    findPaginationButton,
   };
 })();

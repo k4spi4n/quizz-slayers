@@ -8,5 +8,5 @@ export const state = {
   cachedModelsByProvider: {},
   // Cấu hình đang mở trong form sửa (null = thêm mới)
   editingProfileId: null,
-  currentSlideMethod: "ai",
+  currentSlideMethod: 'ai',
 };

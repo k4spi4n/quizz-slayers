@@ -8,8 +8,14 @@
   'use strict';
 
   const { sleep, safeIsVisible, safeClick, getActiveDialog, createLogger } = window.EduxDOM;
-  const { QUESTION_LABEL_RE, normalizeText, parseQuestionIndex, sanitizeAiResponse, parseTrueFalseAnswers, loadAnswersFromInput } =
-    window.EduxAnswerParser;
+  const {
+    QUESTION_LABEL_RE,
+    normalizeText,
+    parseQuestionIndex,
+    sanitizeAiResponse,
+    parseTrueFalseAnswers,
+    loadAnswersFromInput,
+  } = window.EduxAnswerParser;
   const {
     setNativeValue,
     extractOptionsFromEls,
@@ -18,7 +24,7 @@
     findStartButton,
     findQuestionLabel,
     findButtonByText,
-    findPaginationButton
+    findPaginationButton,
   } = window.EduxExamDOM;
   const { buildCompactPromptPayload, generateStandardPromptText } = window.EduxExamPrompt;
   const logMessage = createLogger('[EDUX Slayers Bài Tập]', 'TEST_LOG');
@@ -64,10 +70,12 @@
 
     // Fallback: Quét trực tiếp từ DOM nếu dialog bài tập đang mở
     const searchRoot = getActiveExamDialog() || getActiveDialog() || document;
-    const questionLabels = Array.from(searchRoot.querySelectorAll('p, div, span, h3, h4')).filter((el) => {
-      if (el.closest('nav, aside, header, footer')) return false;
-      return safeIsVisible(el) && QUESTION_LABEL_RE.test((el.textContent || '').trim());
-    });
+    const questionLabels = Array.from(searchRoot.querySelectorAll('p, div, span, h3, h4')).filter(
+      (el) => {
+        if (el.closest('nav, aside, header, footer')) return false;
+        return safeIsVisible(el) && QUESTION_LABEL_RE.test((el.textContent || '').trim());
+      },
+    );
 
     if (questionLabels.length > 0) {
       const compact = {
@@ -76,7 +84,7 @@
         multiple_choice: [],
         fill_in_blank: [],
         essay: [],
-        true_false: []
+        true_false: [],
       };
 
       questionLabels.forEach((labelEl) => {
@@ -85,7 +93,9 @@
         if (qNum === null) return;
 
         let container =
-          labelEl.closest('div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article') ||
+          labelEl.closest(
+            'div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article',
+          ) ||
           labelEl.parentElement?.parentElement?.parentElement ||
           labelEl.parentElement;
         if (!container) return;
@@ -97,11 +107,13 @@
         const tfBlocks = findTrueFalseBlocks(container);
 
         const textarea = container.querySelector('textarea');
-        const input = container.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])");
+        const input = container.querySelector(
+          "input:not([type='hidden']):not([type='checkbox']):not([type='radio'])",
+        );
         const optionEls = Array.from(
           container.querySelectorAll(
-            'div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer'
-          )
+            'div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer',
+          ),
         ).filter(safeIsVisible);
 
         if (tfBlocks.length > 0) {
@@ -118,8 +130,9 @@
           const options = {};
           optionEls.forEach((opt, idx) => {
             const letter =
-              (opt.querySelector('span.flex-shrink-0') || {}).textContent?.trim().replace(/\.$/, '') ||
-              String.fromCharCode(65 + idx);
+              (opt.querySelector('span.flex-shrink-0') || {}).textContent
+                ?.trim()
+                .replace(/\.$/, '') || String.fromCharCode(65 + idx);
             const text = (opt.querySelector('div.prose p, p') || opt).textContent?.trim() || '';
             options[letter] = text;
           });
@@ -140,7 +153,10 @@
       }
     }
 
-    logMessage('⚠️ Chưa bắt được gói tin đề bài. Hãy bấm nút "🚀 Mở bài" hoặc F5 tải lại trang để bắt đề!', 'warn');
+    logMessage(
+      '⚠️ Chưa bắt được gói tin đề bài. Hãy bấm nút "🚀 Mở bài" hoặc F5 tải lại trang để bắt đề!',
+      'warn',
+    );
     return { questions: null, promptText: '', message: 'Chưa bắt được gói tin đề bài tập.' };
   }
 
@@ -178,10 +194,10 @@
             ['bắt đầu làm bài', 'làm lại', 'xác nhận', 'đồng ý', 'bắt đầu'],
             document,
             true,
-            true
+            true,
           );
           if (confirmBtn && confirmBtn !== match.element && safeIsVisible(confirmBtn)) {
-            logMessage("Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...", 'info');
+            logMessage('Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...', 'info');
             safeClick(confirmBtn);
           }
 
@@ -189,7 +205,10 @@
           const captured = getCapturedExamData();
           if (captured) {
             const compact = buildCompactPromptPayload(captured, document.title);
-            logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
+            logMessage(
+              `🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`,
+              'success',
+            );
             return { success: true, opened: true, questions: compact };
           }
 
@@ -203,7 +222,7 @@
 
           // Sau 2 giây nếu vẫn chưa mở, thử kích hoạt lại nút bấm
           if (i === 8 || i === 20) {
-            logMessage("Đang thử kích hoạt lại nút mở bài tập...", 'info');
+            logMessage('Đang thử kích hoạt lại nút mở bài tập...', 'info');
             safeClick(match.element);
             try {
               if (typeof match.element.click === 'function') match.element.click();
@@ -211,7 +230,11 @@
           }
         }
 
-        return { success: true, opened: false, message: "Đã bấm 'Làm bài tập', đang chờ hệ thống tải câu hỏi..." };
+        return {
+          success: true,
+          opened: false,
+          message: "Đã bấm 'Làm bài tập', đang chờ hệ thống tải câu hỏi...",
+        };
       }
 
       if (match.type === 'open_lesson_exercise') {
@@ -240,17 +263,20 @@
                 ['bắt đầu làm bài', 'làm lại', 'xác nhận', 'đồng ý', 'bắt đầu'],
                 document,
                 true,
-                true
+                true,
               );
               if (confirmBtn && confirmBtn !== nextMatch.element && safeIsVisible(confirmBtn)) {
-                logMessage("Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...", 'info');
+                logMessage('Đã phát hiện hộp thoại xác nhận làm bài. Bấm xác nhận...', 'info');
                 safeClick(confirmBtn);
               }
 
               const captured = getCapturedExamData();
               if (captured) {
                 const compact = buildCompactPromptPayload(captured, document.title);
-                logMessage(`🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`, 'success');
+                logMessage(
+                  `🎉 Đã mở bài và bắt được gói tin đề (${compact.total_questions} câu)!`,
+                  'success',
+                );
                 return { success: true, opened: true, questions: compact };
               }
               const dialog = getActiveExamDialog();
@@ -263,7 +289,11 @@
             return { success: true, opened: true };
           }
         }
-        return { success: true, opened: false, message: "Đã mở màn hình bài tập. Hãy bấm 'Làm bài tập' trên trang." };
+        return {
+          success: true,
+          opened: false,
+          message: "Đã mở màn hình bài tập. Hãy bấm 'Làm bài tập' trên trang.",
+        };
       }
     }
 
@@ -273,13 +303,16 @@
       const qLabel = findQuestionLabel(existingDialog);
       logMessage(
         `Cửa sổ bài tập đã được mở sẵn sàng${qLabel ? ' (' + qLabel.textContent.trim() + ')' : ''}.`,
-        'success'
+        'success',
       );
       const extracted = extractQuestions();
       return { success: true, opened: true, questions: extracted.questions };
     }
 
-    return { success: false, message: "Không tìm thấy nút 'Làm bài tập' hoặc 'Bài tập AI' trên trang." };
+    return {
+      success: false,
+      message: "Không tìm thấy nút 'Làm bài tập' hoặc 'Bài tập AI' trên trang.",
+    };
   }
 
   /**
@@ -289,7 +322,10 @@
     const answers = loadAnswersFromInput(rawText);
     const questionIndices = Object.keys(answers);
     if (questionIndices.length === 0) {
-      return { success: false, message: 'Không thể phân tích bất kỳ đáp án hợp lệ nào từ nội dung đã nhập!' };
+      return {
+        success: false,
+        message: 'Không thể phân tích bất kỳ đáp án hợp lệ nào từ nội dung đã nhập!',
+      };
     }
 
     logMessage(`🚀 Bắt đầu điền ${questionIndices.length} câu trả lời cho bài tập...`, 'info');
@@ -297,7 +333,7 @@
     // Chờ hoặc lấy dialog bài tập
     let dialog = getActiveExamDialog();
     if (!dialog) {
-      logMessage("Cửa sổ bài tập chưa mở. Đang tự động mở bài tập để điền...", 'info');
+      logMessage('Cửa sổ bài tập chưa mở. Đang tự động mở bài tập để điền...', 'info');
       const startRes = await startExercise();
       if (startRes && startRes.opened) {
         await sleep(350);
@@ -336,7 +372,10 @@
     let firstLabel = findQuestionLabel(dialog);
     let startIdx = firstLabel ? parseQuestionIndex(firstLabel.textContent) : null;
     if (startIdx && startIdx > 1) {
-      logMessage(`[INFO] Đang ở câu ${startIdx}. Tự động quay lại câu 1 để giải toàn bộ bài tập...`, 'info');
+      logMessage(
+        `[INFO] Đang ở câu ${startIdx}. Tự động quay lại câu 1 để giải toàn bộ bài tập...`,
+        'info',
+      );
       const btn1 = findPaginationButton(1, dialog);
       if (btn1) {
         safeClick(btn1);
@@ -395,7 +434,9 @@
           if (textareaEl && !safeIsVisible(textareaEl)) textareaEl = null;
 
           inputEls = Array.from(
-            dialog.querySelectorAll("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])")
+            dialog.querySelectorAll(
+              "input:not([type='hidden']):not([type='checkbox']):not([type='radio'])",
+            ),
           ).filter(safeIsVisible);
 
           contentEditableEl = dialog.querySelector('[contenteditable="true"], [role="textbox"]');
@@ -403,8 +444,8 @@
 
           optionEls = Array.from(
             dialog.querySelectorAll(
-              "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']"
-            )
+              "div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, [role='radio']",
+            ),
           ).filter(safeIsVisible);
 
           if (
@@ -421,13 +462,16 @@
 
         if (trueFalseBlocks.length > 0) {
           const tfAnswers = parseTrueFalseAnswers(answerValue, trueFalseBlocks.length);
-          logMessage(`[INFO] Câu ${questionIndex}: điền Đúng/Sai (${tfAnswers.length}/${trueFalseBlocks.length} mệnh đề)`, 'info');
+          logMessage(
+            `[INFO] Câu ${questionIndex}: điền Đúng/Sai (${tfAnswers.length}/${trueFalseBlocks.length} mệnh đề)`,
+            'info',
+          );
           for (let i = 0; i < trueFalseBlocks.length; i++) {
             const block = trueFalseBlocks[i];
             const shouldBeTrue = i < tfAnswers.length ? tfAnswers[i] : true;
             const targetName = shouldBeTrue ? 'Đúng' : 'Sai';
             const btn = Array.from(block.querySelectorAll('button')).find(
-              (b) => (b.textContent || '').trim() === targetName
+              (b) => (b.textContent || '').trim() === targetName,
             );
             if (btn) {
               const isAlreadyActive =
@@ -457,7 +501,10 @@
               if (Array.isArray(parsed)) parts = parsed.map(String);
             } catch (e) {}
             if (parts.length === 0) {
-              parts = answerValue.split(/[,;\n]/).map((s) => s.trim()).filter(Boolean);
+              parts = answerValue
+                .split(/[,;\n]/)
+                .map((s) => s.trim())
+                .filter(Boolean);
             }
             for (let i = 0; i < inputEls.length; i++) {
               const val = i < parts.length ? parts[i] : answerValue;
@@ -466,7 +513,10 @@
           }
           filledCount++;
         } else if (contentEditableEl) {
-          logMessage(`[INFO] Câu ${questionIndex}: điền vùng nhập văn bản (contenteditable)`, 'info');
+          logMessage(
+            `[INFO] Câu ${questionIndex}: điền vùng nhập văn bản (contenteditable)`,
+            'info',
+          );
           setNativeValue(contentEditableEl, answerValue);
           filledCount++;
         } else {
@@ -490,7 +540,10 @@
               const targetLetter = letterMatch[1].toUpperCase();
               for (let i = 0; i < optionsList.length; i++) {
                 const optL = optionsList[i].letter.toUpperCase().replace(/[^A-D]/g, '');
-                if (optL === targetLetter || optionsList[i].letter.toUpperCase().startsWith(targetLetter)) {
+                if (
+                  optL === targetLetter ||
+                  optionsList[i].letter.toUpperCase().startsWith(targetLetter)
+                ) {
                   chosenIndex = i;
                   break;
                 }
@@ -499,7 +552,9 @@
 
             // 2. Khớp theo nội dung text nếu chưa tìm thấy bằng ký tự
             if (chosenIndex === -1) {
-              const textWithoutLetter = trimmedAns.replace(/^[\(\[]?[A-D][\.\)\:\s\-]+/i, '').trim();
+              const textWithoutLetter = trimmedAns
+                .replace(/^[\(\[]?[A-D][\.\)\:\s\-]+/i, '')
+                .trim();
               const target = normalizeText(textWithoutLetter || trimmedAns);
               if (target) {
                 for (let i = 0; i < optionsList.length; i++) {
@@ -519,7 +574,10 @@
             }
 
             if (chosenIndex === -1) {
-              logMessage(`[WARN] Câu ${questionIndex}: Không khớp được lựa chọn nào cho '${answerValue}'.`, 'warn');
+              logMessage(
+                `[WARN] Câu ${questionIndex}: Không khớp được lựa chọn nào cho '${answerValue}'.`,
+                'warn',
+              );
             } else {
               safeClick(optionsList[chosenIndex].node);
               filledCount++;
@@ -542,9 +600,14 @@
           logMessage("🎉 Đã đến câu cuối. Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
           await sleep(500);
-          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài'], document, true, true);
+          const confirmBtn = findButtonByText(
+            ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài'],
+            document,
+            true,
+            true,
+          );
           if (confirmBtn && confirmBtn !== submitBtn) {
-            logMessage("✓ Bấm xác nhận nộp bài...", 'info');
+            logMessage('✓ Bấm xác nhận nộp bài...', 'info');
             safeClick(confirmBtn);
           }
         } else {
@@ -569,7 +632,10 @@
           const newProgressEl = dialog.querySelector('span.text-gray-700');
           const newProgress = newProgressEl ? newProgressEl.textContent.trim() : '';
 
-          if ((newLabel && newLabel !== currentLabel) || (newProgress && newProgress !== currentProgress)) {
+          if (
+            (newLabel && newLabel !== currentLabel) ||
+            (newProgress && newProgress !== currentProgress)
+          ) {
             changed = true;
             break;
           }
@@ -607,10 +673,10 @@
               ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'],
               document,
               true,
-              true
+              true,
             );
             if (confirmBtn && confirmBtn !== endSubmitBtn) {
-              logMessage("✓ Bấm xác nhận nộp bài...", 'info');
+              logMessage('✓ Bấm xác nhận nộp bài...', 'info');
               safeClick(confirmBtn);
             }
           } else {
@@ -622,12 +688,12 @@
                 ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'],
                 document,
                 true,
-                true
+                true,
               );
               if (confirmModalBtn && confirmModalBtn !== nextBtn) break;
             }
             if (confirmModalBtn && autoSubmit) {
-              logMessage("✓ Đã phát hiện hộp thoại xác nhận nộp bài. Bấm xác nhận...", 'info');
+              logMessage('✓ Đã phát hiện hộp thoại xác nhận nộp bài. Bấm xác nhận...', 'info');
               safeClick(confirmModalBtn);
             } else {
               logMessage('[WARN] Câu tiếp theo chưa hiển thị kịp hoặc đã đến cuối bài.', 'warn');
@@ -640,13 +706,18 @@
           logMessage("🎉 Tự động bấm nút 'Nộp bài'...", 'success');
           safeClick(submitBtn);
           await sleep(500);
-          const confirmBtn = findButtonByText(['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'], document, true, true);
+          const confirmBtn = findButtonByText(
+            ['Xác nhận', 'Đồng ý', 'Chắc chắn', 'Nộp bài', 'Nộp'],
+            document,
+            true,
+            true,
+          );
           if (confirmBtn && confirmBtn !== submitBtn) safeClick(confirmBtn);
         }
         break;
       } else {
         // Không còn nút Câu tiếp và không có nút Nộp bài (bài tập tự lưu)
-        logMessage("🎉 Đã hoàn thành câu cuối cùng của bài tập!", 'success');
+        logMessage('🎉 Đã hoàn thành câu cuối cùng của bài tập!', 'success');
         break;
       }
     }
@@ -670,9 +741,11 @@
    */
   function fillTestFullPage(answers) {
     let filledCount = 0;
-    const questionLabels = Array.from(document.querySelectorAll('p, div, span, h3, h4')).filter((el) => {
-      return safeIsVisible(el) && QUESTION_LABEL_RE.test((el.textContent || '').trim());
-    });
+    const questionLabels = Array.from(document.querySelectorAll('p, div, span, h3, h4')).filter(
+      (el) => {
+        return safeIsVisible(el) && QUESTION_LABEL_RE.test((el.textContent || '').trim());
+      },
+    );
 
     questionLabels.forEach((labelEl) => {
       const qNum = parseQuestionIndex(labelEl.textContent);
@@ -682,7 +755,9 @@
       if (!targetAns) return;
 
       let container =
-        labelEl.closest('div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article') ||
+        labelEl.closest(
+          'div.bg-white, div.rounded-lg, div.rounded-xl, div.border, div.shadow, section, article',
+        ) ||
         labelEl.parentElement?.parentElement?.parentElement ||
         labelEl.parentElement;
       if (!container) return;
@@ -694,7 +769,7 @@
         tfBlocks.forEach((block, i) => {
           const shouldBeTrue = i < tfAnswers.length ? tfAnswers[i] : true;
           const btn = Array.from(block.querySelectorAll('button')).find(
-            (b) => (b.textContent || '').trim() === (shouldBeTrue ? 'Đúng' : 'Sai')
+            (b) => (b.textContent || '').trim() === (shouldBeTrue ? 'Đúng' : 'Sai'),
           );
           if (btn) safeClick(btn);
         });
@@ -711,7 +786,9 @@
         return;
       }
 
-      const input = container.querySelector("input:not([type='hidden']):not([type='checkbox']):not([type='radio'])");
+      const input = container.querySelector(
+        "input:not([type='hidden']):not([type='checkbox']):not([type='radio'])",
+      );
       if (input && safeIsVisible(input)) {
         setNativeValue(input, targetAns);
         filledCount++;
@@ -729,13 +806,14 @@
 
       const optionEls = Array.from(
         container.querySelectorAll(
-          'div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, label'
-        )
+          'div.relative.flex.items-center.space-x-2.p-2.border.rounded-lg.cursor-pointer, div.border.rounded-lg.cursor-pointer, label',
+        ),
       ).filter(safeIsVisible);
 
       for (const opt of optionEls) {
         const optText = (opt.textContent || '').trim();
-        const letterSpan = (opt.querySelector('span.flex-shrink-0') || {}).textContent?.trim() || '';
+        const letterSpan =
+          (opt.querySelector('span.flex-shrink-0') || {}).textContent?.trim() || '';
         const targetUpper = targetAns.toUpperCase();
 
         if (
@@ -770,6 +848,6 @@
     loadAnswersFromInput,
     sanitizeAiResponse,
     buildCompactPromptPayload,
-    generateStandardPromptText
+    generateStandardPromptText,
   };
 })();

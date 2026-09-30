@@ -8,7 +8,7 @@ export const CONTENT_SCRIPTS = [
   'content/exam-solver.js',
   'content/slide-solver.js',
   'content/score-tracker.js',
-  'content/content.js'
+  'content/content.js',
 ];
 
 // Chạy trong MAIN world của trang EDUX để nghe dữ liệu mạng (đề bài tập, giờ server)

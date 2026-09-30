@@ -12,8 +12,8 @@ export const PROVIDERS = {
       { id: 'gemini-2.0-flash', label: 'gemini-2.0-flash (Khuyên dùng - Nhanh & Chuẩn)' },
       { id: 'gemini-2.0-pro-exp-02-05', label: 'gemini-2.0-pro-exp-02-05 (Suy luận sâu)' },
       { id: 'gemini-1.5-flash', label: 'gemini-1.5-flash' },
-      { id: 'gemini-1.5-pro', label: 'gemini-1.5-pro' }
-    ]
+      { id: 'gemini-1.5-pro', label: 'gemini-1.5-pro' },
+    ],
   },
   openai: {
     name: 'OpenAI',
@@ -25,8 +25,8 @@ export const PROVIDERS = {
       { id: 'gpt-4o-mini', label: 'gpt-4o-mini (Khuyên dùng - Nhanh & Rẻ)' },
       { id: 'gpt-4o', label: 'gpt-4o (Toàn diện nhất)' },
       { id: 'o3-mini', label: 'o3-mini (Lý luận cao cấp)' },
-      { id: 'gpt-4-turbo', label: 'gpt-4-turbo' }
-    ]
+      { id: 'gpt-4-turbo', label: 'gpt-4-turbo' },
+    ],
   },
   deepseek: {
     name: 'DeepSeek',
@@ -36,8 +36,8 @@ export const PROVIDERS = {
     keyPlaceholder: 'Nhập DeepSeek API Key (sk-...)',
     models: [
       { id: 'deepseek-chat', label: 'deepseek-chat (DeepSeek-V3)' },
-      { id: 'deepseek-reasoner', label: 'deepseek-reasoner (DeepSeek-R1)' }
-    ]
+      { id: 'deepseek-reasoner', label: 'deepseek-reasoner (DeepSeek-R1)' },
+    ],
   },
   openrouter: {
     name: 'OpenRouter',
@@ -51,8 +51,8 @@ export const PROVIDERS = {
       { id: 'google/gemini-2.0-flash-001', label: 'google/gemini-2.0-flash-001' },
       { id: 'deepseek/deepseek-r1', label: 'deepseek/deepseek-r1' },
       { id: 'meta-llama/llama-3.3-70b-instruct', label: 'meta-llama/llama-3.3-70b-instruct' },
-      { id: 'anthropic/claude-3.5-sonnet', label: 'anthropic/claude-3.5-sonnet' }
-    ]
+      { id: 'anthropic/claude-3.5-sonnet', label: 'anthropic/claude-3.5-sonnet' },
+    ],
   },
   inception: {
     name: 'Inception',
@@ -64,8 +64,8 @@ export const PROVIDERS = {
     reasoningEfforts: ['instant', 'low', 'medium', 'high'],
     models: [
       { id: 'mercury-2.5', label: 'mercury-2.5 (Khuyên dùng)' },
-      { id: 'mercury-2', label: 'mercury-2' }
-    ]
+      { id: 'mercury-2', label: 'mercury-2' },
+    ],
   },
   ollama: {
     name: 'Ollama',
@@ -77,8 +77,8 @@ export const PROVIDERS = {
       { id: 'llama3.2', label: 'llama3.2' },
       { id: 'qwen2.5:7b', label: 'qwen2.5:7b' },
       { id: 'deepseek-r1:7b', label: 'deepseek-r1:7b' },
-      { id: 'mistral', label: 'mistral' }
-    ]
+      { id: 'mistral', label: 'mistral' },
+    ],
   },
   custom: {
     name: 'Custom',
@@ -87,8 +87,8 @@ export const PROVIDERS = {
     fallbackModel: 'gpt-4o-mini',
     placeholderEndpoint: 'http://localhost:20128/v1',
     keyPlaceholder: 'Nhập API Key nếu có (hoặc để trống)...',
-    models: []
-  }
+    models: [],
+  },
 };
 
 export const REASONING_LABELS = { instant: 'instant (nhanh nhất)', high: 'high (kỹ nhất)' };
@@ -137,7 +137,9 @@ export function resolveRequest(profile) {
   let isGemini;
   if (provider === 'gemini') isGemini = true;
   else if (PROVIDERS[provider] && provider !== 'custom') isGemini = false;
-  else if (customEndpoint) isGemini = customEndpoint.includes('googleapis.com') || customEndpoint.includes(':generateContent');
+  else if (customEndpoint)
+    isGemini =
+      customEndpoint.includes('googleapis.com') || customEndpoint.includes(':generateContent');
   else isGemini = key.startsWith('AIza') || rawModel.toLowerCase().includes('gemini') || !rawModel;
 
   if (isGemini) {
@@ -157,7 +159,8 @@ export function resolveRequest(profile) {
     return { protocol: 'gemini', url, model, key, provider };
   }
 
-  const model = rawModel || (PROVIDERS[provider] ? displayModel('', provider) : OPENAI_COMPAT_DEFAULT_MODEL);
+  const model =
+    rawModel || (PROVIDERS[provider] ? displayModel('', provider) : OPENAI_COMPAT_DEFAULT_MODEL);
   let url;
   if (customEndpoint) {
     const base = customEndpoint.replace(/\/+$/, '');

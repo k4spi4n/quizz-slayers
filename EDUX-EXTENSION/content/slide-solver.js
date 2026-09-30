@@ -6,7 +6,8 @@
 (function () {
   'use strict';
 
-  const { sleep, safeIsVisible, safeIsEnabled, safeClick, getActiveDialog, waitForHidden } = window.EduxDOM;
+  const { sleep, safeIsVisible, safeIsEnabled, safeClick, getActiveDialog, waitForHidden } =
+    window.EduxDOM;
 
   // State & Stats
   let isSlideRunning = false;
@@ -25,7 +26,7 @@
     delayMs: 100,
     autoNext: true,
     useAi: true,
-    slideMethod: null // 'ai' | 'laya' | 'bruteforce'; null = suy ra từ useAi (cấu hình cũ)
+    slideMethod: null, // 'ai' | 'laya' | 'bruteforce'; null = suy ra từ useAi (cấu hình cũ)
   };
 
   function getSlideMethod() {
@@ -48,7 +49,7 @@
           {
             action,
             question: questionText,
-            choices: choices
+            choices: choices,
           },
           (response) => {
             clearTimeout(timeoutId);
@@ -57,7 +58,7 @@
             } else {
               resolve(response || { success: false, message: 'Không nhận được phản hồi' });
             }
-          }
+          },
         );
       } catch (err) {
         clearTimeout(timeoutId);
@@ -74,7 +75,7 @@
 
   const logMessage = window.EduxDOM.createLogger('[EDUX Slayers Slide]', 'SLIDE_LOG', () => ({
     solvedCount,
-    retryCount
+    retryCount,
   }));
 
   function getDialogNextPageButton() {
@@ -84,8 +85,8 @@
     for (const root of searchRoots) {
       const candidates = Array.from(
         root.querySelectorAll(
-          "button, a[role='button'], div[role='button'], [role='button'], div.cursor-pointer, span.cursor-pointer"
-        )
+          "button, a[role='button'], div[role='button'], [role='button'], div.cursor-pointer, span.cursor-pointer",
+        ),
       );
 
       // Pass 1: Buttons with green styling AND completion text
@@ -101,8 +102,15 @@
         if (/^\d+(\s*\/\s*\d+)?$/.test(txt)) continue;
 
         // Never match navigation buttons
-        if (txt.includes('Bài giảng') || title.includes('Bài giảng') || txt.includes('Khóa học')) continue;
-        if (txt.includes('Thử lại') || txt.includes('Bỏ qua') || txt.includes('Phản hồi') || txt.includes('Đổi câu hỏi')) continue;
+        if (txt.includes('Bài giảng') || title.includes('Bài giảng') || txt.includes('Khóa học'))
+          continue;
+        if (
+          txt.includes('Thử lại') ||
+          txt.includes('Bỏ qua') ||
+          txt.includes('Phản hồi') ||
+          txt.includes('Đổi câu hỏi')
+        )
+          continue;
 
         const isGreen =
           btn.classList.contains('bg-green-600') ||
@@ -132,8 +140,15 @@
         const aria = (btn.getAttribute('aria-label') || '').trim();
 
         if (/^\d+(\s*\/\s*\d+)?$/.test(txt)) continue;
-        if (txt.includes('Bài giảng') || title.includes('Bài giảng') || txt.includes('Khóa học')) continue;
-        if (txt.includes('Thử lại') || txt.includes('Bỏ qua') || txt.includes('Phản hồi') || txt.includes('Đổi câu hỏi')) continue;
+        if (txt.includes('Bài giảng') || title.includes('Bài giảng') || txt.includes('Khóa học'))
+          continue;
+        if (
+          txt.includes('Thử lại') ||
+          txt.includes('Bỏ qua') ||
+          txt.includes('Phản hồi') ||
+          txt.includes('Đổi câu hỏi')
+        )
+          continue;
 
         const isTextMatch =
           txt === 'Trang sau' ||
@@ -166,7 +181,10 @@
           const txt = (el.textContent || '').trim();
           const title = el.getAttribute('title') || '';
           const aria = el.getAttribute('aria-label') || '';
-          if ((txt.includes('Bỏ qua') || title.includes('Bỏ qua') || aria.includes('Bỏ qua')) && safeIsEnabled(el)) {
+          if (
+            (txt.includes('Bỏ qua') || title.includes('Bỏ qua') || aria.includes('Bỏ qua')) &&
+            safeIsEnabled(el)
+          ) {
             return el;
           }
         }
@@ -212,7 +230,7 @@
       'div[role="button"]',
       '[role="button"]',
       'div.cursor-pointer',
-      'span.cursor-pointer'
+      'span.cursor-pointer',
     ];
     for (const sel of selectors) {
       try {
@@ -223,8 +241,10 @@
           const title = el.getAttribute('title') || '';
           const aria = el.getAttribute('aria-label') || '';
           if (
-            (txt === 'Thử lại' || (txt.includes('Thử lại') && txt.length <= 30) ||
-             title.includes('Thử lại') || aria.includes('Thử lại')) &&
+            (txt === 'Thử lại' ||
+              (txt.includes('Thử lại') && txt.length <= 30) ||
+              title.includes('Thử lại') ||
+              aria.includes('Thử lại')) &&
             safeIsEnabled(el)
           ) {
             return el;
@@ -249,7 +269,9 @@
     for (const container of containers) {
       for (const name of names) {
         const buttons = Array.from(
-          container.querySelectorAll('button, a[role="button"], div[role="button"], [role="button"], div.cursor-pointer')
+          container.querySelectorAll(
+            'button, a[role="button"], div[role="button"], [role="button"], div.cursor-pointer',
+          ),
         );
         for (const btn of buttons) {
           if (!safeIsVisible(btn)) continue;
@@ -298,8 +320,24 @@
     if (nextBtn && safeClick(nextBtn)) return true;
 
     try {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, which: 39, bubbles: true }));
-      window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, which: 39, bubbles: true }));
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'ArrowRight',
+          code: 'ArrowRight',
+          keyCode: 39,
+          which: 39,
+          bubbles: true,
+        }),
+      );
+      window.dispatchEvent(
+        new KeyboardEvent('keyup', {
+          key: 'ArrowRight',
+          code: 'ArrowRight',
+          keyCode: 39,
+          which: 39,
+          bubbles: true,
+        }),
+      );
       return true;
     } catch (e) {
       return false;
@@ -314,15 +352,23 @@
     const notInSidebar = (el) => !el.closest('nav, aside, .sidebar, [class*="sidebar"]');
 
     // Priority 1: Radiogroup children (div[role='radiogroup'] > div)
-    const radiogroupChildren = Array.from(document.querySelectorAll("div[role='radiogroup'] > div")).filter((el) => {
+    const radiogroupChildren = Array.from(
+      document.querySelectorAll("div[role='radiogroup'] > div"),
+    ).filter((el) => {
       return safeIsVisible(el) && notInSidebar(el);
     });
     if (radiogroupChildren.length > 0) return radiogroupChildren;
 
     // Priority 2: Choice cards containing radio button or bold label
-    const choiceCards = Array.from(document.querySelectorAll("div.rounded-xl.border-2")).filter((el) => {
-      return safeIsVisible(el) && notInSidebar(el) && (el.querySelector("button[role='radio']") || el.querySelector("span.font-bold"));
-    });
+    const choiceCards = Array.from(document.querySelectorAll('div.rounded-xl.border-2')).filter(
+      (el) => {
+        return (
+          safeIsVisible(el) &&
+          notInSidebar(el) &&
+          (el.querySelector("button[role='radio']") || el.querySelector('span.font-bold'))
+        );
+      },
+    );
     if (choiceCards.length > 0) return choiceCards;
 
     // Priority 3: Direct radio buttons
@@ -332,16 +378,27 @@
     if (radios.length > 0) return radios;
 
     // Priority 4: min-h-[80px] cards
-    const minHCards = Array.from(document.querySelectorAll("div.border-2.rounded-xl.min-h-\\[80px\\]")).filter((el) => {
+    const minHCards = Array.from(
+      document.querySelectorAll('div.border-2.rounded-xl.min-h-\\[80px\\]'),
+    ).filter((el) => {
       return safeIsVisible(el) && notInSidebar(el);
     });
     if (minHCards.length > 0) return minHCards;
 
     // Priority 5: Generic border-2 cursor-pointer
-    const pointerCards = Array.from(document.querySelectorAll("div.border-2.cursor-pointer")).filter((el) => {
+    const pointerCards = Array.from(
+      document.querySelectorAll('div.border-2.cursor-pointer'),
+    ).filter((el) => {
       if (!safeIsVisible(el) || !notInSidebar(el)) return false;
       const txt = (el.textContent || '').trim();
-      const ignore = ['Không có câu hỏi', 'Trả lời trên lớp', 'Kiểm tra', 'Câu tiếp theo', 'Thử lại', 'Trang sau'];
+      const ignore = [
+        'Không có câu hỏi',
+        'Trả lời trên lớp',
+        'Kiểm tra',
+        'Câu tiếp theo',
+        'Thử lại',
+        'Trang sau',
+      ];
       return !ignore.includes(txt) && txt.length > 0 && txt.length < 500;
     });
     if (pointerCards.length > 0) return pointerCards;
@@ -372,13 +429,13 @@
    */
   function getSlideQuestionText(answerEls) {
     const candidates = [
-      document.querySelector("div.bg-blue-50.border-blue-500"),
+      document.querySelector('div.bg-blue-50.border-blue-500'),
       document.querySelector("[class*='text-blue-800']"),
-      document.querySelector("div.bg-blue-50"),
-      document.querySelector("p.my-3.text-gray-800.leading-relaxed"),
+      document.querySelector('div.bg-blue-50'),
+      document.querySelector('p.my-3.text-gray-800.leading-relaxed'),
       document.querySelector("div[role='dialog'] h3"),
       document.querySelector("div[role='dialog'] .font-semibold"),
-      document.querySelector("div[role='dialog'] h2")
+      document.querySelector("div[role='dialog'] h2"),
     ];
 
     for (const el of candidates) {
@@ -397,7 +454,7 @@
   function isGreenIndicator(el) {
     if (!el) return false;
     try {
-      const cls = (el.className && typeof el.className === 'string') ? el.className : '';
+      const cls = el.className && typeof el.className === 'string' ? el.className : '';
       if (
         cls.includes('border-green') ||
         cls.includes('bg-green') ||
@@ -429,9 +486,12 @@
 
   function isCardMarkedRed(card) {
     if (!card) return false;
-    const cls = (card.className && typeof card.className === 'string') ? card.className : '';
-    if (cls.includes('border-red') || cls.includes('bg-red') || cls.includes('text-red')) return true;
-    const redChild = card.querySelector("[class*='border-red'], [class*='bg-red'], [class*='text-red']");
+    const cls = card.className && typeof card.className === 'string' ? card.className : '';
+    if (cls.includes('border-red') || cls.includes('bg-red') || cls.includes('text-red'))
+      return true;
+    const redChild = card.querySelector(
+      "[class*='border-red'], [class*='bg-red'], [class*='text-red']",
+    );
     if (redChild && safeIsVisible(redChild)) return true;
     try {
       const style = window.getComputedStyle(card);
@@ -454,14 +514,16 @@
     if (isGreenIndicator(card)) return true;
 
     const greenDescendant = card.querySelector(
-      "[class*='border-green'], [class*='bg-green'], [class*='text-green'], [class*='border-emerald'], [class*='bg-emerald'], svg.text-green-500, svg[class*='text-green']"
+      "[class*='border-green'], [class*='bg-green'], [class*='text-green'], [class*='border-emerald'], [class*='bg-emerald'], svg.text-green-500, svg[class*='text-green']",
     );
     if (greenDescendant && safeIsVisible(greenDescendant)) {
       const cls = greenDescendant.className || '';
       if (typeof cls === 'string' && !cls.includes('red')) return true;
     }
 
-    const radio = card.querySelector("button[role='radio'], div[role='radio'], input[type='radio']");
+    const radio = card.querySelector(
+      "button[role='radio'], div[role='radio'], input[type='radio']",
+    );
     if (radio && isGreenIndicator(radio)) return true;
 
     return false;
@@ -476,12 +538,12 @@
   function extractRevealedCorrectIndex(answerEls = null) {
     // 1. Text search: "Đáp án đúng: X"
     const selectors = [
-      "div.text-red-700",
+      'div.text-red-700',
       "[class*='text-red']",
       "div[role='dialog'] div",
       "div[role='dialog'] p",
-      "div",
-      "p"
+      'div',
+      'p',
     ];
 
     for (const sel of selectors) {
@@ -532,7 +594,10 @@
       // 1.1: "Trang sau" button in Dialog (quiz completed, green button)
       const dialogNextBtn = getDialogNextPageButton();
       if (dialogNextBtn) {
-        logMessage("[Done] 🎉 Phát hiện nút 'Trang sau' hoàn thành quiz, đang chuyển slide...", 'success');
+        logMessage(
+          "[Done] 🎉 Phát hiện nút 'Trang sau' hoàn thành quiz, đang chuyển slide...",
+          'success',
+        );
         safeClick(dialogNextBtn);
         await waitForHidden(dialogNextBtn, 800);
         await sleep(50);
@@ -647,9 +712,28 @@
         // 2.4: Stall Watchdog & Keyboard Recovery
         if (!stallReported && Date.now() - lastProgress > STALL_MS) {
           if (!getActiveDialog()) {
-            logMessage('[RECOVERY] Không thấy nút khả dụng, nhấn phím ArrowRight để chuyển slide...', 'warn');
-            window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, which: 39, bubbles: true }));
-            window.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowRight', code: 'ArrowRight', keyCode: 39, which: 39, bubbles: true }));
+            logMessage(
+              '[RECOVERY] Không thấy nút khả dụng, nhấn phím ArrowRight để chuyển slide...',
+              'warn',
+            );
+            window.dispatchEvent(
+              new KeyboardEvent('keydown', {
+                key: 'ArrowRight',
+                code: 'ArrowRight',
+                keyCode: 39,
+                which: 39,
+                bubbles: true,
+              }),
+            );
+            window.dispatchEvent(
+              new KeyboardEvent('keyup', {
+                key: 'ArrowRight',
+                code: 'ArrowRight',
+                keyCode: 39,
+                which: 39,
+                bubbles: true,
+              }),
+            );
           } else {
             logMessage('[STALL] Đang chờ câu hỏi hoặc kết quả...', 'warn');
           }
@@ -690,17 +774,34 @@
         // Laya: hỏi 1 lần/câu, nhận xác suất từng đáp án -> thử theo thứ tự xác suất giảm dần
         if (method === 'laya') {
           if (!(questionText in layaRankMap)) {
-            const choiceTexts = answerList.map((el) => (el.textContent || '').trim().replace(/\s+/g, ' '));
-            const layaRes = await queryAiForSlideAnswer(questionText, choiceTexts, 'LAYA_SOLVE_SLIDE');
+            const choiceTexts = answerList.map((el) =>
+              (el.textContent || '').trim().replace(/\s+/g, ' '),
+            );
+            const layaRes = await queryAiForSlideAnswer(
+              questionText,
+              choiceTexts,
+              'LAYA_SOLVE_SLIDE',
+            );
             if (!isSlideRunning) return;
 
-            if (layaRes && layaRes.success && Array.isArray(layaRes.ranking) && layaRes.ranking.length === answerCount) {
+            if (
+              layaRes &&
+              layaRes.success &&
+              Array.isArray(layaRes.ranking) &&
+              layaRes.ranking.length === answerCount
+            ) {
               layaRankMap[questionText] = layaRes.ranking;
               const pct = Math.round((layaRes.probabilities?.[0] || 0) * 100);
-              logMessage(`[Laya] 🎯 Xếp hạng xong (${Math.round(layaRes.elapsedMs || 0)}ms) — tốt nhất #${layaRes.ranking[0] + 1} (${pct}%)`, 'info');
+              logMessage(
+                `[Laya] 🎯 Xếp hạng xong (${Math.round(layaRes.elapsedMs || 0)}ms) — tốt nhất #${layaRes.ranking[0] + 1} (${pct}%)`,
+                'info',
+              );
             } else {
               layaRankMap[questionText] = null;
-              logMessage(`[Laya Note] ${layaRes?.message || 'Không có phản hồi'}, chuyển sang thử sai tuần tự...`, 'warn');
+              logMessage(
+                `[Laya Note] ${layaRes?.message || 'Không có phản hồi'}, chuyển sang thử sai tuần tự...`,
+                'warn',
+              );
             }
           }
 
@@ -711,7 +812,10 @@
             if (rankIdx >= 0) {
               nextIndex = ranking[rankIdx];
               pickedByAi = true;
-              logMessage(`[Laya Pick] Hạng ${rankIdx + 1}/${answerCount} -> đáp án #${nextIndex + 1}`, rankIdx === 0 ? 'success' : 'info');
+              logMessage(
+                `[Laya Pick] Hạng ${rankIdx + 1}/${answerCount} -> đáp án #${nextIndex + 1}`,
+                rankIdx === 0 ? 'success' : 'info',
+              );
             }
           }
         }
@@ -720,25 +824,45 @@
         const shouldQueryAi = method === 'ai' && !aiAttemptedMap[questionText];
         if (shouldQueryAi) {
           aiAttemptedMap[questionText] = true;
-          logMessage(`[AI] 🧠 Đang gửi câu hỏi tới AI và CHỜ phản hồi để chọn đáp án chính xác nhất...`, 'info');
+          logMessage(
+            `[AI] 🧠 Đang gửi câu hỏi tới AI và CHỜ phản hồi để chọn đáp án chính xác nhất...`,
+            'info',
+          );
 
-          const choiceTexts = answerList.map((el) => (el.textContent || '').trim().replace(/\s+/g, ' '));
+          const choiceTexts = answerList.map((el) =>
+            (el.textContent || '').trim().replace(/\s+/g, ' '),
+          );
 
           // BẮT BUỘC CHỜ AI trả về đáp án trước khi thực hiện click để đảm bảo độ chính xác
           const aiRes = await queryAiForSlideAnswer(questionText, choiceTexts);
 
           if (!isSlideRunning) return; // Người dùng bấm Dừng trong lúc chờ AI
 
-          if (aiRes && aiRes.success && typeof aiRes.index === 'number' && aiRes.index >= 0 && aiRes.index < answerCount) {
+          if (
+            aiRes &&
+            aiRes.success &&
+            typeof aiRes.index === 'number' &&
+            aiRes.index >= 0 &&
+            aiRes.index < answerCount
+          ) {
             if (!triedIndices.has(aiRes.index)) {
               nextIndex = aiRes.index;
               pickedByAi = true;
-              logMessage(`[AI Pick] 🎯 AI đã phản hồi! Chọn đáp án #${nextIndex + 1}: "${choiceTexts[nextIndex].substring(0, 45)}..."`, 'success');
+              logMessage(
+                `[AI Pick] 🎯 AI đã phản hồi! Chọn đáp án #${nextIndex + 1}: "${choiceTexts[nextIndex].substring(0, 45)}..."`,
+                'success',
+              );
             } else {
-              logMessage(`[AI Pick] AI chọn #${aiRes.index + 1} nhưng đáp án này đã thử trước đó và bị sai.`, 'warn');
+              logMessage(
+                `[AI Pick] AI chọn #${aiRes.index + 1} nhưng đáp án này đã thử trước đó và bị sai.`,
+                'warn',
+              );
             }
           } else {
-            logMessage(`[AI Note] ${aiRes?.message || 'Không có phản hồi AI'}, chuyển sang tự động thử các đáp án...`, 'warn');
+            logMessage(
+              `[AI Note] ${aiRes?.message || 'Không có phản hồi AI'}, chuyển sang tự động thử các đáp án...`,
+              'warn',
+            );
           }
         }
 
@@ -760,7 +884,9 @@
 
       // Đã có đáp án (sau khi chờ AI hoặc fallback) -> Thực hiện Click
       const optionCard = answerList[nextIndex];
-      const radioInside = optionCard.querySelector("button[role='radio'], div[role='radio'], input[type='radio']");
+      const radioInside = optionCard.querySelector(
+        "button[role='radio'], div[role='radio'], input[type='radio']",
+      );
 
       safeClick(optionCard);
       if (radioInside) {
@@ -770,7 +896,11 @@
       await sleep(60);
 
       // Check if clicking the option card already triggered instant submission / completion
-      let instantAction = getDialogNextPageButton() || getDialogNextQuestionButton() || getDialogRetryButton() || getDialogSkipButton();
+      let instantAction =
+        getDialogNextPageButton() ||
+        getDialogNextQuestionButton() ||
+        getDialogRetryButton() ||
+        getDialogSkipButton();
       let checkBtn = null;
 
       if (!instantAction) {
@@ -778,7 +908,11 @@
         for (let w = 0; w < 3; w++) {
           checkBtn = findActionButton(['Kiểm tra'], true);
           if (checkBtn) break;
-          instantAction = getDialogNextPageButton() || getDialogNextQuestionButton() || getDialogRetryButton() || getDialogSkipButton();
+          instantAction =
+            getDialogNextPageButton() ||
+            getDialogNextQuestionButton() ||
+            getDialogRetryButton() ||
+            getDialogSkipButton();
           if (instantAction) break;
           await sleep(60);
         }
@@ -809,7 +943,10 @@
         if (curDialogNext) {
           solvedCount++;
           chrome.storage.local.set({ slideStats: { solved: solvedCount, retries: retryCount } });
-          logMessage("[Done] 🎉 Đã hoàn thành quiz trên slide! Bấm 'Trang sau' chuyển tiếp", 'success');
+          logMessage(
+            "[Done] 🎉 Đã hoàn thành quiz trên slide! Bấm 'Trang sau' chuyển tiếp",
+            'success',
+          );
           safeClick(curDialogNext);
           await waitForHidden(curDialogNext, 800);
           await sleep(50);
@@ -888,7 +1025,10 @@
       }
 
       if (!handled) {
-        logMessage('[WARN] Chưa thấy nút phản hồi sau Kiểm tra (có thể do lag mạng), thử lại...', 'warn');
+        logMessage(
+          '[WARN] Chưa thấy nút phản hồi sau Kiểm tra (có thể do lag mạng), thử lại...',
+          'warn',
+        );
       }
 
       scheduleNextStep(config.delayMs);
@@ -922,7 +1062,7 @@
     const modeText = {
       ai: '🧠 AI',
       laya: '🎯 Laya',
-      bruteforce: '⚡ Bruteforce'
+      bruteforce: '⚡ Bruteforce',
     }[getSlideMethod()];
     logMessage(`▶️ Bắt đầu tự động giải Slide! [${modeText}]`, 'success');
     notifyPopup('SLIDE_STATUS_CHANGE', { isRunning: true });
@@ -941,11 +1081,12 @@
   // =========================================================================
   // =========================================================================
 
-
   window.EduxSlideSolver = {
     start: startSlideBruteforce,
     stop: stopSlideBruteforce,
     getStatus: () => ({ isSlideRunning, solvedCount, retryCount }),
-    setConfig: (newCfg) => { config = { ...config, ...newCfg }; }
+    setConfig: (newCfg) => {
+      config = { ...config, ...newCfg };
+    },
   };
 })();

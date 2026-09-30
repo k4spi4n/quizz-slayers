@@ -64,10 +64,10 @@ export async function layaSolveSlide(question, choices) {
         answer: {
           type: 'choice',
           instructions: 'Which option correctly answers the question?',
-          criteria: labels
-        }
-      }
-    })
+          criteria: labels,
+        },
+      },
+    }),
   });
 
   const probs = json?.answers?.answer?.probabilities || {};
@@ -85,6 +85,6 @@ export async function layaSolveSlide(question, choices) {
     ranking: ranking.map((r) => r.index),
     probabilities: ranking.map((r) => r.p),
     elapsedMs: Number(res.headers.get('X-Inference-Time-Ms')) || Date.now() - started,
-    model: json?.routing?.model || ''
+    model: json?.routing?.model || '',
   };
 }

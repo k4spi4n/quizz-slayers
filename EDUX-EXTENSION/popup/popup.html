@@ -63,9 +63,7 @@
         <div class="card card-hero">
           <div class="card-header">
             <h3>⚡ Tự động giải Slide</h3>
-            <p class="subtitle">
-              Tự động trả lời câu hỏi tương tác & chuyển trang slide bài giảng
-            </p>
+            <p class="subtitle">Tự động trả lời câu hỏi tương tác & chuyển trang slide bài giảng</p>
           </div>
 
           <div class="stats-grid">
@@ -135,16 +133,10 @@
           >
             <span id="slideMethodIcon" style="font-size: 16px">🧠</span>
             <div style="flex: 1">
-              <div
-                id="slideMethodTitle"
-                style="font-size: 11px; font-weight: 700; color: #c7d2fe"
-              >
+              <div id="slideMethodTitle" style="font-size: 11px; font-weight: 700; color: #c7d2fe">
                 AI
               </div>
-              <div
-                id="slideMethodDetail"
-                style="font-size: 10px; color: #94a3b8; margin-top: 2px"
-              >
+              <div id="slideMethodDetail" style="font-size: 10px; color: #94a3b8; margin-top: 2px">
                 Chính xác nhất, chậm nhất. Cần API key.
               </div>
             </div>
@@ -189,9 +181,7 @@
         <div class="card">
           <h4>📋 Nhật ký hoạt động</h4>
           <div class="log-box" id="slideLog">
-            <div class="log-entry info">
-              Chưa bắt đầu. Mở trang Slide EDUX và bấm 'Bắt đầu'.
-            </div>
+            <div class="log-entry info">Chưa bắt đầu. Mở trang Slide EDUX và bấm 'Bắt đầu'.</div>
           </div>
         </div>
       </section>
@@ -202,17 +192,11 @@
         <div class="card card-hero">
           <div
             class="card-header"
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
+            style="display: flex; justify-content: space-between; align-items: center"
           >
             <div>
               <h3>📝 Giải Bài Tập (Test Solver)</h3>
-              <p class="subtitle">
-                Bắt đề bài tập, AI giải & tự động điền đáp án
-              </p>
+              <p class="subtitle">Bắt đề bài tập, AI giải & tự động điền đáp án</p>
             </div>
             <button
               class="btn btn-secondary btn-sm"
@@ -226,11 +210,7 @@
 
           <!-- Trạng thái bắt đề bài tập -->
           <div class="exercise-info-box" id="examInfoBox">
-            <span
-              class="exercise-status-dot"
-              id="examStatusDot"
-              style="display: none"
-            ></span>
+            <span class="exercise-status-dot" id="examStatusDot" style="display: none"></span>
             <span
               id="examInfoText"
               style="
@@ -259,12 +239,7 @@
 
           <!-- Segmented Mode Switcher -->
           <div class="segmented-control">
-            <button
-              type="button"
-              class="segmented-btn active"
-              id="btnModeAuto"
-              data-mode="auto"
-            >
+            <button type="button" class="segmented-btn active" id="btnModeAuto" data-mode="auto">
               <span>⚡ Tự động (API)</span>
             </button>
             <button
@@ -309,9 +284,7 @@
               <span class="hero-btn-icon">⚡</span>
               <div class="hero-btn-content">
                 <span class="hero-btn-title">GIẢI BÀI TẬP BẰNG AI (API)</span>
-                <span class="hero-btn-subtitle"
-                  >Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài</span
-                >
+                <span class="hero-btn-subtitle">Tự mở bài ➔ AI giải ➔ Điền đáp án ➔ Nộp bài</span>
               </div>
             </button>
 
@@ -342,10 +315,7 @@
             </div>
 
             <!-- Collapsible AI Answers Preview -->
-            <div
-              id="autoAnswersContainer"
-              style="display: none; margin-top: 4px"
-            >
+            <div id="autoAnswersContainer" style="display: none; margin-top: 4px">
               <div
                 style="
                   display: flex;
@@ -406,8 +376,7 @@
               <div>
                 <strong>Giải bằng Chatbot AI</strong>
                 <span class="guide-subtitle"
-                  >Dùng ChatGPT / Gemini / Claude miễn phí trên web —
-                  không cần API Key</span
+                  >Dùng ChatGPT / Gemini / Claude miễn phí trên web — không cần API Key</span
                 >
               </div>
             </div>
@@ -447,8 +416,8 @@
               <strong>Copy đề bài tập</strong>
             </div>
             <p class="step-desc">
-              Bấm nút bên dưới để trích đề, copy sẵn vào clipboard và
-              xem trước nội dung — rồi dán vào chatbot ở trên.
+              Bấm nút bên dưới để trích đề, copy sẵn vào clipboard và xem trước nội dung — rồi dán
+              vào chatbot ở trên.
             </p>
             <button
               class="btn btn-secondary"
@@ -462,23 +431,10 @@
             <!-- Khung xem trước Prompt (Collapsible) -->
             <div
               id="promptPreviewCard"
-              style="
-                display: none;
-                flex-direction: column;
-                gap: 6px;
-                margin-top: 6px;
-              "
+              style="display: none; flex-direction: column; gap: 6px; margin-top: 6px"
             >
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                "
-              >
-                <label style="font-size: 11px; color: #a5b4fc"
-                  >Nội dung Prompt đề:</label
-                >
+              <div style="display: flex; justify-content: space-between; align-items: center">
+                <label style="font-size: 11px; color: #a5b4fc">Nội dung Prompt đề:</label>
                 <button
                   class="btn-link"
                   id="btnHidePrompt"
@@ -514,13 +470,7 @@
               <code>1. A, 2. B…</code>
             </p>
             <div class="form-group">
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                "
-              >
+              <div style="display: flex; justify-content: space-between; align-items: center">
                 <span style="font-size: 11px; color: var(--text-muted)"
                   >JSONL / JSON / "1. A, 2. B":</span
                 >
@@ -568,8 +518,7 @@
               <strong>Điền vào bài tập</strong>
             </div>
             <p class="step-desc">
-              Bấm nút bên dưới để tự động chọn đáp án & nộp bài trên
-              trang EDUX.
+              Bấm nút bên dưới để tự động chọn đáp án & nộp bài trên trang EDUX.
             </p>
             <button class="btn btn-success" id="btnFillAnswers">
               <span>✨</span> Bắt đầu điền bài tập
@@ -581,9 +530,7 @@
         <div class="card">
           <h4>📊 Nhật ký bài tập</h4>
           <div class="log-box" id="testLog">
-            <div class="log-entry info">
-              Sẵn sàng. Mở bài tập trên EDUX và chọn thao tác.
-            </div>
+            <div class="log-entry info">Sẵn sàng. Mở bài tập trên EDUX và chọn thao tác.</div>
           </div>
         </div>
       </section>
@@ -593,9 +540,7 @@
         <div class="card card-hero">
           <div class="card-header">
             <h3>📊 Bảng Điểm & Tiến Độ Bài Tập</h3>
-            <p class="subtitle" id="scoresSubjectTitle">
-              Đang nhận diện môn học...
-            </p>
+            <p class="subtitle" id="scoresSubjectTitle">Đang nhận diện môn học...</p>
           </div>
 
           <div class="stats-grid">
@@ -616,11 +561,7 @@
           ></div>
 
           <div class="action-buttons" style="margin-top: 10px">
-            <button
-              class="btn btn-secondary"
-              id="btnRefreshScores"
-              style="width: 100%"
-            >
+            <button class="btn btn-secondary" id="btnRefreshScores" style="width: 100%">
               <span>🔄</span> Quét lại điểm số môn học
             </button>
           </div>
@@ -628,11 +569,7 @@
 
         <div class="card">
           <h4>📋 Chi tiết từng bài tập</h4>
-          <div
-            class="log-box"
-            id="scoresList"
-            style="max-height: 230px; overflow-y: auto"
-          >
+          <div class="log-box" id="scoresList" style="max-height: 230px; overflow-y: auto">
             <div class="log-entry info">
               Chưa tải dữ liệu. Mở trang môn học EDUX và bấm 'Quét lại'.
             </div>
@@ -647,31 +584,16 @@
 
           <div class="setting-item">
             <div>
-              <label class="setting-label"
-                >Thời gian delay giữa các bước (ms)</label
-              >
-              <span class="setting-desc"
-                >Tốc độ cao (khuyên dùng: 50ms - 100ms)</span
-              >
+              <label class="setting-label">Thời gian delay giữa các bước (ms)</label>
+              <span class="setting-desc">Tốc độ cao (khuyên dùng: 50ms - 100ms)</span>
             </div>
-            <input
-              type="number"
-              id="settingDelay"
-              value="100"
-              min="25"
-              max="3000"
-              step="25"
-            />
+            <input type="number" id="settingDelay" value="100" min="25" max="3000" step="25" />
           </div>
 
           <div class="setting-item">
             <div>
-              <label class="setting-label"
-                >Tự động chuyển slide (Next Page)</label
-              >
-              <span class="setting-desc"
-                >Tự click nút Trang sau khi giải xong slide</span
-              >
+              <label class="setting-label">Tự động chuyển slide (Next Page)</label>
+              <span class="setting-desc">Tự click nút Trang sau khi giải xong slide</span>
             </div>
             <input type="checkbox" id="settingAutoNext" checked />
           </div>
@@ -679,9 +601,7 @@
           <div class="setting-item">
             <div>
               <label class="setting-label">Tự động nộp bài khi làm xong</label>
-              <span class="setting-desc"
-                >Tự click 'Nộp bài' ở câu cuối bài tập</span
-              >
+              <span class="setting-desc">Tự click 'Nộp bài' ở câu cuối bài tập</span>
             </div>
             <input type="checkbox" id="settingAutoSubmit" checked />
           </div>
@@ -698,10 +618,7 @@
             </select>
           </div>
 
-          <div
-            class="setting-item"
-            style="flex-direction: column; align-items: stretch; gap: 6px"
-          >
+          <div class="setting-item" style="flex-direction: column; align-items: stretch; gap: 6px">
             <div style="display: flex; justify-content: space-between; align-items: center">
               <label class="setting-label">🤖 Cấu hình AI (API)</label>
               <button
@@ -722,12 +639,8 @@
               style="flex-direction: column; align-items: flex-start; gap: 6px"
             >
               <div>
-                <label class="setting-label"
-                  >Nhà cung cấp / Cấu hình mẫu (Preset)</label
-                >
-                <span class="setting-desc"
-                  >Chọn nhanh nền tảng AI hoặc tùy chỉnh</span
-                >
+                <label class="setting-label">Nhà cung cấp / Cấu hình mẫu (Preset)</label>
+                <span class="setting-desc">Chọn nhanh nền tảng AI hoặc tùy chỉnh</span>
               </div>
               <select id="settingApiProvider" style="width: 100%">
                 <option value="gemini">Google Gemini (Mặc định)</option>
@@ -736,26 +649,17 @@
                 <option value="openrouter">OpenRouter</option>
                 <option value="ollama">Ollama Local (Offline)</option>
                 <option value="inception">Inception (Mercury 2.5)</option>
-                <option value="custom">
-                  Tùy chỉnh (Custom Base URL / Proxy)
-                </option>
+                <option value="custom">Tùy chỉnh (Custom Base URL / Proxy)</option>
               </select>
             </div>
 
             <div
               class="setting-item"
               id="settingApiEndpointGroup"
-              style="
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 6px;
-                display: none;
-              "
+              style="flex-direction: column; align-items: flex-start; gap: 6px; display: none"
             >
               <div>
-                <label class="setting-label"
-                  >Nguồn API (Base URL / Endpoint)</label
-                >
+                <label class="setting-label">Nguồn API (Base URL / Endpoint)</label>
                 <span class="setting-desc"
                   >Mặc định: http://localhost:20128/v1 (OpenAI-compatible)</span
                 >
@@ -774,9 +678,7 @@
             >
               <div>
                 <label class="setting-label">Mô hình AI (Model)</label>
-                <span class="setting-desc"
-                  >Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span
-                >
+                <span class="setting-desc">Chọn trong menu dropdown hoặc bấm 'Lấy DS'</span>
               </div>
               <div style="display: flex; gap: 6px; width: 100%">
                 <select id="settingModelSelect" style="flex: 1; min-width: 0">
@@ -786,21 +688,13 @@
                   type="button"
                   class="btn btn-secondary"
                   id="btnFetchModels"
-                  style="
-                    width: auto;
-                    white-space: nowrap;
-                    padding: 0 10px;
-                    font-size: 11px;
-                  "
+                  style="width: auto; white-space: nowrap; padding: 0 10px; font-size: 11px"
                   title="Lấy danh sách model từ API server (OpenAI-compatible /models)"
                 >
                   <span>🔄</span> Lấy DS
                 </button>
               </div>
-              <div
-                id="customModelGroup"
-                style="width: 100%; display: none; margin-top: 4px"
-              >
+              <div id="customModelGroup" style="width: 100%; display: none; margin-top: 4px">
                 <input
                   type="text"
                   id="settingModelCustom"
@@ -808,10 +702,7 @@
                   style="width: 100%"
                 />
               </div>
-              <span
-                id="fetchModelsStatus"
-                style="font-size: 10px; display: none"
-              ></span>
+              <span id="fetchModelsStatus" style="font-size: 10px; display: none"></span>
             </div>
 
             <div class="setting-item" id="settingReasoningGroup" style="display: none">
@@ -829,8 +720,7 @@
               <div>
                 <label class="setting-label">Khóa API (API Key)</label>
                 <span class="setting-desc"
-                  >Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu
-                  dùng local</span
+                  >Google (AIza...), OpenAI/DeepSeek (sk-...), hoặc để trống nếu dùng local</span
                 >
               </div>
               <input
@@ -868,8 +758,8 @@
             <div>
               <label class="setting-label">Laya server (local)</label>
               <span class="setting-desc"
-                >Chạy <code>pip install "laya[serve]"</code> rồi
-                <code>laya-serve</code>. Key chỉ cần nếu đặt LAYA_API_KEY.</span
+                >Chạy <code>pip install "laya[serve]"</code> rồi <code>laya-serve</code>. Key chỉ
+                cần nếu đặt LAYA_API_KEY.</span
               >
             </div>
             <div style="display: flex; gap: 6px; width: 100%">
@@ -883,12 +773,7 @@
                 type="button"
                 class="btn btn-secondary"
                 id="btnTestLaya"
-                style="
-                  width: auto;
-                  white-space: nowrap;
-                  padding: 0 10px;
-                  font-size: 11px;
-                "
+                style="width: auto; white-space: nowrap; padding: 0 10px; font-size: 11px"
                 title="Kiểm tra kết nối tới laya-serve (/health)"
               >
                 <span>🔌</span> Kiểm tra
@@ -900,15 +785,10 @@
               placeholder="LAYA_API_KEY (để trống nếu không đặt)"
               style="width: 100%"
             />
-            <span
-              id="layaStatus"
-              style="font-size: 10px; display: none"
-            ></span>
+            <span id="layaStatus" style="font-size: 10px; display: none"></span>
           </div>
 
-          <button class="btn btn-primary" id="btnSaveSettings">
-            <span>💾</span> Lưu cài đặt
-          </button>
+          <button class="btn btn-primary" id="btnSaveSettings"><span>💾</span> Lưu cài đặt</button>
         </div>
 
         <div class="card" id="updateCard">
@@ -916,12 +796,8 @@
 
           <div class="setting-item">
             <div>
-              <label class="setting-label"
-                >Phiên bản <span id="currentVersion"></span
-              ></label>
-              <span class="setting-desc" id="updateStatusText"
-                >Chưa kiểm tra bản mới</span
-              >
+              <label class="setting-label">Phiên bản <span id="currentVersion"></span></label>
+              <span class="setting-desc" id="updateStatusText">Chưa kiểm tra bản mới</span>
             </div>
             <button
               type="button"
@@ -937,19 +813,16 @@
             <label class="setting-label">Cập nhật mà vẫn giữ cấu hình AI</label>
             <ol>
               <li>
-                Mở thư mục đã cài extension, chạy <code>update.bat</code> — tự
-                tải & chép đè bản mới.<br />Hoặc: bấm <b>⬇️ Tải zip</b> → giải
-                nén <b>đè lên thư mục cũ</b>.
+                Mở thư mục đã cài extension, chạy <code>update.bat</code> — tự tải & chép đè bản
+                mới.<br />Hoặc: bấm <b>⬇️ Tải zip</b> → giải nén <b>đè lên thư mục cũ</b>.
               </li>
               <li>
-                Mở lại popup → bấm <b>🔄 Áp dụng</b> (hoặc ↻ Reload trong trang
-                quản lý extension).
+                Mở lại popup → bấm <b>🔄 Áp dụng</b> (hoặc ↻ Reload trong trang quản lý extension).
               </li>
             </ol>
             <span class="update-warn"
-              >⚠️ Đừng bấm <b>Remove/Xóa</b> extension hay cài sang thư mục
-              khác — trình duyệt sẽ xóa sạch cấu hình. Nếu buộc phải làm vậy,
-              hãy <b>📤 Xuất file</b> sao lưu trước.</span
+              >⚠️ Đừng bấm <b>Remove/Xóa</b> extension hay cài sang thư mục khác — trình duyệt sẽ
+              xóa sạch cấu hình. Nếu buộc phải làm vậy, hãy <b>📤 Xuất file</b> sao lưu trước.</span
             >
             <div style="display: flex; gap: 6px">
               <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadUpdate">
@@ -968,9 +841,8 @@
             <div>
               <label class="setting-label">💾 Sao lưu cấu hình</label>
               <span class="setting-desc"
-                >Cấu hình AI, API key & cài đặt ra file .json — dùng khi cài
-                lại, đổi trình duyệt hoặc đổi máy. File chứa API key, đừng chia
-                sẻ.</span
+                >Cấu hình AI, API key & cài đặt ra file .json — dùng khi cài lại, đổi trình duyệt
+                hoặc đổi máy. File chứa API key, đừng chia sẻ.</span
               >
             </div>
             <div style="display: flex; gap: 6px">
@@ -980,12 +852,7 @@
               <button type="button" class="btn btn-secondary btn-sm" id="btnImportSettings">
                 📥 Khôi phục
               </button>
-              <input
-                type="file"
-                id="importSettingsFile"
-                accept=".json,application/json"
-                hidden
-              />
+              <input type="file" id="importSettingsFile" accept=".json,application/json" hidden />
             </div>
             <span id="backupStatus" style="font-size: 10px; display: none"></span>
           </div>

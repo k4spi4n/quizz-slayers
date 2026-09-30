@@ -30,7 +30,7 @@
               return originalDateNow() + (window.__EDUX_SERVER_DRIFT__ || 0);
             };
             console.log(
-              `[EDUX Slayers Interceptor] ⏱️ Đã bù trừ lệch giờ ${Math.round(drift / 1000)}s so với server để chống lỗi 'Request expired'.`
+              `[EDUX Slayers Interceptor] ⏱️ Đã bù trừ lệch giờ ${Math.round(drift / 1000)}s so với server để chống lỗi 'Request expired'.`,
             );
           }
         }
@@ -51,9 +51,9 @@
           type,
           url: sourceUrl,
           payload: data,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         },
-        '*'
+        '*',
       );
       console.log(`[EDUX Slayers Interceptor] 📡 Phát sự kiện ${type} từ:`, sourceUrl);
     } catch (e) {
@@ -114,7 +114,10 @@
     }
 
     // 4. Chứa total_questions > 0 hoặc title bài kiểm tra
-    if ((d.total_questions > 0 || data.total_questions > 0) && (d.title || data.title || d.exam_data)) {
+    if (
+      (d.total_questions > 0 || data.total_questions > 0) &&
+      (d.title || data.title || d.exam_data)
+    ) {
       return true;
     }
 

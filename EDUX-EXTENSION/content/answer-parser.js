@@ -176,13 +176,7 @@
           item.stt ??
           item.q;
         const ans =
-          item.dap_an ??
-          item.dapAn ??
-          item.answer ??
-          item.ans ??
-          item.tra_loi ??
-          item.da ??
-          item.a;
+          item.dap_an ?? item.dapAn ?? item.answer ?? item.ans ?? item.tra_loi ?? item.da ?? item.a;
         if (idx == null || ans == null) return;
         const idxInt = parseInt(idx, 10);
         if (isNaN(idxInt)) return;
@@ -229,12 +223,16 @@
     }
 
     for (const chunk of chunks) {
-      const qMatch = chunk.match(/["']?(?:so_cau|soCau|cau|cau_so|cau_hoi|question|id|stt|q)["']?\s*:\s*(\d+)/i);
+      const qMatch = chunk.match(
+        /["']?(?:so_cau|soCau|cau|cau_so|cau_hoi|question|id|stt|q)["']?\s*:\s*(\d+)/i,
+      );
       if (!qMatch) continue;
       const qNum = parseInt(qMatch[1], 10);
       if (!qNum) continue;
 
-      let ansMatch = chunk.match(/["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*)$/i);
+      let ansMatch = chunk.match(
+        /["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*)$/i,
+      );
       if (ansMatch) {
         let rawAns = ansMatch[1].trim();
         if (rawAns.endsWith(',')) rawAns = rawAns.slice(0, -1).trim();
@@ -246,7 +244,10 @@
             rawAns = rawAns.slice(1, -1).trim();
           }
         } else {
-          if ((rawAns.startsWith('"') && rawAns.endsWith('"')) || (rawAns.startsWith("'") && rawAns.endsWith("'"))) {
+          if (
+            (rawAns.startsWith('"') && rawAns.endsWith('"')) ||
+            (rawAns.startsWith("'") && rawAns.endsWith("'"))
+          ) {
             rawAns = rawAns.slice(1, -1);
           } else if (rawAns.startsWith('"')) {
             rawAns = rawAns.replace(/^"/, '').replace(/"\s*$/, '');
@@ -255,11 +256,14 @@
         answers[qNum] = rawAns.trim();
       } else {
         const ansBeforeMatch = chunk.match(
-          /["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*?)(?:,\s*["']?(?:so_cau|soCau|cau|question|id)\b)/i
+          /["']?(?:dap_an|dapAn|answer|ans|tra_loi|da|a)["']?\s*:\s*([\s\S]*?)(?:,\s*["']?(?:so_cau|soCau|cau|question|id)\b)/i,
         );
         if (ansBeforeMatch) {
           let rawAns = ansBeforeMatch[1].trim();
-          if ((rawAns.startsWith('"') && rawAns.endsWith('"')) || (rawAns.startsWith("'") && rawAns.endsWith("'"))) {
+          if (
+            (rawAns.startsWith('"') && rawAns.endsWith('"')) ||
+            (rawAns.startsWith("'") && rawAns.endsWith("'"))
+          ) {
             rawAns = rawAns.slice(1, -1);
           }
           answers[qNum] = rawAns.trim();
@@ -286,7 +290,12 @@
             data = JSON.parse(data);
           } catch (e) {}
         }
-        if (typeof data === 'object' && data !== null && !Array.isArray(data) && 'answers' in data) {
+        if (
+          typeof data === 'object' &&
+          data !== null &&
+          !Array.isArray(data) &&
+          'answers' in data
+        ) {
           data = data.answers;
         }
         const parsed = normalizeAnswersPayload(data);
@@ -320,7 +329,8 @@
       let trimmed = chunk.trim();
       if (!trimmed) continue;
       if (trimmed.startsWith('[') && trimmed.length > 1) trimmed = trimmed.substring(1).trim();
-      if (trimmed.endsWith(']') && trimmed.length > 1) trimmed = trimmed.substring(0, trimmed.length - 1).trim();
+      if (trimmed.endsWith(']') && trimmed.length > 1)
+        trimmed = trimmed.substring(0, trimmed.length - 1).trim();
       if (trimmed.endsWith(',')) trimmed = trimmed.substring(0, trimmed.length - 1).trim();
       try {
         jsonItems.push(JSON.parse(trimmed));
@@ -353,6 +363,6 @@
     parseTrueFalseAnswers,
     normalizeAnswersPayload,
     extractFromObjectChunks,
-    loadAnswersFromInput
+    loadAnswersFromInput,
   };
 })();

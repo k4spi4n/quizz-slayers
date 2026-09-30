@@ -2,7 +2,12 @@
 // Lắng nghe sự kiện trình duyệt và định tuyến tin nhắn từ popup / content scripts tới từng module.
 import { DEFAULT_SETTINGS } from '../shared/storage.js';
 import { callAiService } from './ai-client.js';
-import { slideSystemPrompt, slideUserPrompt, EXAM_SYSTEM_PROMPT, parseSlideIndex } from './prompts.js';
+import {
+  slideSystemPrompt,
+  slideUserPrompt,
+  EXAM_SYSTEM_PROMPT,
+  parseSlideIndex,
+} from './prompts.js';
 import { layaHealth, layaSolveSlide } from './laya.js';
 import { checkForUpdate } from './updater.js';
 import { INJECTED_SCRIPT } from '../shared/content-scripts.js';
@@ -39,13 +44,14 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       .executeScript({
         target: { tabId },
         files: [INJECTED_SCRIPT],
-        world: 'MAIN'
+        world: 'MAIN',
       })
       .catch(() => {});
   }
 });
 
-const isValidSlide = (req) => !!req.question && Array.isArray(req.choices) && req.choices.length > 0;
+const isValidSlide = (req) =>
+  !!req.question && Array.isArray(req.choices) && req.choices.length > 0;
 const INVALID_SLIDE = { success: false, message: 'Dữ liệu câu hỏi hoặc lựa chọn không hợp lệ' };
 
 // action -> handler(req) trả về object phản hồi. Lỗi ném ra được đổi thành { success: false, message }.
@@ -69,14 +75,14 @@ const handlers = {
       prompt: slideUserPrompt(question, choices),
       systemPrompt: slideSystemPrompt(choices.length),
       temperature: 0,
-      purpose: 'slide'
+      purpose: 'slide',
     });
 
     const index = parseSlideIndex(rawResult, choices);
     if (index < 0) {
       return {
         success: false,
-        message: 'Không phân tích được chỉ số đáp án từ kết quả AI: ' + rawResult.substring(0, 100)
+        message: 'Không phân tích được chỉ số đáp án từ kết quả AI: ' + rawResult.substring(0, 100),
       };
     }
     return { success: true, index, answerText: choices[index], rawResult };
@@ -87,10 +93,10 @@ const handlers = {
       prompt: req.promptText,
       systemPrompt: EXAM_SYSTEM_PROMPT,
       temperature: 0,
-      purpose: 'exam'
+      purpose: 'exam',
     });
     return { success: true, answersText };
-  }
+  },
 };
 
 chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {

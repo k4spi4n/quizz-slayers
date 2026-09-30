@@ -1,9 +1,9 @@
 // Giao tiếp với tab EDUX: tìm tab, gửi lệnh tới content script (tự nạp lại script nếu chưa có)
-import { CONTENT_SCRIPTS, INJECTED_SCRIPT } from "../shared/content-scripts.js";
+import { CONTENT_SCRIPTS, INJECTED_SCRIPT } from '../shared/content-scripts.js';
 
-const CONTENT_CSS = "content/content.css";
+const CONTENT_CSS = 'content/content.css';
 
-export const isEduxUrl = (url) => !!url && (url.includes("cmcu.edu.vn") || url.includes("edux"));
+export const isEduxUrl = (url) => !!url && (url.includes('cmcu.edu.vn') || url.includes('edux'));
 
 export async function getActiveTab() {
   const [tab] = await chrome.tabs.query({
@@ -25,7 +25,7 @@ export async function sendTabMessage(tabId, message) {
         .executeScript({
           target: { tabId },
           files: [INJECTED_SCRIPT],
-          world: "MAIN",
+          world: 'MAIN',
         })
         .catch(() => {});
 
@@ -48,6 +48,6 @@ export async function sendTabMessage(tabId, message) {
 // Đảm bảo network interceptor luôn hoạt động trong MAIN world
 export function ensureInterceptor(tabId) {
   chrome.scripting
-    .executeScript({ target: { tabId }, files: [INJECTED_SCRIPT], world: "MAIN" })
+    .executeScript({ target: { tabId }, files: [INJECTED_SCRIPT], world: 'MAIN' })
     .catch(() => {});
 }

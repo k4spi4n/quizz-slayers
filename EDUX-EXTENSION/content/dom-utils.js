@@ -45,7 +45,11 @@
 
       // Check standalone classes only (classList.contains does not match disabled:cursor-not-allowed)
       const classList = el.classList;
-      if (classList && classList.contains('cursor-not-allowed') && classList.contains('pointer-events-none')) {
+      if (
+        classList &&
+        classList.contains('cursor-not-allowed') &&
+        classList.contains('pointer-events-none')
+      ) {
         return false;
       }
 
@@ -78,15 +82,33 @@
         clientX,
         clientY,
         screenX: (window.screenX || 0) + clientX,
-        screenY: (window.screenY || 0) + clientY
+        screenY: (window.screenY || 0) + clientY,
       };
 
       el.dispatchEvent(new PointerEvent('pointerover', baseOpts));
       el.dispatchEvent(new MouseEvent('mouseover', baseOpts));
-      el.dispatchEvent(new PointerEvent('pointerdown', { ...baseOpts, button: 0, buttons: 1, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+      el.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          ...baseOpts,
+          button: 0,
+          buttons: 1,
+          pointerId: 1,
+          pointerType: 'mouse',
+          isPrimary: true,
+        }),
+      );
       el.dispatchEvent(new MouseEvent('mousedown', { ...baseOpts, button: 0, buttons: 1 }));
       if (typeof el.focus === 'function') el.focus();
-      el.dispatchEvent(new PointerEvent('pointerup', { ...baseOpts, button: 0, buttons: 0, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
+      el.dispatchEvent(
+        new PointerEvent('pointerup', {
+          ...baseOpts,
+          button: 0,
+          buttons: 0,
+          pointerId: 1,
+          pointerType: 'mouse',
+          isPrimary: true,
+        }),
+      );
       el.dispatchEvent(new MouseEvent('mouseup', { ...baseOpts, button: 0, buttons: 0 }));
 
       if (typeof el.click === 'function') {
@@ -119,7 +141,7 @@
       "div[data-slot='dialog-content'][data-state='open']",
       "div[data-slot='dialog-content']",
       "div[role='dialog']",
-      "[aria-modal='true']"
+      "[aria-modal='true']",
     ];
     for (const sel of selectors) {
       try {
@@ -184,6 +206,6 @@
     safeIsEnabled,
     safeClick,
     getActiveDialog,
-    waitForHidden
+    waitForHidden,
   };
 })();

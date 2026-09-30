@@ -10,7 +10,7 @@ const test = base.extend({
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       headless: true,
-      args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`]
+      args: [`--disable-extensions-except=${EXT_DIR}`, `--load-extension=${EXT_DIR}`],
     });
     await use(context);
     await context.close();
@@ -35,13 +35,13 @@ const test = base.extend({
       return page;
     });
     expect(errors, 'popup must not log errors').toEqual([]);
-  }
+  },
 });
 
 const storage = {
   get: (page, keys) => page.evaluate((k) => chrome.storage.local.get(k), keys),
   set: (page, items) => page.evaluate((i) => chrome.storage.local.set(i), items),
-  clear: (page) => page.evaluate(() => chrome.storage.local.clear())
+  clear: (page) => page.evaluate(() => chrome.storage.local.clear()),
 };
 
 test('service worker boots with the manifest version', async ({ worker }) => {
@@ -82,24 +82,47 @@ test('AI profile saved in the editor survives a reload', async ({ openPopup }) =
 test('legacy single-provider settings are migrated to a profile', async ({ openPopup }) => {
   const page = await openPopup();
   await storage.clear(page);
-  await storage.set(page, { apiProvider: 'deepseek', apiKey: 'sk-old', apiModel: 'deepseek-chat', apiEndpoint: '' });
+  await storage.set(page, {
+    apiProvider: 'deepseek',
+    apiKey: 'sk-old',
+    apiModel: 'deepseek-chat',
+    apiEndpoint: '',
+  });
   await page.reload();
   await expect(page.locator('#aiProfileList .ai-profile-row')).toHaveCount(1);
 
   const s = await storage.get(page, null);
-  expect(s.aiProfiles).toEqual([{ id: 'p1', provider: 'deepseek', endpoint: '', apiKey: 'sk-old', model: 'deepseek-chat' }]);
+  expect(s.aiProfiles).toEqual([
+    { id: 'p1', provider: 'deepseek', endpoint: '', apiKey: 'sk-old', model: 'deepseek-chat' },
+  ]);
   expect(s.aiAssign).toEqual({ slide: 'p1', exam: 'p1' });
   expect(s.apiKey).toBeUndefined();
 });
 
 test('settings backup exports and restores', async ({ openPopup }, testInfo) => {
   const page = await openPopup();
-  const profiles = [{ id: 'pX', provider: 'gemini', endpoint: '', apiKey: 'AIza-backup', model: 'gemini-2.0-flash' }];
-  await storage.set(page, { aiProfiles: profiles, aiAssign: { slide: 'pX', exam: 'pX' }, delayMs: 250, savedAnswers: 'tmp' });
+  const profiles = [
+    {
+      id: 'pX',
+      provider: 'gemini',
+      endpoint: '',
+      apiKey: 'AIza-backup',
+      model: 'gemini-2.0-flash',
+    },
+  ];
+  await storage.set(page, {
+    aiProfiles: profiles,
+    aiAssign: { slide: 'pX', exam: 'pX' },
+    delayMs: 250,
+    savedAnswers: 'tmp',
+  });
   await page.reload();
   await page.click('.tab-btn[data-tab="tab-settings"]');
 
-  const [download] = await Promise.all([page.waitForEvent('download'), page.click('#btnExportSettings')]);
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#btnExportSettings'),
+  ]);
   const file = testInfo.outputPath('backup.json');
   await download.saveAs(file);
   const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -111,12 +134,18 @@ test('settings backup exports and restores', async ({ openPopup }, testInfo) => 
   await page.setInputFiles('#importSettingsFile', file);
   await page.waitForEvent('load');
   const restored = await storage.get(page, ['aiProfiles', 'aiAssign', 'delayMs']);
-  expect(restored).toEqual({ aiProfiles: profiles, aiAssign: { slide: 'pX', exam: 'pX' }, delayMs: 250 });
+  expect(restored).toEqual({
+    aiProfiles: profiles,
+    aiAssign: { slide: 'pX', exam: 'pX' },
+    delayMs: 250,
+  });
 });
 
 test('update check answers from the service worker', async ({ openPopup }) => {
   const page = await openPopup();
-  const res = await page.evaluate(() => chrome.runtime.sendMessage({ action: 'CHECK_UPDATE', force: true }));
+  const res = await page.evaluate(() =>
+    chrome.runtime.sendMessage({ action: 'CHECK_UPDATE', force: true }),
+  );
   // Network may be offline in CI: accept a clean failure, but the handler must answer
   expect(typeof res.success).toBe('boolean');
   if (res.success) expect(res.latest).toMatch(/^\d+(\.\d+)*$/);
@@ -125,8 +154,13 @@ test('update check answers from the service worker', async ({ openPopup }) => {
 test('exercise AI requests are answered by the service worker', async ({ openPopup }) => {
   const page = await openPopup();
   await storage.set(page, { aiProfiles: [], aiAssign: {} });
-  const res = await page.evaluate(() => chrome.runtime.sendMessage({ action: 'AI_SOLVE_EXAM', promptText: 'x' }));
-  expect(res).toEqual({ success: false, message: 'Chưa có cấu hình AI. Vào tab Cài đặt → Cấu hình AI để thêm.' });
+  const res = await page.evaluate(() =>
+    chrome.runtime.sendMessage({ action: 'AI_SOLVE_EXAM', promptText: 'x' }),
+  );
+  expect(res).toEqual({
+    success: false,
+    message: 'Chưa có cấu hình AI. Vào tab Cài đặt → Cấu hình AI để thêm.',
+  });
 });
 
 // A minimal exam page served at an EDUX URL, so the manifest's content scripts are injected into it
@@ -146,7 +180,7 @@ const EXAM_PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Bài 
 
 test('content scripts load on EDUX pages and extract questions', async ({ context, openPopup }) => {
   await context.route('https://edux.cmcu.edu.vn/**', (route) =>
-    route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: EXAM_PAGE })
+    route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: EXAM_PAGE }),
   );
   const edux = await context.newPage();
   const pageErrors = [];
@@ -154,14 +188,18 @@ test('content scripts load on EDUX pages and extract questions', async ({ contex
   await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
 
   // MAIN-world network interceptor (content/injected.js)
-  await expect.poll(() => edux.evaluate(() => window.__EDUX_SLAYERS_INTERCEPTOR_ACTIVE__)).toBe(true);
+  await expect
+    .poll(() => edux.evaluate(() => window.__EDUX_SLAYERS_INTERCEPTOR_ACTIVE__))
+    .toBe(true);
 
   // Isolated-world scripts: content.js answers only if every script before it loaded
   const popup = await openPopup();
   const extractFromEduxTab = () =>
     popup.evaluate(async () => {
       const [tab] = await chrome.tabs.query({ url: 'https://edux.cmcu.edu.vn/*' });
-      return chrome.tabs.sendMessage(tab.id, { action: 'EXTRACT_QUESTIONS' }).catch((e) => ({ error: e.message }));
+      return chrome.tabs
+        .sendMessage(tab.id, { action: 'EXTRACT_QUESTIONS' })
+        .catch((e) => ({ error: e.message }));
     });
   await expect.poll(async () => typeof (await extractFromEduxTab()).promptText).toBe('string');
 
@@ -186,10 +224,17 @@ async function startFakeAi(answer) {
     });
   });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
-  return { requests, endpoint: `http://127.0.0.1:${server.address().port}/v1`, close: () => server.close() };
+  return {
+    requests,
+    endpoint: `http://127.0.0.1:${server.address().port}/v1`,
+    close: () => server.close(),
+  };
 }
 
-test('exercise API mode: extract → AI (via service worker) → answers shown and filled', async ({ context, openPopup }) => {
+test('exercise API mode: extract → AI (via service worker) → answers shown and filled', async ({
+  context,
+  openPopup,
+}) => {
   const answer = '[{"so_cau": 1, "dap_an": "A"}, {"so_cau": 2, "dap_an": "100"}]';
   const ai = await startFakeAi(answer);
   try {
@@ -197,17 +242,22 @@ test('exercise API mode: extract → AI (via service worker) → answers shown a
       route.fulfill({
         status: 200,
         contentType: 'text/html; charset=utf-8',
-        body: EXAM_PAGE.replace('<body>', '<body><div role="dialog" data-state="open">').replace('</body>', '</div></body>')
-      })
+        body: EXAM_PAGE.replace('<body>', '<body><div role="dialog" data-state="open">').replace(
+          '</body>',
+          '</div></body>',
+        ),
+      }),
     );
     const edux = await context.newPage();
     await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
 
     const popup = await openPopup();
     await storage.set(popup, {
-      aiProfiles: [{ id: 'local', provider: 'custom', endpoint: ai.endpoint, apiKey: '', model: 'fake-model' }],
+      aiProfiles: [
+        { id: 'local', provider: 'custom', endpoint: ai.endpoint, apiKey: '', model: 'fake-model' },
+      ],
       aiAssign: { slide: 'local', exam: 'local' },
-      autoSubmit: false
+      autoSubmit: false,
     });
     await popup.reload();
     await popup.click('.tab-btn[data-tab="tab-test"]');
