@@ -53,7 +53,7 @@ test('service worker boots with the manifest version', async ({ worker }) => {
 test('popup opens and every tab switches', async ({ openPopup }) => {
   const page = await openPopup();
   const manifest = JSON.parse(fs.readFileSync(`${EXT_DIR}/manifest.json`, 'utf8'));
-  await expect(page.locator('#appVersion')).toHaveText(`v${manifest.version} • Manifest V3`);
+  await expect(page.locator('#appVersion')).toHaveText(`v${manifest.version}`);
 
   for (const tab of ['tab-test', 'tab-scores', 'tab-settings', 'tab-slide']) {
     await page.click(`.tab-btn[data-tab="${tab}"]`);

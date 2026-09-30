@@ -9,7 +9,7 @@ const runningVersion = chrome.runtime.getManifest().version;
 const RELEASES_URL = 'https://github.com/k4spi4n/quizz-slayers/releases/latest';
 
 export function initUpdatePanel() {
-  if (UI.appVersion) UI.appVersion.textContent = `v${runningVersion} • Manifest V3`;
+  if (UI.appVersion) UI.appVersion.textContent = `v${runningVersion}`;
   if (UI.currentVersion) UI.currentVersion.textContent = `v${runningVersion}`;
 
   // Extension dạng unpacked đọc file trực tiếp từ ổ đĩa, nên manifest.json trên đĩa

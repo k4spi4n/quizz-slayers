@@ -2,7 +2,7 @@
 
 > Extension Chromium (Manifest V3) giải **Slide**, **Bài tập** và theo dõi **Điểm số** ngay trên EDUX — không cần Python, không cần lưu mật khẩu.
 
-![version](https://img.shields.io/badge/version-v2.5.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
+![version](https://img.shields.io/badge/version-v2.6.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
 
 > [!IMPORTANT]
 > **Extension (`EDUX-EXTENSION`) là trọng tâm phát triển duy nhất.** Các script Python/Playwright (`EDUX-SLIDE-BRUTEFORCE`, `EDUX-TEST-SOLVER`, `EDUX-SLIDE-AI`, `EDUX-LIVE-QUESTION`) đã **ngừng hỗ trợ** và được chuyển vào [`legacy/`](legacy/).
@@ -126,7 +126,7 @@ Mở bài tập EDUX (hoặc bấm **🚀 Mở bài** trong popup) → tab **Bà
 
 ```text
 EDUX-EXTENSION/          # Extension chính (duy nhất còn phát triển)
-├── manifest.json        # Manifest V3, v2.5.0
+├── manifest.json        # Manifest V3, v2.6.0
 ├── background/          # Service worker: client AI, Laya, kiểm tra bản mới
 ├── content/             # Content script: giải Slide, Bài tập, theo dõi điểm
 ├── popup/               # Giao diện popup, mỗi tab một module
