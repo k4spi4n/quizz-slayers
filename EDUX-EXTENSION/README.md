@@ -94,3 +94,66 @@ Bộ công cụ tự động hóa giải Slide bài giảng & Bài tập trên n
 ---
 
 *Lưu ý: Công cụ này được tạo ra cho mục đích nghiên cứu và học tập. Vui lòng sử dụng có trách nhiệm.*
+
+---
+
+## 🧩 Kiến trúc (cho người phát triển)
+
+Không có bước build: trình duyệt nạp thẳng thư mục này. Service worker và popup là **ES module**; content script là script thường (Manifest V3 chưa hỗ trợ module) chia sẻ qua `window.Edux*`.
+
+```text
+manifest.json
+shared/                  # ES module dùng chung cho background + popup
+├── providers.js         # ⭐ Bảng provider AI: endpoint, model, mức suy luận, resolveRequest()
+├── content-scripts.js   # Thứ tự nạp content script + đường dẫn injected.js
+├── storage.js           # Mặc định cài đặt, danh sách khóa sao lưu
+└── version.js           # compareVersions
+background/              # Service worker (module)
+├── index.js             # Lắng nghe sự kiện + bảng định tuyến action → handler
+├── ai-client.js         # Client AI duy nhất (Gemini + chuẩn OpenAI)
+├── prompts.js           # Prompt Slide / Bài tập, đọc chỉ số đáp án
+├── laya.js              # Laya local
+└── updater.js           # Kiểm tra bản mới trên GitHub Releases
+content/                 # Content script, nạp theo thứ tự trong manifest
+├── dom-utils.js         # window.EduxDOM — click/visible/logger
+├── answer-parser.js     # window.EduxAnswerParser — đọc đáp án AI trả về (thuần chuỗi)
+├── exam-dom.js          # window.EduxExamDOM — tìm dialog, nút, ô nhập của bài tập
+├── exam-prompt.js       # window.EduxExamPrompt — dựng prompt từ đề (thuần dữ liệu)
+├── exam-solver.js       # window.EduxTestSolver — bắt đề + điền bài
+├── slide-solver.js      # window.EduxSlideSolver
+├── score-tracker.js     # window.EduxScoreTracker
+├── content.js           # Nhận lệnh từ popup, gọi các solver
+└── injected.js          # Chạy trong MAIN world: bắt dữ liệu mạng, bù lệch giờ
+popup/                   # Popup (module) — mỗi tab một file
+├── main.js              # Điểm vào: nạp cài đặt, khởi tạo từng tab
+├── ui.js / state.js / edux-tab.js
+├── ai-profiles.js       # Cấu hình AI, chọn model, chuyển đổi cấu hình cũ
+└── slide-panel.js / exam-panel.js / scores-panel.js / settings-panel.js / update-panel.js
+update.bat / update.ps1  # Cập nhật tại chỗ (xem phần Cập nhật)
+```
+
+**Việc thường gặp:**
+
+- **Thêm provider AI:** thêm 1 mục vào `PROVIDERS` trong `shared/providers.js`. Provider theo chuẩn OpenAI không cần sửa gì thêm; nhớ thêm `<option>` vào `#settingApiProvider` trong `popup/popup.html`.
+- **Thêm lệnh background:** thêm handler vào bảng `handlers` trong `background/index.js`; handler trả về object phản hồi, lỗi ném ra tự thành `{ success: false, message }`.
+- **Thêm content script:** thêm vào **cả** `manifest.json` và `shared/content-scripts.js` (test kiểm tra hai nơi khớp nhau).
+- **Khóa `chrome.storage`:** không đổi tên khóa đã có — người dùng cập nhật sẽ mất cấu hình.
+- **Không đổi tên thư mục `EDUX-EXTENSION/`:** extension cài từ mã nguồn lấy ID theo đường dẫn thư mục, đổi tên = mất cấu hình.
+
+## 🧪 Phát triển
+
+Công cụ dev nằm ở thư mục gốc repo (không nằm trong extension, không có trong file zip):
+
+```bash
+npm install                      # lần đầu
+npx playwright install chromium  # lần đầu, cho smoke test
+npm run lint                     # ESLint — bắt tham chiếu sai khi di chuyển code
+npm test                         # Unit test + golden test (request từng provider, parse đáp án)
+npm run smoke                    # Nạp extension thật trong Chromium: popup, cấu hình, sao lưu, bắt đề, giải bằng API
+npm run format                   # Prettier
+npm run package                  # Tạo edux-extension.zip (kèm files.txt) từ commit hiện tại
+```
+
+Golden test lưu kết quả mẫu trong `tests/*.snapshot`. Chỉ cập nhật khi **cố ý** đổi hành vi: `node --test --test-update-snapshots "tests/**/*.test.js"`.
+
+`update.ps1 -ZipPath <file.zip>` cài từ zip có sẵn thay vì tải GitHub — tiện để thử một bản build trước khi phát hành.

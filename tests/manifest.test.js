@@ -42,3 +42,11 @@ test('prompt payload falls back to the page title', () => {
   assert.equal(exam.buildCompactPromptPayload({ data: { exam_data: {} } }).title, 'Bài kiểm tra số 3 - EDUX');
   assert.equal(exam.buildCompactPromptPayload({ data: { title: 'Từ API', exam_data: {} } }).title, 'Từ API');
 });
+
+test('provider dropdown in popup.html matches shared/providers.js', async () => {
+  const { PROVIDERS } = await import('../EDUX-EXTENSION/shared/providers.js');
+  const html = fs.readFileSync(path.join(EXT_DIR, 'popup/popup.html'), 'utf8');
+  const select = html.match(/<select id="settingApiProvider"[\s\S]*?<\/select>/)[0];
+  const options = [...select.matchAll(/<option value="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(options.sort(), Object.keys(PROVIDERS).sort());
+});

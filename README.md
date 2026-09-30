@@ -126,13 +126,17 @@ Mở bài tập EDUX (hoặc bấm **🚀 Mở bài** trong popup) → tab **Bà
 ```text
 EDUX-EXTENSION/          # Extension chính (duy nhất còn phát triển)
 ├── manifest.json        # Manifest V3, v2.5.0
-├── popup/               # Giao diện popup (Slide / Bài tập / Điểm số / Cài đặt)
-├── scripts/             # slide-solver, test-solver, score-tracker, dom-utils
-├── content.js / injected.js / background.js
+├── background/          # Service worker: client AI, Laya, kiểm tra bản mới
+├── content/             # Content script: giải Slide, Bài tập, theo dõi điểm
+├── popup/               # Giao diện popup, mỗi tab một module
+├── shared/              # Bảng provider AI và hằng số dùng chung
 ├── update.bat / update.ps1  # Cập nhật tại chỗ, giữ nguyên cấu hình
+tests/                   # Unit test, golden test, smoke test (Playwright)
+tools/                   # Đóng gói bản phát hành
 legacy/                  # [ngừng hỗ trợ] script Python/Playwright cũ — xem legacy/README.md
-edux-extension.zip       # Bản đóng gói sẵn
 ```
+
+Kiến trúc chi tiết và lệnh phát triển (`npm test`, `npm run smoke`...): xem [EDUX-EXTENSION/README.md](EDUX-EXTENSION/README.md#-kiến-trúc-cho-người-phát-triển).
 
 ---
 
