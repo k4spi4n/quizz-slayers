@@ -926,3 +926,14 @@ select:focus {
   font-size: 10px;
   color: #fbbf24;
 }
+
+/* Thời gian chờ mỗi câu khi điền bài tập */
+.exam-delay-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.exam-delay-row input[type='number'] {
+  width: 72px;
+}

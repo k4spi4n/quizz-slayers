@@ -19,6 +19,7 @@ const settings = await chrome.storage.local.get([
   'delayMs',
   'autoNext',
   'autoSubmit',
+  'examQuestionDelay',
   'useAiSlide',
   'slideMethod',
   'layaEndpoint',

@@ -231,41 +231,49 @@ async function startFakeAi(answer) {
   };
 }
 
+// Fake EDUX exam dialog + fake AI + a profile pointing at it; returns with the Bài tập tab open
+async function setupExamApi({ context, openPopup, answer, settings = {} }) {
+  const ai = await startFakeAi(answer);
+  await context.route('https://edux.cmcu.edu.vn/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+      body: EXAM_PAGE.replace('<body>', '<body><div role="dialog" data-state="open">').replace(
+        '</body>',
+        '</div></body>',
+      ),
+    }),
+  );
+  const edux = await context.newPage();
+  await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
+
+  const popup = await openPopup();
+  await storage.set(popup, {
+    aiProfiles: [
+      { id: 'local', provider: 'custom', endpoint: ai.endpoint, apiKey: '', model: 'fake-model' },
+    ],
+    aiAssign: { slide: 'local', exam: 'local' },
+    autoSubmit: false,
+    ...settings,
+  });
+  await popup.reload();
+  await popup.click('.tab-btn[data-tab="tab-test"]');
+  return { ai, edux, popup };
+}
+
+const EXAM_ANSWER = '[{"so_cau": 1, "dap_an": "A"}, {"so_cau": 2, "dap_an": "100"}]';
+
 test('exercise API mode: extract → AI (via service worker) → answers shown and filled', async ({
   context,
   openPopup,
 }) => {
-  const answer = '[{"so_cau": 1, "dap_an": "A"}, {"so_cau": 2, "dap_an": "100"}]';
-  const ai = await startFakeAi(answer);
+  const { ai, edux, popup } = await setupExamApi({ context, openPopup, answer: EXAM_ANSWER });
   try {
-    await context.route('https://edux.cmcu.edu.vn/**', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'text/html; charset=utf-8',
-        body: EXAM_PAGE.replace('<body>', '<body><div role="dialog" data-state="open">').replace(
-          '</body>',
-          '</div></body>',
-        ),
-      }),
-    );
-    const edux = await context.newPage();
-    await edux.goto('https://edux.cmcu.edu.vn/smoke-exam');
-
-    const popup = await openPopup();
-    await storage.set(popup, {
-      aiProfiles: [
-        { id: 'local', provider: 'custom', endpoint: ai.endpoint, apiKey: '', model: 'fake-model' },
-      ],
-      aiAssign: { slide: 'local', exam: 'local' },
-      autoSubmit: false,
-    });
-    await popup.reload();
-    await popup.click('.tab-btn[data-tab="tab-test"]');
     await popup.click('#btnSolveAI');
 
     await expect(popup.locator('#testLog')).toContainText('AI đã giải xong', { timeout: 20_000 });
-    await expect(popup.locator('#autoAnswersBox')).toHaveValue(answer);
-    expect((await storage.get(popup, 'savedAnswers')).savedAnswers).toBe(answer);
+    await expect(popup.locator('#autoAnswersBox')).toHaveValue(EXAM_ANSWER);
+    expect((await storage.get(popup, 'savedAnswers')).savedAnswers).toBe(EXAM_ANSWER);
 
     expect(ai.requests).toHaveLength(1);
     const { url, body } = ai.requests[0];
@@ -277,7 +285,63 @@ test('exercise API mode: extract → AI (via service worker) → answers shown a
     // Fill step reached the page and wrote an answer. (Which answer lands where depends on EDUX's
     // one-question-per-view dialog, which this static page doesn't reproduce; v2.5.0 behaves the same.)
     await expect(edux.locator('input[type="text"]')).not.toHaveValue('', { timeout: 15_000 });
+    // No delay configured -> no waiting
+    await expect(popup.locator('#testLog')).not.toContainText('⏳');
   } finally {
     ai.close();
   }
+});
+
+test('exercise auto-fill waits the configured time on each question', async ({
+  context,
+  openPopup,
+}) => {
+  const { ai, popup } = await setupExamApi({
+    context,
+    openPopup,
+    answer: EXAM_ANSWER,
+    settings: { examQuestionDelay: { mode: 'fixed', fixed: 1.5, min: 3, max: 8 } },
+  });
+  try {
+    const log = popup.locator('#testLog');
+    await popup.click('#btnSolveAI');
+
+    await expect(log).toContainText('(chờ 1.5s mỗi câu)', { timeout: 20_000 });
+    await expect(log).toContainText('⏳ Câu 1: chờ 1.5s', { timeout: 15_000 });
+    const waitStarted = Date.now();
+    await expect(log).toContainText('Hoàn tất', { timeout: 15_000 });
+    expect(Date.now() - waitStarted).toBeGreaterThanOrEqual(1200);
+  } finally {
+    ai.close();
+  }
+});
+
+test('per-question delay setting: fixed/random inputs, saved and restored', async ({
+  openPopup,
+}) => {
+  const page = await openPopup();
+  await page.click('.tab-btn[data-tab="tab-settings"]');
+
+  // Default: fixed 0 (no wait), random inputs hidden
+  await expect(page.locator('#settingExamDelayMode')).toHaveValue('fixed');
+  await expect(page.locator('#settingExamDelayFixed')).toHaveValue('0');
+  await expect(page.locator('#examDelayRandomGroup')).toBeHidden();
+
+  await page.selectOption('#settingExamDelayMode', 'random');
+  await expect(page.locator('#examDelayRandomGroup')).toBeVisible();
+  await expect(page.locator('#examDelayFixedGroup')).toBeHidden();
+  await page.fill('#settingExamDelayMin', '2.5');
+  await page.fill('#settingExamDelayMax', '6');
+  await page.click('#btnSaveSettings');
+
+  await expect
+    .poll(async () => (await storage.get(page, 'examQuestionDelay')).examQuestionDelay)
+    .toEqual({ mode: 'random', fixed: 0, min: 2.5, max: 6 });
+
+  await page.reload();
+  await page.click('.tab-btn[data-tab="tab-settings"]');
+  await expect(page.locator('#settingExamDelayMode')).toHaveValue('random');
+  await expect(page.locator('#settingExamDelayMin')).toHaveValue('2.5');
+  await expect(page.locator('#settingExamDelayMax')).toHaveValue('6');
+  await expect(page.locator('#examDelayRandomGroup')).toBeVisible();
 });

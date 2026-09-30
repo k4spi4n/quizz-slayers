@@ -1,8 +1,33 @@
-// Tab Cài đặt: delay, tự chuyển slide, tự nộp bài, Laya server, nút Lưu cài đặt
+// Tab Cài đặt: delay, tự chuyển slide, tự nộp bài, chờ mỗi câu bài tập, Laya server, nút Lưu cài đặt
 import { UI, addLog } from './ui.js';
 import { state } from './state.js';
 import { getActiveTab, sendTabMessage } from './edux-tab.js';
 import { checkLayaHealth } from './slide-panel.js';
+
+// Chờ mỗi câu khi điền bài tập (giây). Mặc định không chờ, giữ nguyên hành vi cũ.
+const DEFAULT_EXAM_DELAY = { mode: 'fixed', fixed: 0, min: 3, max: 8 };
+
+function showExamDelayMode(mode) {
+  if (UI.examDelayFixedGroup)
+    UI.examDelayFixedGroup.style.display = mode === 'random' ? 'none' : 'flex';
+  if (UI.examDelayRandomGroup)
+    UI.examDelayRandomGroup.style.display = mode === 'random' ? 'flex' : 'none';
+}
+
+// Đọc thẳng từ form (giống "Tự động nộp bài") nên có hiệu lực ngay, chưa cần bấm Lưu.
+// exam-solver.js tự chặn giá trị âm / quá lớn và tự đổi chỗ nếu "từ" > "đến".
+export function getExamDelayConfig() {
+  const seconds = (el, fallback) => {
+    const v = parseFloat(el?.value);
+    return Number.isFinite(v) && v >= 0 ? v : fallback;
+  };
+  return {
+    mode: UI.settingExamDelayMode?.value === 'random' ? 'random' : 'fixed',
+    fixed: seconds(UI.settingExamDelayFixed, DEFAULT_EXAM_DELAY.fixed),
+    min: seconds(UI.settingExamDelayMin, DEFAULT_EXAM_DELAY.min),
+    max: seconds(UI.settingExamDelayMax, DEFAULT_EXAM_DELAY.max),
+  };
+}
 
 export function initSettingsPanel(settings) {
   UI.settingDelay.value = settings.delayMs !== undefined ? settings.delayMs : 100;
@@ -11,6 +36,18 @@ export function initSettingsPanel(settings) {
     UI.settingAutoSubmit.checked = settings.autoSubmit !== undefined ? settings.autoSubmit : true;
   if (UI.settingLayaEndpoint) UI.settingLayaEndpoint.value = settings.layaEndpoint || '';
   if (UI.settingLayaApiKey) UI.settingLayaApiKey.value = settings.layaApiKey || '';
+
+  const examDelay = { ...DEFAULT_EXAM_DELAY, ...(settings.examQuestionDelay || {}) };
+  if (UI.settingExamDelayMode) {
+    UI.settingExamDelayMode.value = examDelay.mode === 'random' ? 'random' : 'fixed';
+    UI.settingExamDelayMode.addEventListener('change', () =>
+      showExamDelayMode(UI.settingExamDelayMode.value),
+    );
+  }
+  if (UI.settingExamDelayFixed) UI.settingExamDelayFixed.value = examDelay.fixed;
+  if (UI.settingExamDelayMin) UI.settingExamDelayMin.value = examDelay.min;
+  if (UI.settingExamDelayMax) UI.settingExamDelayMax.value = examDelay.max;
+  showExamDelayMode(examDelay.mode);
 
   if (UI.btnTestLaya) {
     UI.btnTestLaya.addEventListener('click', async () => {
@@ -35,6 +72,7 @@ export function initSettingsPanel(settings) {
       delayMs: parseInt(UI.settingDelay.value, 10) || 100,
       autoNext: UI.settingAutoNext.checked,
       autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true,
+      examQuestionDelay: getExamDelayConfig(),
       slideMethod: state.currentSlideMethod,
       useAiSlide: state.currentSlideMethod === 'ai',
       useAi: state.currentSlideMethod === 'ai',

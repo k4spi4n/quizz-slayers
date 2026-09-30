@@ -2,6 +2,7 @@
 import { UI, addLog, setStatus, showTab } from './ui.js';
 import { getActiveTab, sendTabMessage } from './edux-tab.js';
 import { getAssignedProfile } from './ai-profiles.js';
+import { getExamDelayConfig } from './settings-panel.js';
 import { displayModel, isProfileReady } from '../shared/providers.js';
 
 export function updateExamInfoUI(data) {
@@ -446,6 +447,7 @@ export function initExamPanel(settings) {
           answersText: aiAnswers,
           options: {
             autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true,
+            questionDelay: getExamDelayConfig(),
           },
         });
 
@@ -615,6 +617,7 @@ export function initExamPanel(settings) {
           answersText: rawAnswers,
           options: {
             autoSubmit: UI.settingAutoSubmit ? UI.settingAutoSubmit.checked : true,
+            questionDelay: getExamDelayConfig(),
           },
         });
         if (res && res.success) {

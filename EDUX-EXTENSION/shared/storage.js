@@ -14,6 +14,7 @@ export const BACKUP_KEYS = [
   'delayMs',
   'autoNext',
   'autoSubmit',
+  'examQuestionDelay',
   'slideMethod',
   'useAiSlide',
   'useAi',

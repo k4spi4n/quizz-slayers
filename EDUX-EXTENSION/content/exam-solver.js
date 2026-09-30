@@ -315,8 +315,46 @@
     };
   }
 
+  // Thời gian chờ tối đa cho 1 câu (giây), chặn giá trị nhập nhầm quá lớn
+  const MAX_QUESTION_DELAY_S = 600;
+
+  /**
+   * Thời gian chờ (ms) trên mỗi câu khi tự điền, theo cài đặt (đơn vị giây):
+   * { mode: 'fixed', fixed } hoặc { mode: 'random', min, max } — ngẫu nhiên trong [min, max].
+   */
+  function questionDelayMs(config, random = Math.random) {
+    if (!config) return 0;
+    const seconds = (v) => Math.min(Math.max(Number(v) || 0, 0), MAX_QUESTION_DELAY_S);
+    if (config.mode === 'random') {
+      const lo = Math.min(seconds(config.min), seconds(config.max));
+      const hi = Math.max(seconds(config.min), seconds(config.max));
+      return Math.round((lo + random() * (hi - lo)) * 1000);
+    }
+    return Math.round(seconds(config.fixed) * 1000);
+  }
+
+  function describeQuestionDelay(config) {
+    if (!config) return '';
+    if (config.mode === 'random') {
+      const lo = questionDelayMs(config, () => 0) / 1000;
+      const hi = questionDelayMs(config, () => 1) / 1000;
+      return hi > 0 ? `ngẫu nhiên ${lo}–${hi}s mỗi câu` : '';
+    }
+    const ms = questionDelayMs(config);
+    return ms > 0 ? `${ms / 1000}s mỗi câu` : '';
+  }
+
+  // Chờ sau khi điền xong 1 câu, trước khi sang câu tiếp / nộp bài
+  async function waitOnQuestion(questionIndex, config) {
+    const ms = questionDelayMs(config);
+    if (ms <= 0) return;
+    logMessage(`⏳ Câu ${questionIndex}: chờ ${(ms / 1000).toFixed(1)}s...`, 'info');
+    await sleep(ms);
+  }
+
   /**
    * Bắt đầu điền đáp án bài tập
+   * options: { autoSubmit, questionDelay } — questionDelay xem questionDelayMs()
    */
   async function fillTestAnswers(rawText, options = {}) {
     const answers = loadAnswersFromInput(rawText);
@@ -328,7 +366,11 @@
       };
     }
 
-    logMessage(`🚀 Bắt đầu điền ${questionIndices.length} câu trả lời cho bài tập...`, 'info');
+    const delayNote = describeQuestionDelay(options.questionDelay);
+    logMessage(
+      `🚀 Bắt đầu điền ${questionIndices.length} câu trả lời cho bài tập${delayNote ? ` (chờ ${delayNote})` : ''}...`,
+      'info',
+    );
 
     // Chờ hoặc lấy dialog bài tập
     let dialog = getActiveExamDialog();
@@ -353,7 +395,7 @@
     if (dialog && safeIsVisible(dialog)) {
       result = await fillTestDialog(dialog, answers, options);
     } else {
-      result = fillTestFullPage(answers);
+      result = await fillTestFullPage(answers, options);
     }
 
     return result;
@@ -587,6 +629,7 @@
       }
 
       await sleep(250);
+      await waitOnQuestion(questionIndex, options.questionDelay);
 
       // Kiểm tra nút "Nộp bài" và "Câu tiếp"
       const submitBtn =
@@ -739,7 +782,7 @@
   /**
    * Fallback khi bài tập hiển thị cả trang (không phải modal)
    */
-  function fillTestFullPage(answers) {
+  async function fillTestFullPage(answers, options = {}) {
     let filledCount = 0;
     const questionLabels = Array.from(document.querySelectorAll('p, div, span, h3, h4')).filter(
       (el) => {
@@ -747,7 +790,7 @@
       },
     );
 
-    questionLabels.forEach((labelEl) => {
+    const fillLabel = (labelEl) => {
       const qNum = parseQuestionIndex(labelEl.textContent);
       if (qNum === null) return;
 
@@ -828,7 +871,19 @@
           break;
         }
       }
-    });
+    };
+
+    for (let i = 0; i < questionLabels.length; i++) {
+      const filledBefore = filledCount;
+      fillLabel(questionLabels[i]);
+      // Chờ giữa các câu đã điền (không cần chờ sau câu cuối vì không có nút chuyển câu)
+      if (filledCount > filledBefore && i < questionLabels.length - 1) {
+        await waitOnQuestion(
+          parseQuestionIndex(questionLabels[i].textContent),
+          options.questionDelay,
+        );
+      }
+    }
 
     logMessage(`🎉 Đã tự động điền xong ${filledCount} câu hỏi bài tập.`, 'success');
     return { success: true, filledCount };
@@ -849,5 +904,6 @@
     sanitizeAiResponse,
     buildCompactPromptPayload,
     generateStandardPromptText,
+    questionDelayMs,
   };
 })();

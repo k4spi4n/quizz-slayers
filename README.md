@@ -16,7 +16,7 @@
 | ⚡ Slide | Tự động đọc câu hỏi → AI phân tích → click đáp án → tự chuyển trang. 3 chế độ: 🧠 **AI** (cần API key), 🎯 **Laya** 🧪 *thử nghiệm* (model local, cân bằng tốc độ/độ chính xác) và ⚡ **Bruteforce** (không cần key). |
 | 📝 Bài tập | 2 cách giải: ⚡ **Tự động (API)** — 1 chạm bắt đề → AI giải → điền → nộp; 💬 **Chatbot** — copy đề sang ChatGPT/Gemini/Claude web (miễn phí, không cần key) rồi dán đáp án về. |
 | 📊 Điểm số | Quét tiến độ Slide + Bài tập, điểm cao nhất từng bài, cảnh báo bài chưa làm — cả ở trang môn học lẫn trong popup. |
-| ⚙️ Cài đặt | Cấu hình 1 lần: provider, model, API key, delay, tự nộp bài, tự chuyển slide. Kiểm tra bản mới, sao lưu / khôi phục cấu hình. |
+| ⚙️ Cài đặt | Cấu hình 1 lần: provider, model, API key, delay, tự nộp bài, thời gian chờ mỗi câu bài tập, tự chuyển slide. Kiểm tra bản mới, sao lưu / khôi phục cấu hình. |
 
 **Vì sao dùng Extension thay script cũ:** cài trong 30 giây · dùng luôn session đăng nhập trên trình duyệt · hỗ trợ Gemini / OpenAI / DeepSeek / OpenRouter / Ollama / Custom endpoint · popup + widget trực quan · tự thích ứng DOM EDUX mới.
 
@@ -111,6 +111,7 @@ Mở bài tập EDUX (hoặc bấm **🚀 Mở bài** trong popup) → tab **Bà
   1. **Bước 1:** bấm **📋 Copy đề & xem trước** → đề được copy sẵn, có thể mở nhanh ChatGPT / Gemini / Claude ngay trong popup.
   2. **Bước 2:** dán đề vào chatbot, copy đáp án → về popup bấm **📥 Dán Clipboard** (lần đầu trình duyệt sẽ hỏi quyền clipboard → chọn **Cho phép**) hoặc `Ctrl+V` vào ô.
   3. **Bước 3:** bấm **✨ Bắt đầu điền bài tập**.
+- **Thời gian chờ mỗi câu** (tab ⚙️ Cài đặt): khi tự điền, chờ sau mỗi câu rồi mới sang câu tiếp / nộp bài — **Cố định** (VD `5` giây) hoặc **Ngẫu nhiên** trong khoảng (VD `3`–`8` giây). Mặc định `0` = không chờ. Áp dụng cho cả chế độ Tự động (API) và Chatbot.
 - Nút **🔄 Phiên mới** để xóa đáp án cũ khi làm bài khác.
 
 ### 4. Xem điểm (tab 📊 Điểm số)
