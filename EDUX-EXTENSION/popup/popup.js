@@ -243,7 +243,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   const AI_FUNCTIONS = ["slide", "exam"];
   // Mức suy luận (tham số reasoning_effort) theo provider — chỉ provider có trong bảng mới hiện lựa chọn.
-  // Giữ đồng bộ với REASONING_EFFORTS trong background.js
+  // Giữ đồng bộ với reasoningEfforts trong shared/providers.js
   const REASONING_EFFORTS = {
     inception: ["instant", "low", "medium", "high"],
   };
@@ -1368,254 +1368,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // =========================================================================
-  // 7. AI Solver Service (Hỗ trợ tùy chỉnh nguồn API: Gemini, OpenAI, DeepSeek, OpenRouter, Ollama...)
-  // =========================================================================
-  async function solveWithAI(
-    promptContent,
-    apiKey,
-    model,
-    apiEndpoint,
-    apiProvider,
-    reasoningEffort = "",
-  ) {
-    const key = (apiKey || "").trim();
-    const rawModel = (model || "").trim();
-    let customEndpoint = (apiEndpoint || "").trim();
-    const provider = (apiProvider || "gemini").toLowerCase().trim();
-
-    if (provider === "custom" && !customEndpoint) {
-      customEndpoint = "http://localhost:20128/v1";
-    }
-
-    const isLocal =
-      provider === "ollama" ||
-      customEndpoint.includes("localhost") ||
-      customEndpoint.includes("127.0.0.1");
-
-    if (!key && !isLocal) {
-      throw new Error(
-        "Chưa cấu hình API Key. Vui lòng vào tab Cài đặt để nhập key.",
-      );
-    }
-
-    // Xác định giao thức API: Gemini format hay OpenAI Chat Completions format
-    let isGemini = false;
-    if (provider === "gemini") {
-      isGemini = true;
-    } else if (
-      provider === "openai" ||
-      provider === "deepseek" ||
-      provider === "openrouter" ||
-      provider === "ollama" ||
-      provider === "inception"
-    ) {
-      isGemini = false;
-    } else {
-      // provider là 'custom' hoặc auto
-      if (customEndpoint) {
-        if (
-          customEndpoint.includes("googleapis.com") ||
-          customEndpoint.includes(":generateContent")
-        ) {
-          isGemini = true;
-        } else {
-          isGemini = false;
-        }
-      } else if (
-        key.startsWith("AIza") ||
-        rawModel.toLowerCase().includes("gemini") ||
-        !rawModel
-      ) {
-        isGemini = true;
-      }
-    }
-
-    const systemPrompt =
-      "Bạn là chuyên gia khảo thí và học thuật cao cấp hàng đầu, có độ chính xác tuyệt đối 100% trong việc giải quyết các bài kiểm tra trắc nghiệm, đúng/sai, điền khuyết và tự luận.\n" +
-      "Yêu cầu:\n" +
-      "1. Phân tích cẩn thận từng câu hỏi và các lựa chọn loại trừ để chọn phương án đúng tuyệt đối.\n" +
-      "2. Trả về JSONL một dòng duy nhất (hoặc JSON Array các object);\n" +
-      '3. Mỗi phần tử có "so_cau" và "dap_an";\n' +
-      '4. "dap_an" là A/B/C/D hoặc từ/cụm từ cần điền;\n' +
-      '5. Với câu đúng/sai, "dap_an" là mảng giá trị Đúng/Sai theo thứ tự từng mệnh đề (ví dụ: [true, false, true, true]);\n' +
-      "6. Tuyệt đối không thêm lời dẫn hay giải thích.";
-
-    let responseText = "";
-
-    if (isGemini) {
-      const geminiModel = rawModel
-        ? rawModel.replace(/^gemini\//i, "")
-        : "gemini-2.0-flash";
-      let endpoint = "";
-
-      if (customEndpoint) {
-        if (customEndpoint.includes(":generateContent")) {
-          endpoint = customEndpoint;
-          if (key && !endpoint.includes("key=")) {
-            endpoint +=
-              (endpoint.includes("?") ? "&" : "?") +
-              `key=${encodeURIComponent(key)}`;
-          }
-        } else {
-          const base = customEndpoint.replace(/\/+$/, "");
-          if (base.endsWith("/v1beta") || base.endsWith("/v1")) {
-            endpoint = `${base}/models/${geminiModel}:generateContent?key=${encodeURIComponent(key)}`;
-          } else {
-            endpoint = `${base}/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(key)}`;
-          }
-        }
-      } else {
-        endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${encodeURIComponent(key)}`;
-      }
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptContent }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { temperature: 0 },
-        }),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(
-          `Lỗi Gemini API (${res.status}): ${errJson.error?.message || res.statusText}`,
-        );
-      }
-
-      const resJson = await res.json();
-      responseText = resJson?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    } else {
-      // OpenAI / OpenAI-Compatible (DeepSeek, OpenRouter, Ollama, Groq, custom proxy...)
-      let openAiModel = rawModel;
-      if (!openAiModel) {
-        if (provider === "deepseek") openAiModel = "deepseek-chat";
-        else if (provider === "ollama") openAiModel = "llama3.2";
-        else if (provider === "inception") openAiModel = "mercury-2.5";
-        else openAiModel = "gpt-4o-mini";
-      }
-
-      let endpoint = "";
-      if (customEndpoint) {
-        const base = customEndpoint.replace(/\/+$/, "");
-        if (base.endsWith("/chat/completions")) {
-          endpoint = base;
-        } else if (base.endsWith("/v1")) {
-          endpoint = `${base}/chat/completions`;
-        } else {
-          endpoint = `${base}/v1/chat/completions`;
-        }
-      } else {
-        if (provider === "deepseek") {
-          endpoint = "https://api.deepseek.com/v1/chat/completions";
-        } else if (provider === "openrouter") {
-          endpoint = "https://openrouter.ai/api/v1/chat/completions";
-        } else if (provider === "ollama") {
-          endpoint = "http://localhost:11434/v1/chat/completions";
-        } else if (provider === "inception") {
-          endpoint = "https://api.inceptionlabs.ai/v1/chat/completions";
-        } else {
-          endpoint = "https://api.openai.com/v1/chat/completions";
-        }
-      }
-
-      const headers = { "Content-Type": "application/json" };
-      if (key) {
-        headers["Authorization"] = `Bearer ${key}`;
-      }
-      if (endpoint.includes("openrouter.ai")) {
-        headers["HTTP-Referer"] = "https://edux.cmcu.edu.vn";
-        headers["X-Title"] = "EDUX Slayers";
-      }
-
-      const body = {
-        model: openAiModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: promptContent },
-        ],
-        // Inception (Mercury) chỉ nhận 0.5–1.0; ngoài khoảng sẽ bị đặt về mặc định 1.0
-        temperature: endpoint.includes("inceptionlabs.ai") ? 0.5 : 0,
-        stream: false,
-      };
-      const effort = validReasoningEffort(provider, reasoningEffort);
-      if (effort) body.reasoning_effort = effort;
-
-      let res = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-      let rawText = await res.text();
-
-      // Server từ chối reasoning_effort -> thử lại 1 lần không kèm tham số này
-      if (
-        !res.ok &&
-        body.reasoning_effort &&
-        (res.status === 400 || res.status === 422) &&
-        /reasoning/i.test(rawText)
-      ) {
-        delete body.reasoning_effort;
-        res = await fetch(endpoint, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-        });
-        rawText = await res.text();
-      }
-      if (!res.ok) {
-        let errMessage = res.statusText;
-        try {
-          const errJson = JSON.parse(rawText);
-          errMessage = errJson.error?.message || errJson.message || errMessage;
-        } catch (e) {}
-        throw new Error(`Lỗi API (${res.status}): ${errMessage}`);
-      }
-
-      if (rawText.trim().startsWith("data:") || rawText.includes("\ndata:")) {
-        let accumulated = "";
-        const lines = rawText.split("\n");
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data:")) continue;
-          const dataStr = trimmed.replace(/^data:\s*/, "").trim();
-          if (dataStr === "[DONE]") break;
-          try {
-            const chunk = JSON.parse(dataStr);
-            const delta =
-              chunk.choices?.[0]?.delta?.content ||
-              chunk.choices?.[0]?.message?.content ||
-              "";
-            accumulated += delta;
-          } catch (e) {}
-        }
-        responseText = accumulated;
-      } else {
-        try {
-          const resJson = JSON.parse(rawText);
-          const choiceMessage = resJson?.choices?.[0]?.message;
-          responseText =
-            choiceMessage?.content || choiceMessage?.reasoning_content || "";
-        } catch (e) {
-          responseText = rawText;
-        }
-      }
-    }
-
-    // Mô phỏng sanitize_ai_response()
-    let cleaned = responseText.trim();
-    if (cleaned.startsWith("```")) {
-      const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
-      if (match) {
-        cleaned = match[1].trim();
-      }
-    }
-    return cleaned;
-  }
-
-  // =========================================================================
   // 8. Test Solver Actions (Bài tập)
   // =========================================================================
 
@@ -1960,14 +1712,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           `Đang gửi ${qCount} câu tới AI (${displayModel})...`,
         );
 
-        const aiAnswers = await solveWithAI(
-          extRes.promptText,
-          examProfile.apiKey,
-          examProfile.model,
-          examProfile.endpoint,
-          examProfile.provider,
-          examProfile.reasoningEffort,
-        );
+        // Background dùng cấu hình được gán cho "exam" (cùng examProfile ở trên)
+        const aiRes = await chrome.runtime.sendMessage({
+          action: "AI_SOLVE_EXAM",
+          promptText: extRes.promptText,
+        });
+        if (!aiRes?.success) {
+          throw new Error(aiRes?.message || "Không nhận được phản hồi từ AI.");
+        }
+        const aiAnswers = aiRes.answersText;
         UI.answerInput.value = aiAnswers;
         if (UI.autoAnswersBox) UI.autoAnswersBox.value = aiAnswers;
         if (UI.btnToggleAutoAnswers)

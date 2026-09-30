@@ -121,3 +121,10 @@ test('update check answers from the service worker', async ({ openPopup }) => {
   expect(typeof res.success).toBe('boolean');
   if (res.success) expect(res.latest).toMatch(/^\d+(\.\d+)*$/);
 });
+
+test('exercise AI requests are answered by the service worker', async ({ openPopup }) => {
+  const page = await openPopup();
+  await storage.set(page, { aiProfiles: [], aiAssign: {} });
+  const res = await page.evaluate(() => chrome.runtime.sendMessage({ action: 'AI_SOLVE_EXAM', promptText: 'x' }));
+  expect(res).toEqual({ success: false, message: 'Chưa có cấu hình AI. Vào tab Cài đặt → Cấu hình AI để thêm.' });
+});

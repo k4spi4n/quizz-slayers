@@ -25,7 +25,8 @@
     "default_title": "EDUX Slayers Control"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background/index.js",
+    "type": "module"
   },
   "content_scripts": [
     {

@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const EXT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../EDUX-EXTENSION');
 
@@ -105,13 +105,16 @@ export async function loadBackground() {
   const net = createFetch();
   const { chrome, listeners } = createChrome(storage);
 
-  const ctx = vm.createContext({ chrome, fetch: net.fetch, console, Response, URL, setTimeout, clearTimeout });
-  vm.runInContext(read('background.js'), ctx, { filename: 'background.js' });
+  // The service worker is an ES module that reads `chrome` / `fetch` as globals
+  globalThis.chrome = chrome;
+  globalThis.fetch = net.fetch;
+  await import(pathToFileURL(path.join(EXT_DIR, 'background/index.js')).href);
+  const { compareVersions } = await import(pathToFileURL(path.join(EXT_DIR, 'shared/version.js')).href);
 
   return {
     storage,
     net,
-    compareVersions: ctx.compareVersions,
+    compareVersions,
     dispatch(message) {
       return new Promise((resolve) => {
         const keepOpen = listeners.onMessage(message, {}, resolve);
