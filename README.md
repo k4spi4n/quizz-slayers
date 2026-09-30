@@ -2,7 +2,7 @@
 
 > Extension Chromium (Manifest V3) giải **Slide**, **Bài tập** và theo dõi **Điểm số** ngay trên EDUX — không cần Python, không cần lưu mật khẩu.
 
-![version](https://img.shields.io/badge/version-v2.4.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
+![version](https://img.shields.io/badge/version-v2.5.0-blue) ![mv3](https://img.shields.io/badge/manifest-V3-green) ![chromium](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20Brave%20%7C%20C%E1%BB%91c%20C%E1%BB%91c-orange)
 
 > [!IMPORTANT]
 > **Extension (`EDUX-EXTENSION`) là trọng tâm phát triển duy nhất.** Các script Python/Playwright (`EDUX-SLIDE-BRUTEFORCE`, `EDUX-TEST-SOLVER`, `EDUX-SLIDE-AI`, `EDUX-LIVE-QUESTION`) đã **ngừng hỗ trợ** — xem phần cuối README.
@@ -16,7 +16,7 @@
 | ⚡ Slide | Tự động đọc câu hỏi → AI phân tích → click đáp án → tự chuyển trang. 3 chế độ: 🧠 **AI** (cần API key), 🎯 **Laya** 🧪 *thử nghiệm* (model local, cân bằng tốc độ/độ chính xác) và ⚡ **Bruteforce** (không cần key). |
 | 📝 Bài tập | 2 cách giải: ⚡ **Tự động (API)** — 1 chạm bắt đề → AI giải → điền → nộp; 💬 **Chatbot** — copy đề sang ChatGPT/Gemini/Claude web (miễn phí, không cần key) rồi dán đáp án về. |
 | 📊 Điểm số | Quét tiến độ Slide + Bài tập, điểm cao nhất từng bài, cảnh báo bài chưa làm — cả ở trang môn học lẫn trong popup. |
-| ⚙️ Cài đặt | Cấu hình 1 lần: provider, model, API key, delay, tự nộp bài, tự chuyển slide. |
+| ⚙️ Cài đặt | Cấu hình 1 lần: provider, model, API key, delay, tự nộp bài, tự chuyển slide. Kiểm tra bản mới, sao lưu / khôi phục cấu hình. |
 
 **Vì sao dùng Extension thay script cũ:** cài trong 30 giây · dùng luôn session đăng nhập trên trình duyệt · hỗ trợ Gemini / OpenAI / DeepSeek / OpenRouter / Ollama / Custom endpoint · popup + widget trực quan · tự thích ứng DOM EDUX mới.
 
@@ -33,6 +33,24 @@ Sau đó trên Chrome / Edge / Brave / Cốc Cốc / Opera:
 1. Mở `chrome://extensions` (Edge: `edge://extensions`, Brave: `brave://extensions`, Cốc Cốc: `coccoc://extensions`) → bật **Developer mode**.
 2. **Load unpacked** → chọn thư mục đã giải nén (hoặc `EDUX-EXTENSION/`).
 3. Ghim **EDUX Slayers** ⚔️ ra thanh công cụ.
+
+---
+
+## 🔄 Cập nhật (giữ nguyên cấu hình AI & API key)
+
+Cấu hình được trình duyệt lưu theo extension. **Chép đè file + Reload** thì giữ nguyên; **Remove** extension hoặc **Load unpacked từ thư mục khác** thì mất sạch.
+
+Khi có bản mới, icon extension hiện nhãn **NEW** và popup báo 🎉 **Có bản mới**. Để cập nhật:
+
+1. Mở thư mục đã cài extension → chạy **`update.bat`** (tự tải bản mới nhất và chép đè vào đúng thư mục đó).
+   Hoặc thủ công: tải `edux-extension.zip` ở [Releases](../../releases/latest) → giải nén **đè lên thư mục cũ** (chọn *Replace*).
+2. Mở popup → bấm **🔄 Áp dụng** (hoặc nút ↻ Reload ở trang `chrome://extensions`).
+
+> [!TIP]
+> Trước khi cài lại, đổi thư mục, đổi trình duyệt hay đổi máy: vào **⚙️ Cài đặt → 🔄 Cập nhật & Sao lưu → 📤 Xuất file** để lưu cấu hình ra file `.json`, cài xong bấm **📥 Khôi phục**. File chứa API key — đừng chia sẻ.
+
+> [!NOTE]
+> Từ **v2.4.0 trở về trước** chưa có `update.bat`: lần này hãy giải nén zip mới **đè lên thư mục cũ** rồi bấm ↻ Reload. Những lần sau chỉ cần chạy `update.bat`. Nếu cài từ mã nguồn git thì dùng `git pull` rồi Reload.
 
 ---
 
@@ -107,10 +125,11 @@ Mở bài tập EDUX (hoặc bấm **🚀 Mở bài** trong popup) → tab **Bà
 
 ```text
 EDUX-EXTENSION/          # Extension chính (duy nhất còn phát triển)
-├── manifest.json        # Manifest V3, v2.4.0
+├── manifest.json        # Manifest V3, v2.5.0
 ├── popup/               # Giao diện popup (Slide / Bài tập / Điểm số / Cài đặt)
 ├── scripts/             # slide-solver, test-solver, score-tracker, dom-utils
 ├── content.js / injected.js / background.js
+├── update.bat / update.ps1  # Cập nhật tại chỗ, giữ nguyên cấu hình
 EDUX-SLIDE-BRUTEFORCE/   # [deprecated] script Playwright cũ
 EDUX-TEST-SOLVER/        # [deprecated] script Playwright cũ
 EDUX-SLIDE-AI/           # [deprecated] script OCR + Ollama cũ

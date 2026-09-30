@@ -853,3 +853,51 @@ textarea:focus, input:focus, select:focus {
   color: var(--text-muted);
   padding-top: 4px;
 }
+
+/* Cập nhật & sao lưu */
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  font-size: 12px;
+}
+
+.update-banner .btn {
+  width: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.update-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.update-steps ol {
+  padding-left: 16px;
+  font-size: 10px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.update-steps code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0 4px;
+  border-radius: 4px;
+  color: var(--text-main);
+}
+
+.update-warn {
+  font-size: 10px;
+  color: #fbbf24;
+}

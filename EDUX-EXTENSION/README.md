@@ -51,6 +51,13 @@ Bộ công cụ tự động hóa giải Slide bài giảng & Bài tập trên n
 4. Nhấn nút **Tải tiện ích đã giải nén** (*Load unpacked*).
 5. Trỏ tới thư mục: `D:\CODE\quizz-slayers\EDUX-EXTENSION` và nhấn **Select Folder**.
 
+### 🔄 Cập nhật mà không mất cấu hình AI
+
+- Chạy **`update.bat`** trong thư mục extension (tự tải bản mới nhất từ GitHub Releases và chép đè), hoặc giải nén zip mới **đè lên thư mục cũ**.
+- Mở popup → bấm **🔄 Áp dụng** (hoặc ↻ Reload trong trang quản lý extension).
+- **Không** bấm *Remove* hay *Load unpacked* sang thư mục khác — trình duyệt sẽ xóa cấu hình. Nếu buộc phải làm, dùng **⚙️ Cài đặt → 📤 Xuất file** trước và **📥 Khôi phục** sau khi cài lại.
+- Cài từ mã nguồn git: `git pull` rồi Reload.
+
 ---
 
 ## 📖 Hướng dẫn Sử dụng

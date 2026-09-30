@@ -24,7 +24,7 @@
           </div>
           <div>
             <h1>EDUX Slayers</h1>
-            <span class="version">v2.4.0 • Manifest V3</span>
+            <span class="version" id="appVersion">v2.5.0 • Manifest V3</span>
           </div>
         </div>
         <div class="status-indicator" id="globalStatus">
@@ -32,6 +32,15 @@
           <span class="status-text">Sẵn sàng</span>
         </div>
       </header>
+
+      <!-- Thông báo bản mới (ẩn mặc định) -->
+      <div id="updateBanner" class="update-banner hidden">
+        <div style="min-width: 0">
+          <strong id="updateBannerTitle"></strong>
+          <span id="updateBannerDesc" class="setting-desc"></span>
+        </div>
+        <button type="button" class="btn btn-success btn-xs" id="btnUpdateAction"></button>
+      </div>
 
       <!-- Navigation Tabs -->
       <nav class="tabs">
@@ -900,6 +909,86 @@
           <button class="btn btn-primary" id="btnSaveSettings">
             <span>💾</span> Lưu cài đặt
           </button>
+        </div>
+
+        <div class="card" id="updateCard">
+          <h3>🔄 Cập nhật & Sao lưu</h3>
+
+          <div class="setting-item">
+            <div>
+              <label class="setting-label"
+                >Phiên bản <span id="currentVersion"></span
+              ></label>
+              <span class="setting-desc" id="updateStatusText"
+                >Chưa kiểm tra bản mới</span
+              >
+            </div>
+            <button
+              type="button"
+              class="btn btn-secondary btn-xs"
+              id="btnCheckUpdate"
+              style="width: auto; white-space: nowrap"
+            >
+              🔍 Kiểm tra
+            </button>
+          </div>
+
+          <div class="update-steps">
+            <label class="setting-label">Cập nhật mà vẫn giữ cấu hình AI</label>
+            <ol>
+              <li>
+                Mở thư mục đã cài extension, chạy <code>update.bat</code> — tự
+                tải & chép đè bản mới.<br />Hoặc: bấm <b>⬇️ Tải zip</b> → giải
+                nén <b>đè lên thư mục cũ</b>.
+              </li>
+              <li>
+                Mở lại popup → bấm <b>🔄 Áp dụng</b> (hoặc ↻ Reload trong trang
+                quản lý extension).
+              </li>
+            </ol>
+            <span class="update-warn"
+              >⚠️ Đừng bấm <b>Remove/Xóa</b> extension hay cài sang thư mục
+              khác — trình duyệt sẽ xóa sạch cấu hình. Nếu buộc phải làm vậy,
+              hãy <b>📤 Xuất file</b> sao lưu trước.</span
+            >
+            <div style="display: flex; gap: 6px">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnDownloadUpdate">
+                ⬇️ Tải zip
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnReleaseNotes">
+                📋 Có gì mới
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="setting-item"
+            style="flex-direction: column; align-items: stretch; gap: 6px; border-bottom: none"
+          >
+            <div>
+              <label class="setting-label">💾 Sao lưu cấu hình</label>
+              <span class="setting-desc"
+                >Cấu hình AI, API key & cài đặt ra file .json — dùng khi cài
+                lại, đổi trình duyệt hoặc đổi máy. File chứa API key, đừng chia
+                sẻ.</span
+              >
+            </div>
+            <div style="display: flex; gap: 6px">
+              <button type="button" class="btn btn-secondary btn-sm" id="btnExportSettings">
+                📤 Xuất file
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnImportSettings">
+                📥 Khôi phục
+              </button>
+              <input
+                type="file"
+                id="importSettingsFile"
+                accept=".json,application/json"
+                hidden
+              />
+            </div>
+            <span id="backupStatus" style="font-size: 10px; display: none"></span>
+          </div>
         </div>
       </section>
 
